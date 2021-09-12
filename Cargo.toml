@@ -1,0 +1,10 @@
+[workspace]
+members = [
+    "bucket",
+    "archive-node",
+    "main"
+]
+
+[profile.release]
+lto = true
+opt-level = 'z'

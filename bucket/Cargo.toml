@@ -1,0 +1,13 @@
+[package]
+name = "ic-history-bucket"
+version = "0.1.0"
+edition = "2018"
+authors = ["Parsa Ghadimi <parsa@fleek.co>"]
+
+[dependencies]
+ic-certified-map = "0.1.0"
+ic-kit = "0.4.0"
+ic-cdk = "0.3.1"
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+async-std = { version="1.10.0", features = ["attributes"] }
