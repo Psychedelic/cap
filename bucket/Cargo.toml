@@ -8,6 +8,8 @@ authors = ["Parsa Ghadimi <parsa@fleek.co>"]
 ic-certified-map = "0.1.0"
 ic-kit = "0.4.0"
 ic-cdk = "0.3.1"
+sha2 = "0.9"
+serde = "1.0.116"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 async-std = { version="1.10.0", features = ["attributes"] }

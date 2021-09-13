@@ -627,6 +627,8 @@ dependencies = [
  "ic-cdk",
  "ic-certified-map",
  "ic-kit",
+ "serde",
+ "sha2",
 ]
 
 [[package]]
