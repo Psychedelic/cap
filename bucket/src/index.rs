@@ -31,11 +31,11 @@ struct IndexPage {
 
 impl Index {
     /// Insert a new local transaction id into the lookup table of the given principal id.
-    pub fn insert(&mut self, principal: Principal, id: u32) {
+    pub fn insert(&mut self, principal: &Principal, id: u32) {
         let mut inserted = false;
 
-        let next_page = if let Some(&page_no) = self.pager.get(&principal) {
-            let key = IndexKey::new(&principal, page_no);
+        let next_page = if let Some(&page_no) = self.pager.get(principal) {
+            let key = IndexKey::new(principal, page_no);
 
             self.data.modify(key.as_ref(), |page| {
                 inserted = page.insert(id);
@@ -51,10 +51,22 @@ impl Index {
             let mut page = IndexPage::default();
             page.insert(id);
 
-            let key = IndexKey::new(&principal, next_page);
+            let key = IndexKey::new(principal, next_page);
             self.data.insert(key, page);
-            self.pager.insert(principal, next_page);
+            self.pager.insert(principal.clone(), next_page);
         }
+    }
+}
+
+impl AsHashTree for Index {
+    #[inline(always)]
+    fn root_hash(&self) -> Hash {
+        self.data.root_hash()
+    }
+
+    #[inline(always)]
+    fn as_hash_tree(&self) -> HashTree<'_> {
+        self.data.as_hash_tree()
     }
 }
 
@@ -120,8 +132,16 @@ impl IndexPage {
         true
     }
 
+    /// Return the transaction id at the given index.
+    #[inline]
     pub fn get(&self, index: usize) -> Option<u32> {
-        todo!()
+        let offset = index * 4;
+        if offset >= self.data.len() {
+            return None;
+        }
+        let mut buffer = [0u8; 4];
+        buffer.copy_from_slice(&self.data[offset..][..4]);
+        Some(u32::from_be_bytes(buffer))
     }
 }
 
@@ -134,16 +154,5 @@ impl AsHashTree for IndexPage {
     #[inline(always)]
     fn as_hash_tree(&self) -> HashTree<'_> {
         self.data.as_hash_tree()
-    }
-}
-
-#[test]
-fn be() {
-    for i in 0..5000u32 {
-        let i_be = i.to_be_bytes();
-        for j in 0..i {
-            let j_be = j.to_be_bytes();
-            assert!(i_be > j_be);
-        }
     }
 }
