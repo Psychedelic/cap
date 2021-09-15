@@ -1,6 +1,7 @@
 use crate::index::Index;
 use crate::transaction::Event;
 use ic_certified_map::{fork, fork_hash, leaf_hash, AsHashTree, Hash, HashTree, RbTree};
+use ic_kit::Principal;
 
 /// A bucket contains a series of transactions and appropriate indexers.
 ///
@@ -76,6 +77,24 @@ impl Bucket {
             &self.user_indexer.root_hash(),
             &self.token_indexer.root_hash(),
         )
+    }
+
+    /// Return the transactions associated with a user's principal id at the given page.
+    #[inline]
+    pub fn get_transactions_for_user(&self, principal: &Principal, page: u32) -> Vec<&Event> {
+        self.user_indexer
+            .get(principal, page)
+            .map(|iter| iter.map(|id| &self.events[id as usize]).collect())
+            .unwrap_or_default()
+    }
+
+    /// Return the transactions associated with a token's principal id at the given page.
+    #[inline]
+    pub fn get_transactions_for_token(&self, principal: &Principal, page: u32) -> Vec<&Event> {
+        self.token_indexer
+            .get(principal, page)
+            .map(|iter| iter.map(|id| &self.events[id as usize]).collect())
+            .unwrap_or_default()
     }
 }
 

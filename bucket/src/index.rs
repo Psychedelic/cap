@@ -3,8 +3,8 @@ use ic_kit::Principal;
 use std::collections::BTreeMap;
 
 /// How many Transaction IDs per page.
-const PAGE_CAPACITY: usize = 128;
-/// Number of bytes required to store each page's data. 512 bytes.
+pub const PAGE_CAPACITY: usize = 64;
+/// Number of bytes required to store each page's data. 256 bytes.
 const PAGE_CAPACITY_BYTES: usize = PAGE_CAPACITY * std::mem::size_of::<u32>();
 
 /// Type used for representing the page number.
@@ -20,7 +20,7 @@ pub struct Index {
 /// structure:
 /// u8      Principal length
 /// u8;29   Principal inner
-/// u8;4    Page number, u16 as Big Endian
+/// u8;4    Page number, u32 as Big Endian
 struct IndexKey([u8; 34]);
 
 #[derive(Default)]
@@ -55,6 +55,20 @@ impl Index {
             self.data.insert(key, page);
             self.pager.insert(principal.clone(), next_page);
         }
+    }
+
+    /// Create a witness proving the data returned by get.
+    #[inline]
+    pub fn witness(&self, principal: &Principal, page: u32) -> HashTree {
+        let key = IndexKey::new(principal, page);
+        self.data.witness(key.as_ref())
+    }
+
+    /// Get a page from the indexer.
+    #[inline]
+    pub fn get(&self, principal: &Principal, page: u32) -> Option<IndexPageIterator> {
+        let key = IndexKey::new(principal, page);
+        self.data.get(key.as_ref()).map(IndexPage::iter)
     }
 }
 
@@ -132,6 +146,13 @@ impl IndexPage {
         true
     }
 
+    /// Return the number of items inserted into this page.
+    #[inline]
+    pub fn len(&self) -> usize {
+        // div by 4.
+        self.data.len() >> 2
+    }
+
     /// Return the transaction id at the given index.
     #[inline]
     pub fn get(&self, index: usize) -> Option<u32> {
@@ -142,6 +163,39 @@ impl IndexPage {
         let mut buffer = [0u8; 4];
         buffer.copy_from_slice(&self.data[offset..][..4]);
         Some(u32::from_be_bytes(buffer))
+    }
+
+    /// Create an iterator over the transaction ids in this page.
+    #[inline]
+    pub fn iter(&self) -> IndexPageIterator {
+        IndexPageIterator {
+            cursor: 0,
+            page: &self,
+        }
+    }
+}
+
+pub struct IndexPageIterator<'a> {
+    cursor: usize,
+    page: &'a IndexPage,
+}
+
+impl<'a> Iterator for IndexPageIterator<'a> {
+    type Item = u32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let index = self.cursor;
+        self.cursor += 1;
+        self.page.get(index)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let rem = self.page.len() - self.cursor;
+        (rem, Some(rem))
+    }
+
+    fn count(self) -> usize {
+        self.page.len() - self.cursor
     }
 }
 
