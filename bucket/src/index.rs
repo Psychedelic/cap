@@ -173,6 +173,27 @@ impl IndexPage {
             page: &self,
         }
     }
+
+    /// Create an iterator over the transaction ids as big endian in this page.
+    #[inline]
+    pub fn iter_be(&self) -> IndexPageBeIterator {
+        IndexPageBeIterator {
+            cursor: 0,
+            page: &self,
+        }
+    }
+}
+
+impl AsHashTree for IndexPage {
+    #[inline(always)]
+    fn root_hash(&self) -> Hash {
+        self.data.root_hash()
+    }
+
+    #[inline(always)]
+    fn as_hash_tree(&self) -> HashTree<'_> {
+        self.data.as_hash_tree()
+    }
 }
 
 pub struct IndexPageIterator<'a> {
@@ -199,14 +220,29 @@ impl<'a> Iterator for IndexPageIterator<'a> {
     }
 }
 
-impl AsHashTree for IndexPage {
-    #[inline(always)]
-    fn root_hash(&self) -> Hash {
-        self.data.root_hash()
+pub struct IndexPageBeIterator<'a> {
+    cursor: usize,
+    page: &'a IndexPage,
+}
+
+impl<'a> Iterator for IndexPageBeIterator<'a> {
+    type Item = &'a [u8];
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let offset = self.cursor << 2; // mul 4
+        if offset >= self.page.data.len() {
+            None
+        } else {
+            Some(&self.page.data[offset..offset + 4])
+        }
     }
 
-    #[inline(always)]
-    fn as_hash_tree(&self) -> HashTree<'_> {
-        self.data.as_hash_tree()
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let rem = self.page.len() - self.cursor;
+        (rem, Some(rem))
+    }
+
+    fn count(self) -> usize {
+        self.page.len() - self.cursor
     }
 }

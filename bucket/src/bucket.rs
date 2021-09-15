@@ -29,7 +29,7 @@ pub struct Bucket {
     token_indexer: Index,
 }
 
-struct EventKey([u8; 4]);
+pub struct EventKey([u8; 4]);
 
 impl From<u32> for EventKey {
     #[inline(always)]
