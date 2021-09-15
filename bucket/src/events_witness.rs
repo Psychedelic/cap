@@ -10,8 +10,8 @@ use std::cmp::Ordering;
 use std::iter::Peekable;
 
 enum Color {
-    Red,
-    Black,
+    _Red,
+    _Black,
 }
 
 struct NodeVisible<K, V> {
@@ -35,15 +35,6 @@ impl<K: 'static + AsRef<[u8]>, V: AsHashTree + 'static> NodeVisible<K, V> {
             Empty
         } else {
             Pruned((*(*n).left).subtree_hash)
-        }
-    }
-
-    unsafe fn right_hash_tree<'a>(n: *mut Self) -> HashTree<'a> {
-        debug_assert!(!n.is_null());
-        if (*n).right.is_null() {
-            Empty
-        } else {
-            Pruned((*(*n).right).subtree_hash)
         }
     }
 

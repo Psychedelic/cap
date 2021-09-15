@@ -70,6 +70,13 @@ impl Index {
         let key = IndexKey::new(principal, page);
         self.data.get(key.as_ref()).map(IndexPage::iter)
     }
+
+    /// Get a BE iterator over the transaction ids in a page.
+    #[inline]
+    pub fn get_be(&self, principal: &Principal, page: u32) -> Option<IndexPageBeIterator> {
+        let key = IndexKey::new(principal, page);
+        self.data.get(key.as_ref()).map(IndexPage::iter_be)
+    }
 }
 
 impl AsHashTree for Index {

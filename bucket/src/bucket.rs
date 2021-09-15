@@ -1,5 +1,7 @@
-use crate::index::Index;
+use crate::events_witness::build_events_witness;
+use crate::index::{Index, IndexPageBeIterator};
 use crate::transaction::Event;
+use ic_certified_map::HashTree::Pruned;
 use ic_certified_map::{fork, fork_hash, leaf_hash, AsHashTree, Hash, HashTree, RbTree};
 use ic_kit::Principal;
 
@@ -95,6 +97,45 @@ impl Bucket {
             .get(principal, page)
             .map(|iter| iter.map(|id| &self.events[id as usize]).collect())
             .unwrap_or_default()
+    }
+
+    #[inline]
+    fn witness_transactions<'a: 't, 't>(
+        &'a self,
+        r_tree: HashTree<'t>,
+        maybe_keys: Option<IndexPageBeIterator<'a>>,
+    ) -> HashTree<'t> {
+        if let Some(keys) = maybe_keys {
+            fork(
+                fork(
+                    build_events_witness(&self.event_hashes, keys),
+                    HashTree::Leaf(&self.global_offset_be),
+                ),
+                r_tree,
+            )
+        } else {
+            fork(Pruned(self.left_v_hash()), r_tree)
+        }
+    }
+
+    /// Return the witness that can be used to prove the response from get_transactions_for_user.
+    pub fn witness_transactions_for_user(&self, principal: &Principal, page: u32) -> HashTree {
+        let maybe_keys = self.user_indexer.get_be(principal, page);
+        let r_tree = fork(
+            self.user_indexer.witness(principal, page),
+            Pruned(self.token_indexer.root_hash()),
+        );
+        self.witness_transactions(r_tree, maybe_keys)
+    }
+
+    /// Return the witness that can be used to prove the response from get_transactions_for_token.
+    pub fn witness_transactions_for_token(&self, principal: &Principal, page: u32) -> HashTree {
+        let maybe_keys = self.token_indexer.get_be(principal, page);
+        let r_tree = fork(
+            Pruned(self.user_indexer.root_hash()),
+            self.token_indexer.witness(principal, page),
+        );
+        self.witness_transactions(r_tree, maybe_keys)
     }
 }
 
