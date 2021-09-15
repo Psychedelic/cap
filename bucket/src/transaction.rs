@@ -138,3 +138,100 @@ fn domain_sep(s: &str) -> sha2::Sha256 {
     h.update(s.as_bytes());
     h
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ic_kit::mock_principals;
+
+    #[test]
+    fn extract_principal_transfer() {
+        let event = Event {
+            token: mock_principals::xtc(),
+            time: 0,
+            caller: mock_principals::bob(),
+            amount: 0,
+            fee: 0,
+            memo: 0,
+            kind: EventKind::Transfer {
+                from: mock_principals::alice(),
+                to: mock_principals::john(),
+            },
+        };
+
+        let ids = event.extract_principal_ids();
+        assert!(ids.contains(&mock_principals::bob()));
+        assert!(ids.contains(&mock_principals::alice()));
+        assert!(ids.contains(&mock_principals::john()));
+        // Should not panic.
+        event.hash();
+    }
+
+    #[test]
+    fn extract_principal_mint() {
+        let event = Event {
+            token: mock_principals::xtc(),
+            time: 0,
+            caller: mock_principals::bob(),
+            amount: 0,
+            fee: 0,
+            memo: 0,
+            kind: EventKind::Mint {
+                to: mock_principals::alice(),
+            },
+        };
+
+        let ids = event.extract_principal_ids();
+        assert!(ids.contains(&mock_principals::bob()));
+        assert!(ids.contains(&mock_principals::alice()));
+        // Should not panic.
+        event.hash();
+    }
+
+    #[test]
+    fn extract_principal_burn() {
+        let event = Event {
+            token: mock_principals::xtc(),
+            time: 0,
+            caller: mock_principals::bob(),
+            amount: 0,
+            fee: 0,
+            memo: 0,
+            kind: EventKind::Burn {
+                from: mock_principals::alice(),
+                to: Some(mock_principals::john()),
+            },
+        };
+
+        let ids = event.extract_principal_ids();
+        assert!(ids.contains(&mock_principals::bob()));
+        assert!(ids.contains(&mock_principals::alice()));
+        assert!(ids.contains(&mock_principals::john()));
+        // Should not panic.
+        event.hash();
+    }
+
+    #[test]
+    fn extract_principal_custom() {
+        let event = Event {
+            token: mock_principals::xtc(),
+            time: 0,
+            caller: mock_principals::bob(),
+            amount: 0,
+            fee: 0,
+            memo: 0,
+            kind: EventKind::Custom {
+                name: "".to_string(),
+                spenders: vec![mock_principals::john()],
+                receivers: vec![mock_principals::alice()],
+            },
+        };
+
+        let ids = event.extract_principal_ids();
+        assert!(ids.contains(&mock_principals::bob()));
+        assert!(ids.contains(&mock_principals::john()));
+        assert!(ids.contains(&mock_principals::alice()));
+        // Should not panic.
+        event.hash();
+    }
+}

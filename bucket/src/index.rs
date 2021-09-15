@@ -110,18 +110,6 @@ impl IndexKey {
 
         IndexKey(buffer)
     }
-
-    #[inline]
-    pub fn parse(&self) -> (Principal, PageNumber) {
-        let principal_len = self.0[0] as usize;
-        let principal_slice = &self.0[1..][..principal_len];
-        let mut page_slice = [0u8; 4];
-        page_slice.copy_from_slice(&self.0[30..]);
-        (
-            Principal::from_slice(&principal_slice),
-            u32::from_be_bytes(page_slice),
-        )
-    }
 }
 
 impl AsRef<[u8]> for IndexKey {
@@ -141,14 +129,7 @@ impl IndexPage {
 
         let slice = id.to_be_bytes();
         self.data.extend_from_slice(&slice);
-
-        if self.data.capacity() > PAGE_CAPACITY_BYTES {
-            let vec = Vec::with_capacity(PAGE_CAPACITY_BYTES);
-            let data = std::mem::replace(&mut self.data, vec);
-            for b in data.into_iter() {
-                self.data.push(b);
-            }
-        }
+        self.data.shrink_to_fit();
 
         true
     }
@@ -221,10 +202,6 @@ impl<'a> Iterator for IndexPageIterator<'a> {
         let rem = self.page.len() - self.cursor;
         (rem, Some(rem))
     }
-
-    fn count(self) -> usize {
-        self.page.len() - self.cursor
-    }
 }
 
 pub struct IndexPageBeIterator<'a> {
@@ -243,14 +220,5 @@ impl<'a> Iterator for IndexPageBeIterator<'a> {
         } else {
             Some(&self.page.data[offset..offset + 4])
         }
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        let rem = self.page.len() - self.cursor;
-        (rem, Some(rem))
-    }
-
-    fn count(self) -> usize {
-        self.page.len() - self.cursor
     }
 }

@@ -57,7 +57,7 @@ impl Bucket {
             global_offset: offset,
             global_offset_be: offset.to_be_bytes(),
             user_indexer: Index::default(),
-            token_indexer: Index::default()
+            token_indexer: Index::default(),
         }
     }
 
@@ -123,10 +123,7 @@ impl Bucket {
             debug_assert_eq!(witness.reconstruct(), self.event_hashes.root_hash());
 
             fork(
-                fork(
-                    witness,
-                    HashTree::Leaf(&self.global_offset_be),
-                ),
+                fork(witness, HashTree::Leaf(&self.global_offset_be)),
                 r_tree,
             )
         } else {
@@ -217,35 +214,19 @@ impl AsHashTree for Bucket {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ic_kit::mock_principals;
     use crate::transaction::EventKind;
+    use ic_kit::mock_principals;
     use std::collections::BTreeSet;
 
-    fn e(memo: u32) -> Event {
+    fn e(memo: u32, caller: Principal, token: Principal) -> Event {
         Event {
-            token: mock_principals::xtc(),
+            token,
             time: 0,
-            caller: mock_principals::alice(),
+            caller,
             amount: 0,
             fee: 0,
             memo,
-            kind: EventKind::Mint {
-                to: mock_principals::bob()
-            }
-        }
-    }
-
-    fn e_john(memo: u32) -> Event {
-        Event {
-            token: mock_principals::xtc(),
-            time: 0,
-            caller: mock_principals::john(),
-            amount: 0,
-            fee: 0,
-            memo,
-            kind: EventKind::Mint {
-                to: mock_principals::john()
-            }
+            kind: EventKind::Mint { to: caller },
         }
     }
 
@@ -280,9 +261,9 @@ mod tests {
                     let r = f as &(HashTree, HashTree);
                     &r.0
                 }
-                _ => unreachable!()
+                _ => unreachable!(),
             },
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 
@@ -290,15 +271,14 @@ mod tests {
         get_tree_keys(get_events_tree(tree))
     }
 
-
     /// root_hash and as_hash_tree should use the same tree layout.
     #[test]
     fn test_hash_tree() {
         let mut bucket = Bucket::new(0);
-        bucket.insert(e(0));
-        bucket.insert(e(1));
-        bucket.insert(e(2));
-        bucket.insert(e(3));
+        bucket.insert(e(0, mock_principals::alice(), mock_principals::xtc()));
+        bucket.insert(e(1, mock_principals::alice(), mock_principals::xtc()));
+        bucket.insert(e(2, mock_principals::alice(), mock_principals::xtc()));
+        bucket.insert(e(3, mock_principals::alice(), mock_principals::xtc()));
         assert_eq!(bucket.as_hash_tree().reconstruct(), bucket.root_hash());
         let keys = keys(&bucket.as_hash_tree());
         assert_eq!(keys.len(), 4);
@@ -309,10 +289,10 @@ mod tests {
     #[test]
     fn test_witness_transaction() {
         let mut bucket = Bucket::new(0);
-        bucket.insert(e(0));
-        bucket.insert(e(1));
-        bucket.insert(e(2));
-        bucket.insert(e(3));
+        bucket.insert(e(0, mock_principals::alice(), mock_principals::xtc()));
+        bucket.insert(e(1, mock_principals::alice(), mock_principals::xtc()));
+        bucket.insert(e(2, mock_principals::alice(), mock_principals::xtc()));
+        bucket.insert(e(3, mock_principals::alice(), mock_principals::xtc()));
 
         let event = bucket.get_transaction(1).unwrap();
         let witness = bucket.witness_transaction(1);
@@ -324,21 +304,55 @@ mod tests {
     }
 
     #[test]
+    fn test_witness_transaction_large() {
+        let mut bucket = Bucket::new(0);
+        bucket.insert(e(0, mock_principals::alice(), mock_principals::xtc()));
+        bucket.insert(e(1, mock_principals::alice(), mock_principals::xtc()));
+        bucket.insert(e(2, mock_principals::alice(), mock_principals::xtc()));
+        bucket.insert(e(3, mock_principals::alice(), mock_principals::xtc()));
+
+        assert_eq!(bucket.get_transaction(4).is_none(), true);
+
+        let witness = bucket.witness_transaction(4);
+        assert_eq!(witness.reconstruct(), bucket.root_hash());
+
+        let keys = keys(&witness);
+        assert_eq!(keys.len(), 1);
+        assert!(keys.contains(&3));
+    }
+
+    #[test]
+    fn test_witness_transaction_below_offset() {
+        let mut bucket = Bucket::new(10);
+        bucket.insert(e(10, mock_principals::alice(), mock_principals::xtc()));
+        bucket.insert(e(11, mock_principals::alice(), mock_principals::xtc()));
+        bucket.insert(e(12, mock_principals::alice(), mock_principals::xtc()));
+        bucket.insert(e(13, mock_principals::alice(), mock_principals::xtc()));
+
+        assert_eq!(bucket.get_transaction(5).is_none(), true);
+        let witness = bucket.witness_transaction(5);
+        assert_eq!(witness.reconstruct(), bucket.root_hash());
+
+        let keys = keys(&witness);
+        assert_eq!(keys.len(), 0);
+    }
+
+    #[test]
     fn test_witness_user_transactions() {
         let mut bucket = Bucket::new(0);
 
         for i in 0..5000 {
             if i % 27 == 0 {
-                bucket.insert(e_john(i));
+                bucket.insert(e(i, mock_principals::bob(), mock_principals::xtc()));
             } else {
-                bucket.insert(e(i));
+                bucket.insert(e(i, mock_principals::alice(), mock_principals::xtc()));
             }
         }
 
         let mut count = 0;
 
         for page in 0.. {
-            let principal = mock_principals::john();
+            let principal = mock_principals::bob();
             let data = bucket.get_transactions_for_user(&principal, page);
             let witness = bucket.witness_transactions_for_user(&principal, page);
             let len = data.len();
@@ -349,7 +363,6 @@ mod tests {
 
             if len > 0 {
                 let keys = keys(&witness);
-                println!("keys: {:?}", keys);
                 assert_eq!(keys.len(), data.len());
             } else {
                 break;
@@ -358,5 +371,41 @@ mod tests {
 
         // floor(5000 / 27) + 1 = 186
         assert_eq!(count, 186);
+    }
+
+    #[test]
+    fn test_witness_token_transactions() {
+        let mut bucket = Bucket::new(0);
+
+        for i in 0..2500 {
+            if i % 13 == 0 {
+                bucket.insert(e(i, mock_principals::xtc(), mock_principals::bob()));
+            } else {
+                bucket.insert(e(i, mock_principals::alice(), mock_principals::xtc()));
+            }
+        }
+
+        let mut count = 0;
+
+        for page in 0.. {
+            let principal = mock_principals::bob();
+            let data = bucket.get_transactions_for_token(&principal, page);
+            let witness = bucket.witness_transactions_for_token(&principal, page);
+            let len = data.len();
+
+            assert_eq!(witness.reconstruct(), bucket.root_hash());
+
+            count += len;
+
+            if len > 0 {
+                let keys = keys(&witness);
+                assert_eq!(keys.len(), data.len());
+            } else {
+                break;
+            }
+        }
+
+        // floor(2500 / 13) + 1 = 193
+        assert_eq!(count, 193);
     }
 }

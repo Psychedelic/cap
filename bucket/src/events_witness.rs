@@ -38,6 +38,15 @@ impl<K: 'static + AsRef<[u8]>, V: AsHashTree + 'static> NodeVisible<K, V> {
         }
     }
 
+    unsafe fn right_hash_tree<'a>(n: *mut Self) -> HashTree<'a> {
+        debug_assert!(!n.is_null());
+        if (*n).right.is_null() {
+            Empty
+        } else {
+            Pruned((*(*n).right).subtree_hash)
+        }
+    }
+
     unsafe fn subtree_with<'a>(
         n: *mut Self,
         f: impl FnOnce(&'a V) -> HashTree<'a>,
@@ -71,8 +80,6 @@ pub fn build_events_witness<'a>(
     tree: &'a RbTree<EventKey, Hash>,
     keys: IndexPageBeIterator<'a>,
 ) -> HashTree<'a> {
-    println!("Called");
-
     unsafe fn build<'a, 'p>(
         keys: &'p mut Peekable<IndexPageBeIterator<'a>>,
         n: *mut NodeVisible<EventKey, Hash>,
@@ -87,11 +94,14 @@ pub fn build_events_witness<'a>(
         // so key < every other key.
         let key = match keys.peek() {
             Some(key) => *key,
-            None => return Pruned(NodeVisible::data_hash(n)),
+            None => {
+                return three_way_fork(
+                    NodeVisible::left_hash_tree(n),
+                    Pruned(NodeVisible::data_hash(n)),
+                    NodeVisible::right_hash_tree(n),
+                )
+            }
         };
-
-        let mut s = [0; 4];
-        s.copy_from_slice(key);
 
         match key.cmp((*n).key.as_ref()) {
             Ordering::Equal => {
