@@ -48,6 +48,19 @@ impl AsRef<[u8]> for EventKey {
 }
 
 impl Bucket {
+    /// Create a new bucket with the given global offset.
+    #[inline]
+    pub fn new(offset: u64) -> Self {
+        Bucket {
+            events: vec![],
+            event_hashes: RbTree::new(),
+            global_offset: offset,
+            global_offset_be: offset.to_be_bytes(),
+            user_indexer: Index::default(),
+            token_indexer: Index::default()
+        }
+    }
+
     /// Try to insert an event into the bucket.
     pub fn insert(&mut self, event: Event) -> u64 {
         let local_index = self.events.len() as u32;
