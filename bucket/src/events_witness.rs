@@ -71,6 +71,8 @@ pub fn build_events_witness<'a>(
     tree: &'a RbTree<EventKey, Hash>,
     keys: IndexPageBeIterator<'a>,
 ) -> HashTree<'a> {
+    println!("Called");
+
     unsafe fn build<'a, 'p>(
         keys: &'p mut Peekable<IndexPageBeIterator<'a>>,
         n: *mut NodeVisible<EventKey, Hash>,
@@ -87,6 +89,9 @@ pub fn build_events_witness<'a>(
             Some(key) => *key,
             None => return Pruned(NodeVisible::data_hash(n)),
         };
+
+        let mut s = [0; 4];
+        s.copy_from_slice(key);
 
         match key.cmp((*n).key.as_ref()) {
             Ordering::Equal => {

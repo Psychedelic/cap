@@ -237,6 +237,7 @@ impl<'a> Iterator for IndexPageBeIterator<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let offset = self.cursor << 2; // mul 4
+        self.cursor += 1;
         if offset >= self.page.data.len() {
             None
         } else {

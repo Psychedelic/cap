@@ -119,9 +119,12 @@ impl Bucket {
         maybe_keys: Option<IndexPageBeIterator<'a>>,
     ) -> HashTree<'t> {
         if let Some(keys) = maybe_keys {
+            let witness = build_events_witness(&self.event_hashes, keys);
+            debug_assert_eq!(witness.reconstruct(), self.event_hashes.root_hash());
+
             fork(
                 fork(
-                    build_events_witness(&self.event_hashes, keys),
+                    witness,
                     HashTree::Leaf(&self.global_offset_be),
                 ),
                 r_tree,
@@ -208,5 +211,152 @@ impl AsHashTree for Bucket {
                 self.token_indexer.as_hash_tree(),
             ),
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ic_kit::mock_principals;
+    use crate::transaction::EventKind;
+    use std::collections::BTreeSet;
+
+    fn e(memo: u32) -> Event {
+        Event {
+            token: mock_principals::xtc(),
+            time: 0,
+            caller: mock_principals::alice(),
+            amount: 0,
+            fee: 0,
+            memo,
+            kind: EventKind::Mint {
+                to: mock_principals::bob()
+            }
+        }
+    }
+
+    fn e_john(memo: u32) -> Event {
+        Event {
+            token: mock_principals::xtc(),
+            time: 0,
+            caller: mock_principals::john(),
+            amount: 0,
+            fee: 0,
+            memo,
+            kind: EventKind::Mint {
+                to: mock_principals::john()
+            }
+        }
+    }
+
+    fn get_tree_keys(tree: &HashTree) -> BTreeSet<u32> {
+        fn visit(collection: &mut BTreeSet<u32>, tree: &HashTree) {
+            match tree {
+                HashTree::Empty => {}
+                HashTree::Fork(f) => {
+                    let r = f as &(HashTree, HashTree);
+                    visit(collection, &r.0);
+                    visit(collection, &r.1);
+                }
+                HashTree::Labeled(key, _) => {
+                    let mut slice = [0; 4];
+                    slice.copy_from_slice(*key);
+                    collection.insert(u32::from_be_bytes(slice));
+                }
+                HashTree::Leaf(_) => {}
+                Pruned(_) => {}
+            }
+        }
+
+        let mut keys = BTreeSet::new();
+        visit(&mut keys, tree);
+        keys
+    }
+
+    fn get_events_tree<'a>(tree: &'a HashTree<'a>) -> &HashTree<'a> {
+        match tree {
+            HashTree::Fork(f) => match f as &(HashTree, HashTree) {
+                (HashTree::Fork(f), _) => {
+                    let r = f as &(HashTree, HashTree);
+                    &r.0
+                }
+                _ => unreachable!()
+            },
+            _ => unreachable!()
+        }
+    }
+
+    fn keys<'a>(tree: &'a HashTree<'a>) -> BTreeSet<u32> {
+        get_tree_keys(get_events_tree(tree))
+    }
+
+
+    /// root_hash and as_hash_tree should use the same tree layout.
+    #[test]
+    fn test_hash_tree() {
+        let mut bucket = Bucket::new(0);
+        bucket.insert(e(0));
+        bucket.insert(e(1));
+        bucket.insert(e(2));
+        bucket.insert(e(3));
+        assert_eq!(bucket.as_hash_tree().reconstruct(), bucket.root_hash());
+        let keys = keys(&bucket.as_hash_tree());
+        assert_eq!(keys.len(), 4);
+    }
+
+    /// This test tires to see if the witness created for a lookup is minimal
+    /// and reconstructs to the root_hash.
+    #[test]
+    fn test_witness_transaction() {
+        let mut bucket = Bucket::new(0);
+        bucket.insert(e(0));
+        bucket.insert(e(1));
+        bucket.insert(e(2));
+        bucket.insert(e(3));
+
+        let event = bucket.get_transaction(1).unwrap();
+        let witness = bucket.witness_transaction(1);
+        let keys = keys(&witness);
+        assert_eq!(event.memo, 1);
+        assert_eq!(keys.len(), 1);
+        assert!(keys.contains(&1));
+        assert_eq!(witness.reconstruct(), bucket.root_hash());
+    }
+
+    #[test]
+    fn test_witness_user_transactions() {
+        let mut bucket = Bucket::new(0);
+
+        for i in 0..5000 {
+            if i % 27 == 0 {
+                bucket.insert(e_john(i));
+            } else {
+                bucket.insert(e(i));
+            }
+        }
+
+        let mut count = 0;
+
+        for page in 0.. {
+            let principal = mock_principals::john();
+            let data = bucket.get_transactions_for_user(&principal, page);
+            let witness = bucket.witness_transactions_for_user(&principal, page);
+            let len = data.len();
+
+            assert_eq!(witness.reconstruct(), bucket.root_hash());
+
+            count += len;
+
+            if len > 0 {
+                let keys = keys(&witness);
+                println!("keys: {:?}", keys);
+                assert_eq!(keys.len(), data.len());
+            } else {
+                break;
+            }
+        }
+
+        // floor(5000 / 27) + 1 = 186
+        assert_eq!(count, 186);
     }
 }
