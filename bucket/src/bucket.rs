@@ -119,6 +119,7 @@ impl Bucket {
     }
 
     /// Return the witness that can be used to prove the response from get_transactions_for_user.
+    #[inline]
     pub fn witness_transactions_for_user(&self, principal: &Principal, page: u32) -> HashTree {
         let maybe_keys = self.user_indexer.get_be(principal, page);
         let r_tree = fork(
@@ -129,6 +130,7 @@ impl Bucket {
     }
 
     /// Return the witness that can be used to prove the response from get_transactions_for_token.
+    #[inline]
     pub fn witness_transactions_for_token(&self, principal: &Principal, page: u32) -> HashTree {
         let maybe_keys = self.token_indexer.get_be(principal, page);
         let r_tree = fork(
@@ -136,6 +138,44 @@ impl Bucket {
             self.token_indexer.witness(principal, page),
         );
         self.witness_transactions(r_tree, maybe_keys)
+    }
+
+    /// Return a transaction by its global id.
+    #[inline]
+    pub fn get_transaction(&self, id: u64) -> Option<&Event> {
+        if id < self.global_offset {
+            None
+        } else {
+            let local = (id - self.global_offset) as usize;
+            if local < self.events.len() {
+                Some(&self.events[local])
+            } else {
+                None
+            }
+        }
+    }
+
+    /// Return a witness which proves the response returned by get_transaction.
+    #[inline]
+    pub fn witness_transaction(&self, id: u64) -> HashTree {
+        if id < self.global_offset {
+            fork(
+                fork(
+                    Pruned(self.event_hashes.root_hash()),
+                    HashTree::Leaf(&self.global_offset_be),
+                ),
+                Pruned(self.right_v_hash()),
+            )
+        } else {
+            let local = (id - self.global_offset) as u32;
+            fork(
+                fork(
+                    self.event_hashes.witness(&local.to_be_bytes()),
+                    HashTree::Leaf(&self.global_offset_be),
+                ),
+                Pruned(self.right_v_hash()),
+            )
+        }
     }
 }
 
