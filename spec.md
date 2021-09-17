@@ -270,5 +270,9 @@ service writable : {
 
     // Insert the given transaction to the ICHS and issue a transaction id.
     insert : (IndefiniteEvent) -> (TransactionId);
+
+    // The time on the canister. The time can be used to check if this WritableCanister
+    // is on the same subnet as the caller.
+    time : () -> nat64;
 };
 ```
