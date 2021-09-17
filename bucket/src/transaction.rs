@@ -87,7 +87,11 @@ impl Event {
             EventKind::Transfer { .. } => domain_sep("transfer"),
             EventKind::Mint { .. } => domain_sep("mint"),
             EventKind::Burn { .. } => domain_sep("burn"),
-            EventKind::Custom { .. } => domain_sep("custom"),
+            EventKind::Custom { name, .. } => {
+                let mut h = domain_sep("custom");
+                h.update(name.as_bytes());
+                h
+            },
         };
 
         h.update(&self.time.to_be_bytes() as &[u8]);
