@@ -411,28 +411,40 @@ mod tests {
 
     #[test]
     fn witness_size() {
-        // step = 1
-        // 25k   events -> 3572 bytes
-        // 250k  events -> 3876 bytes
-        // step = 5
-        // 25k   events -> xxx bytes
-        // 250k  events -> xxx bytes
-        // step = 137
-        // 25k   events -> 26980 bytes
-        // 250k  events -> xxx bytes
+        // Output for length 25_000
+        // Step: 1
+        // Size: 3876
+        // Step: 5
+        // Size: 10184
+        // Step: 137
+        // Size: 26980
 
-        let mut bucket = Bucket::new(0);
-        for i in 0..250_000 {
-            if i % 137 == 0 {
-                bucket.insert(e(i, mock_principals::bob(), mock_principals::xtc()));
-            } else {
-                bucket.insert(e(i, mock_principals::alice(), mock_principals::xtc()));
+        // Output for length 100_000
+        // Step: 1
+        // Size: 4028
+        // Step: 5
+        // Size: 10336
+        // Step: 137
+        // Size: 27132
+
+        for s in vec![1, 5, 137] {
+            println!("Step: {}", s);
+
+            let mut bucket = Bucket::new(0);
+
+            for i in 0..100_000 {
+                if i % s == 0 {
+                    bucket.insert(e(i, mock_principals::bob(), mock_principals::xtc()));
+                } else {
+                    bucket.insert(e(i, mock_principals::alice(), mock_principals::xtc()));
+                }
             }
+
+            let principal = mock_principals::bob();
+            let witness = bucket.witness_transactions_for_user(&principal, 0);
+            let vec = serde_cbor::to_vec(&witness).unwrap();
+            println!("Size: {}", vec.len());
         }
 
-        let principal = mock_principals::bob();
-        let witness = bucket.witness_transactions_for_user(&principal, 0);
-        let vec = serde_cbor::to_vec(&witness).unwrap();
-        println!("size: {}", vec.len());
     }
 }
