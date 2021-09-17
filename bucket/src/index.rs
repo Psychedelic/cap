@@ -1,11 +1,12 @@
+use crate::transaction::Event;
 use ic_certified_map::{AsHashTree, Hash, HashTree, RbTree};
 use ic_kit::Principal;
+use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
+use std::ptr::NonNull;
 
 /// How many Transaction IDs per page.
 pub const PAGE_CAPACITY: usize = 64;
-/// Number of bytes required to store each page's data. 256 bytes.
-const PAGE_CAPACITY_BYTES: usize = PAGE_CAPACITY * std::mem::size_of::<u32>();
 
 /// Type used for representing the page number.
 type PageNumber = u32;
@@ -25,20 +26,21 @@ struct IndexKey([u8; 34]);
 
 #[derive(Default)]
 struct IndexPage {
-    /// An array of u32s encoded as big endian.
-    data: Vec<u8>,
+    data: Vec<NonNull<Event>>,
+    hash: Hash,
 }
 
 impl Index {
-    /// Insert a new local transaction id into the lookup table of the given principal id.
-    pub fn insert(&mut self, principal: &Principal, id: u32) {
+    /// Insert a new transaction into the lookup table of the given principal id.
+    /// The second parameter should be the hash of the passed event.
+    pub fn insert(&mut self, principal: &Principal, event: NonNull<Event>, hash: &Hash) {
         let mut inserted = false;
 
         let next_page = if let Some(&page_no) = self.pager.get(principal) {
             let key = IndexKey::new(principal, page_no);
 
             self.data.modify(key.as_ref(), |page| {
-                inserted = page.insert(id);
+                inserted = page.insert(event, hash);
             });
 
             page_no + 1
@@ -49,7 +51,7 @@ impl Index {
         // Create a new page.
         if !inserted {
             let mut page = IndexPage::default();
-            page.insert(id);
+            page.insert(event, hash);
 
             let key = IndexKey::new(principal, next_page);
             self.data.insert(key, page);
@@ -64,18 +66,15 @@ impl Index {
         self.data.witness(key.as_ref())
     }
 
-    /// Get a page from the indexer.
+    /// Return the data associated with the given page.
     #[inline]
-    pub fn get(&self, principal: &Principal, page: u32) -> Option<IndexPageIterator> {
+    pub fn get(&self, principal: &Principal, page: u32) -> Option<&Vec<NonNull<Event>>> {
         let key = IndexKey::new(principal, page);
-        self.data.get(key.as_ref()).map(IndexPage::iter)
-    }
-
-    /// Get a BE iterator over the transaction ids in a page.
-    #[inline]
-    pub fn get_be(&self, principal: &Principal, page: u32) -> Option<IndexPageBeIterator> {
-        let key = IndexKey::new(principal, page);
-        self.data.get(key.as_ref()).map(IndexPage::iter_be)
+        if let Some(page) = self.data.get(key.as_ref()) {
+            Some(&page.data)
+        } else {
+            None
+        }
     }
 }
 
@@ -122,103 +121,31 @@ impl AsRef<[u8]> for IndexKey {
 impl IndexPage {
     /// Try to insert a local transaction id into the page, returns the success status.
     #[inline]
-    pub fn insert(&mut self, id: u32) -> bool {
-        if self.data.len() == PAGE_CAPACITY_BYTES {
+    pub fn insert(&mut self, event: NonNull<Event>, hash: &Hash) -> bool {
+        if self.data.len() == PAGE_CAPACITY {
             return false;
         }
 
-        let slice = id.to_be_bytes();
-        self.data.extend_from_slice(&slice);
-        self.data.shrink_to_fit();
+        self.data.push(event);
+
+        // Compute the new hash.
+        let mut h = Sha256::new();
+        h.update(&self.hash);
+        h.update(hash);
+        self.hash = h.finalize().into();
 
         true
-    }
-
-    /// Return the number of items inserted into this page.
-    #[inline]
-    pub fn len(&self) -> usize {
-        // div by 4.
-        self.data.len() >> 2
-    }
-
-    /// Return the transaction id at the given index.
-    #[inline]
-    pub fn get(&self, index: usize) -> Option<u32> {
-        let offset = index * 4;
-        if offset >= self.data.len() {
-            return None;
-        }
-        let mut buffer = [0u8; 4];
-        buffer.copy_from_slice(&self.data[offset..][..4]);
-        Some(u32::from_be_bytes(buffer))
-    }
-
-    /// Create an iterator over the transaction ids in this page.
-    #[inline]
-    pub fn iter(&self) -> IndexPageIterator {
-        IndexPageIterator {
-            cursor: 0,
-            page: &self,
-        }
-    }
-
-    /// Create an iterator over the transaction ids as big endian in this page.
-    #[inline]
-    pub fn iter_be(&self) -> IndexPageBeIterator {
-        IndexPageBeIterator {
-            cursor: 0,
-            page: &self,
-        }
     }
 }
 
 impl AsHashTree for IndexPage {
     #[inline(always)]
     fn root_hash(&self) -> Hash {
-        self.data.root_hash()
+        self.hash.root_hash()
     }
 
     #[inline(always)]
     fn as_hash_tree(&self) -> HashTree<'_> {
-        self.data.as_hash_tree()
-    }
-}
-
-pub struct IndexPageIterator<'a> {
-    cursor: usize,
-    page: &'a IndexPage,
-}
-
-impl<'a> Iterator for IndexPageIterator<'a> {
-    type Item = u32;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let index = self.cursor;
-        self.cursor += 1;
-        self.page.get(index)
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        let rem = self.page.len() - self.cursor;
-        (rem, Some(rem))
-    }
-}
-
-pub struct IndexPageBeIterator<'a> {
-    cursor: usize,
-    page: &'a IndexPage,
-}
-
-impl<'a> Iterator for IndexPageBeIterator<'a> {
-    type Item = &'a [u8];
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let offset = self.cursor << 2; // mul 4
-        self.cursor += 1;
-        if offset >= self.page.data.len() {
-            None
-        } else {
-            Some(&self.page.data[offset..offset + 4])
-        }
+        self.hash.as_hash_tree()
     }
 }

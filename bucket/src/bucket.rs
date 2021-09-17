@@ -1,9 +1,11 @@
-use crate::events_witness::build_events_witness;
-use crate::index::{Index, IndexPageBeIterator};
+use crate::index::Index;
 use crate::transaction::Event;
 use ic_certified_map::HashTree::Pruned;
 use ic_certified_map::{fork, fork_hash, leaf_hash, AsHashTree, Hash, HashTree, RbTree};
 use ic_kit::Principal;
+use std::alloc::{dealloc, Layout};
+use std::ptr;
+use std::ptr::NonNull;
 
 /// A bucket contains a series of transactions and appropriate indexers.
 ///
@@ -23,12 +25,23 @@ use ic_kit::Principal;
 ///  0    1   3    4
 /// ```
 pub struct Bucket {
-    events: Vec<Event>,
+    /// Map each local Transaction ID to its hash.
     event_hashes: RbTree<EventKey, Hash>,
+    /// The offset of this bucket, i.e the actual id of the first event in the bucket.
     global_offset: u64,
+    /// Same as `global_offset` but is the encoded big endian, this struct should own this data
+    /// since it is used in the HashTree, so whenever we want to pass a reference to a BE encoded
+    /// value of the `global_offset` we can use this slice.
     global_offset_be: [u8; 8],
+    /// Maps each user principal id to the vector of events they have.
     user_indexer: Index,
+    /// Maps each token principal id to the vector of events inserted by that token.
     token_indexer: Index,
+    /// All of the events in this bucket, we store a pointer to an allocated memory. Which is used
+    /// only internally in this struct. And this Vec should be considered the actual owner of this
+    /// pointers.
+    /// So this should be the last thing that will be dropped.
+    events: Vec<NonNull<Event>>,
 }
 
 pub struct EventKey([u8; 4]);
@@ -64,15 +77,18 @@ impl Bucket {
     /// Try to insert an event into the bucket.
     pub fn insert(&mut self, event: Event) -> u64 {
         let local_index = self.events.len() as u32;
+        let hash = event.hash();
+        let event: NonNull<Event> = Box::leak(Box::new(event)).into();
+        let eve = unsafe { event.as_ref() };
 
         // Update the indexers for the transaction.
-        self.token_indexer.insert(&event.token, local_index);
-        for user in event.extract_principal_ids() {
-            self.user_indexer.insert(user, local_index);
+        self.token_indexer.insert(&eve.token, event, &hash);
+        for user in eve.extract_principal_ids() {
+            self.user_indexer.insert(user, event, &hash);
         }
 
         // Insert the event itself.
-        self.event_hashes.insert(local_index.into(), event.hash());
+        self.event_hashes.insert(local_index.into(), hash);
         self.events.push(event);
 
         self.global_offset + (local_index as u64)
@@ -97,60 +113,45 @@ impl Bucket {
     /// Return the transactions associated with a user's principal id at the given page.
     #[inline]
     pub fn get_transactions_for_user(&self, principal: &Principal, page: u32) -> Vec<&Event> {
-        self.user_indexer
-            .get(principal, page)
-            .map(|iter| iter.map(|id| &self.events[id as usize]).collect())
-            .unwrap_or_default()
+        if let Some(data) = self.user_indexer.get(principal, page) {
+            data.iter().map(|v| unsafe { v.as_ref() }).collect()
+        } else {
+            vec![]
+        }
     }
 
     /// Return the transactions associated with a token's principal id at the given page.
     #[inline]
     pub fn get_transactions_for_token(&self, principal: &Principal, page: u32) -> Vec<&Event> {
-        self.token_indexer
-            .get(principal, page)
-            .map(|iter| iter.map(|id| &self.events[id as usize]).collect())
-            .unwrap_or_default()
-    }
-
-    #[inline]
-    fn witness_transactions<'a: 't, 't>(
-        &'a self,
-        r_tree: HashTree<'t>,
-        maybe_keys: Option<IndexPageBeIterator<'a>>,
-    ) -> HashTree<'t> {
-        if let Some(keys) = maybe_keys {
-            let witness = build_events_witness(&self.event_hashes, keys);
-            debug_assert_eq!(witness.reconstruct(), self.event_hashes.root_hash());
-
-            fork(
-                fork(witness, HashTree::Leaf(&self.global_offset_be)),
-                r_tree,
-            )
+        if let Some(data) = self.token_indexer.get(principal, page) {
+            data.iter().map(|v| unsafe { v.as_ref() }).collect()
         } else {
-            fork(Pruned(self.left_v_hash()), r_tree)
+            vec![]
         }
     }
 
     /// Return the witness that can be used to prove the response from get_transactions_for_user.
     #[inline]
     pub fn witness_transactions_for_user(&self, principal: &Principal, page: u32) -> HashTree {
-        let maybe_keys = self.user_indexer.get_be(principal, page);
-        let r_tree = fork(
-            self.user_indexer.witness(principal, page),
-            Pruned(self.token_indexer.root_hash()),
-        );
-        self.witness_transactions(r_tree, maybe_keys)
+        fork(
+            Pruned(self.left_v_hash()),
+            fork(
+                self.user_indexer.witness(principal, page),
+                Pruned(self.token_indexer.root_hash()),
+            ),
+        )
     }
 
     /// Return the witness that can be used to prove the response from get_transactions_for_token.
     #[inline]
     pub fn witness_transactions_for_token(&self, principal: &Principal, page: u32) -> HashTree {
-        let maybe_keys = self.token_indexer.get_be(principal, page);
-        let r_tree = fork(
-            Pruned(self.user_indexer.root_hash()),
-            self.token_indexer.witness(principal, page),
-        );
-        self.witness_transactions(r_tree, maybe_keys)
+        fork(
+            Pruned(self.left_v_hash()),
+            fork(
+                Pruned(self.user_indexer.root_hash()),
+                self.token_indexer.witness(principal, page),
+            ),
+        )
     }
 
     /// Return a transaction by its global id.
@@ -161,7 +162,7 @@ impl Bucket {
         } else {
             let local = (id - self.global_offset) as usize;
             if local < self.events.len() {
-                Some(&self.events[local])
+                Some(unsafe { self.events[local].as_ref() })
             } else {
                 None
             }
@@ -208,6 +209,18 @@ impl AsHashTree for Bucket {
                 self.token_indexer.as_hash_tree(),
             ),
         )
+    }
+}
+
+impl Drop for Bucket {
+    fn drop(&mut self) {
+        unsafe {
+            for event in &self.events {
+                let as_mut_ref = &mut (*event.as_ptr());
+                ptr::drop_in_place(as_mut_ref);
+                dealloc(event.cast().as_ptr(), Layout::for_value(event.as_ref()));
+            }
+        }
     }
 }
 
@@ -413,26 +426,26 @@ mod tests {
     fn witness_size() {
         // Output for length 25_000
         // Step: 1
-        // Size: 3876
+        // Size: 454
         // Step: 5
-        // Size: 10184
+        // Size: 454
         // Step: 137
-        // Size: 26980
+        // Size: 492
 
         // Output for length 100_000
         // Step: 1
-        // Size: 4028
+        // Size: 530
         // Step: 5
-        // Size: 10336
+        // Size: 530
         // Step: 137
-        // Size: 27132
+        // Size: 568
 
         for s in vec![1, 5, 137] {
             println!("Step: {}", s);
 
             let mut bucket = Bucket::new(0);
 
-            for i in 0..100_000 {
+            for i in 0..25_000 {
                 if i % s == 0 {
                     bucket.insert(e(i, mock_principals::bob(), mock_principals::xtc()));
                 } else {
@@ -445,6 +458,5 @@ mod tests {
             let vec = serde_cbor::to_vec(&witness).unwrap();
             println!("Size: {}", vec.len());
         }
-
     }
 }
