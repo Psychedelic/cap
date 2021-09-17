@@ -229,7 +229,6 @@ mod tests {
     use super::*;
     use crate::transaction::EventKind;
     use ic_kit::mock_principals;
-    use std::collections::BTreeSet;
 
     fn e(memo: u32, caller: Principal, token: Principal) -> Event {
         Event {
@@ -243,47 +242,6 @@ mod tests {
         }
     }
 
-    fn get_tree_keys(tree: &HashTree) -> BTreeSet<u32> {
-        fn visit(collection: &mut BTreeSet<u32>, tree: &HashTree) {
-            match tree {
-                HashTree::Empty => {}
-                HashTree::Fork(f) => {
-                    let r = f as &(HashTree, HashTree);
-                    visit(collection, &r.0);
-                    visit(collection, &r.1);
-                }
-                HashTree::Labeled(key, _) => {
-                    let mut slice = [0; 4];
-                    slice.copy_from_slice(*key);
-                    collection.insert(u32::from_be_bytes(slice));
-                }
-                HashTree::Leaf(_) => {}
-                Pruned(_) => {}
-            }
-        }
-
-        let mut keys = BTreeSet::new();
-        visit(&mut keys, tree);
-        keys
-    }
-
-    fn get_events_tree<'a>(tree: &'a HashTree<'a>) -> &HashTree<'a> {
-        match tree {
-            HashTree::Fork(f) => match f as &(HashTree, HashTree) {
-                (HashTree::Fork(f), _) => {
-                    let r = f as &(HashTree, HashTree);
-                    &r.0
-                }
-                _ => unreachable!(),
-            },
-            _ => unreachable!(),
-        }
-    }
-
-    fn keys<'a>(tree: &'a HashTree<'a>) -> BTreeSet<u32> {
-        get_tree_keys(get_events_tree(tree))
-    }
-
     /// root_hash and as_hash_tree should use the same tree layout.
     #[test]
     fn test_hash_tree() {
@@ -293,8 +251,6 @@ mod tests {
         bucket.insert(e(2, mock_principals::alice(), mock_principals::xtc()));
         bucket.insert(e(3, mock_principals::alice(), mock_principals::xtc()));
         assert_eq!(bucket.as_hash_tree().reconstruct(), bucket.root_hash());
-        let keys = keys(&bucket.as_hash_tree());
-        assert_eq!(keys.len(), 4);
     }
 
     /// This test tires to see if the witness created for a lookup is minimal
@@ -309,10 +265,7 @@ mod tests {
 
         let event = bucket.get_transaction(1).unwrap();
         let witness = bucket.witness_transaction(1);
-        let keys = keys(&witness);
         assert_eq!(event.memo, 1);
-        assert_eq!(keys.len(), 1);
-        assert!(keys.contains(&1));
         assert_eq!(witness.reconstruct(), bucket.root_hash());
     }
 
@@ -328,10 +281,6 @@ mod tests {
 
         let witness = bucket.witness_transaction(4);
         assert_eq!(witness.reconstruct(), bucket.root_hash());
-
-        let keys = keys(&witness);
-        assert_eq!(keys.len(), 1);
-        assert!(keys.contains(&3));
     }
 
     #[test]
@@ -345,9 +294,6 @@ mod tests {
         assert_eq!(bucket.get_transaction(5).is_none(), true);
         let witness = bucket.witness_transaction(5);
         assert_eq!(witness.reconstruct(), bucket.root_hash());
-
-        let keys = keys(&witness);
-        assert_eq!(keys.len(), 0);
     }
 
     #[test]
@@ -374,10 +320,7 @@ mod tests {
 
             count += len;
 
-            if len > 0 {
-                let keys = keys(&witness);
-                assert_eq!(keys.len(), data.len());
-            } else {
+            if len == 0 {
                 break;
             }
         }
@@ -410,10 +353,7 @@ mod tests {
 
             count += len;
 
-            if len > 0 {
-                let keys = keys(&witness);
-                assert_eq!(keys.len(), data.len());
-            } else {
+            if len == 0 {
                 break;
             }
         }
@@ -422,7 +362,6 @@ mod tests {
         assert_eq!(count, 193);
     }
 
-    #[test]
     fn witness_size() {
         // Output for length 25_000
         // Step: 1
