@@ -1,5 +1,5 @@
 [package]
-name = "ic-history-archive-node"
+name = "ic-history-types"
 version = "0.1.0"
 edition = "2018"
 authors = ["Parsa Ghadimi <parsa@fleek.co>"]
@@ -7,7 +7,10 @@ authors = ["Parsa Ghadimi <parsa@fleek.co>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-
-[lib]
-crate-type = ["cdylib"]
-path = "src/lib.rs"
+ic-certified-map = "0.1.0"
+ic-kit = "0.4.2"
+ic-cdk = "0.3.1"
+sha2 = "0.9"
+serde = "1.0.116"
+serde_bytes = "0.11"
+serde_cbor = "0.11.2"

@@ -1,10 +1,11 @@
-use ic_certified_map::Hash;
+use crate::readable::EventHash;
 use ic_kit::candid::{CandidType, Deserialize};
 use ic_kit::Principal;
+use serde::Serialize;
 use sha2::Digest;
 use std::collections::BTreeSet;
 
-#[derive(CandidType, Deserialize, Clone)]
+#[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
 pub struct Event {
     /// The canister that inserted this event to the history.
     pub token: Principal,
@@ -22,7 +23,21 @@ pub struct Event {
     pub kind: EventKind,
 }
 
-#[derive(CandidType, Deserialize, Clone)]
+#[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
+pub struct IndefiniteEvent {
+    /// The caller that initiated the call on the token.
+    pub caller: Principal,
+    /// The amount of tokens that was touched in this event.
+    pub amount: u64,
+    /// The fee captured by the token contract.
+    pub fee: u64,
+    /// The transaction memo.
+    pub memo: u32,
+    /// The transaction detail
+    pub kind: EventKind,
+}
+
+#[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
 pub enum EventKind {
     Transfer {
         from: Principal,
@@ -82,7 +97,7 @@ impl Event {
     }
 
     /// Compute the hash for the given event.
-    pub fn hash(&self) -> Hash {
+    pub fn hash(&self) -> EventHash {
         let mut h = match &self.kind {
             EventKind::Transfer { .. } => domain_sep("transfer"),
             EventKind::Mint { .. } => domain_sep("mint"),
@@ -91,7 +106,7 @@ impl Event {
                 let mut h = domain_sep("custom");
                 h.update(name.as_bytes());
                 h
-            },
+            }
         };
 
         h.update(&self.time.to_be_bytes() as &[u8]);
@@ -132,6 +147,22 @@ impl Event {
         }
 
         h.finalize().into()
+    }
+}
+
+impl IndefiniteEvent {
+    /// Convert an indefinite event to a definite one by adding the token and time fields.
+    #[inline]
+    pub fn to_event(self, token: Principal, time: u64) -> Event {
+        Event {
+            token,
+            time,
+            caller: self.caller,
+            amount: self.amount,
+            fee: self.fee,
+            memo: self.memo,
+            kind: self.kind,
+        }
     }
 }
 

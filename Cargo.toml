@@ -1,8 +1,8 @@
 [workspace]
 members = [
     "bucket",
-    "archive-node",
-    "main"
+    "types",
+    "canisters/router"
 ]
 
 [profile.release]

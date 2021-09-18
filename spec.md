@@ -230,14 +230,29 @@ type GetTransactionResponse = variant {
     Data(vec Event, opt Witness)
 };
 
-service readable : {
+type WithWitnessArg = record {
+    witness: bool;
+};
+
+type GetIndexCanistersResponse = record {
+    canisters: vec ReadableCanisterId;
     // Witness type: leaf(CanistersListHash)
     // CanistersListHash is computed like events page.
-    get_index_canisters : () -> ((vec ReadableCanisterId, Witness));
+    witness: opt Witness;
+}
+
+type GetBucketResponse = record {
+    canister: ReadableCanisterId;
+    // Witness type: tree<TransactionId, ReadableCanisterId>
+    witness: opt Witness;
+};
+
+service readable : {
+    // Return the list of canisters that can be used for routing the requests.
+    get_index_canisters : (WithWitnessArg) -> (GetIndexCanistersResponse) query;
 
     // Return a bucket that can be used to query for the given transaction id.
-    // Witness type: tree<TransactionId, ReadableCanisterId>
-    get_bucket_for : (WithIdArg) -> ((principal, opt Witness)) query;
+    get_bucket_for : (WithIdArg) -> (GetBucketResponse) query;
 
     // Return the given transaction.
     get_transaction : (WithIdArg) -> (GetTransactionResponse) query;

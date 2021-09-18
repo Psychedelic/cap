@@ -1,7 +1,7 @@
 use crate::index::Index;
-use crate::transaction::Event;
 use ic_certified_map::HashTree::Pruned;
 use ic_certified_map::{fork, fork_hash, leaf_hash, AsHashTree, Hash, HashTree, RbTree};
+use ic_history_types::transaction::Event;
 use ic_kit::Principal;
 use std::alloc::{dealloc, Layout};
 use std::ptr;
@@ -227,7 +227,7 @@ impl Drop for Bucket {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::transaction::EventKind;
+    use ic_history_types::transaction::EventKind;
     use ic_kit::mock_principals;
 
     fn e(memo: u32, caller: Principal, token: Principal) -> Event {

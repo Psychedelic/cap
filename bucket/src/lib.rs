@@ -1,3 +1,4 @@
 pub mod bucket;
 pub mod index;
-pub mod transaction;
+
+pub use bucket::Bucket;
