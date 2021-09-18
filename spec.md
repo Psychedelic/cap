@@ -179,7 +179,7 @@ hash_event(Event token time caller amount fee memo Custom name spenders receiver
     H(domain_sep("burn")
     . name
     . byte(time) . byte(amount) . byte(fee) . byte(memo)
-    . token . bytecaller . spenders . receivers)
+    . token . caller . concat(spenders) . concat(receivers))
 ```
 
 ## Readable Canister
@@ -266,13 +266,13 @@ type TransactionId = nat64;
 
 service writable : {
     // Return the canisters that can be used to write data to.
-    writers : () -> (vec WritableCanisterId);
+    get_writer_canisters : () -> (vec WritableCanisterId);
 
     // Insert the given transaction to the ICHS and issue a transaction id.
     insert : (IndefiniteEvent) -> (TransactionId);
 
     // The time on the canister. The time can be used to check if this WritableCanister
     // is on the same subnet as the caller.
-    time : () -> nat64;
+    time : () -> (nat64) query;
 };
 ```
