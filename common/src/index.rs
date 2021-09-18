@@ -1,5 +1,5 @@
+use crate::transaction::Event;
 use ic_certified_map::{AsHashTree, Hash, HashTree, RbTree};
-use ic_history_types::transaction::Event;
 use ic_kit::Principal;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;

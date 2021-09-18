@@ -1,13 +1,13 @@
 use crate::index::Index;
+use crate::transaction::Event;
 use ic_certified_map::HashTree::Pruned;
 use ic_certified_map::{fork, fork_hash, leaf_hash, AsHashTree, Hash, HashTree, RbTree};
-use ic_history_types::transaction::Event;
 use ic_kit::Principal;
 use std::alloc::{dealloc, Layout};
 use std::ptr;
 use std::ptr::NonNull;
 
-/// A bucket contains a series of transactions and appropriate indexers.
+/// A common contains a series of transactions and appropriate indexers.
 ///
 /// This structure exposes a virtual merkle-tree in the following form:
 ///
@@ -27,7 +27,7 @@ use std::ptr::NonNull;
 pub struct Bucket {
     /// Map each local Transaction ID to its hash.
     event_hashes: RbTree<EventKey, Hash>,
-    /// The offset of this bucket, i.e the actual id of the first event in the bucket.
+    /// The offset of this common, i.e the actual id of the first event in the common.
     global_offset: u64,
     /// Same as `global_offset` but is the encoded big endian, this struct should own this data
     /// since it is used in the HashTree, so whenever we want to pass a reference to a BE encoded
@@ -37,7 +37,7 @@ pub struct Bucket {
     user_indexer: Index,
     /// Maps each token principal id to the vector of events inserted by that token.
     token_indexer: Index,
-    /// All of the events in this bucket, we store a pointer to an allocated memory. Which is used
+    /// All of the events in this common, we store a pointer to an allocated memory. Which is used
     /// only internally in this struct. And this Vec should be considered the actual owner of this
     /// pointers.
     /// So this should be the last thing that will be dropped.
@@ -61,7 +61,7 @@ impl AsRef<[u8]> for EventKey {
 }
 
 impl Bucket {
-    /// Create a new bucket with the given global offset.
+    /// Create a new common with the given global offset.
     #[inline]
     pub fn new(offset: u64) -> Self {
         Bucket {
@@ -74,7 +74,7 @@ impl Bucket {
         }
     }
 
-    /// Try to insert an event into the bucket.
+    /// Try to insert an event into the common.
     pub fn insert(&mut self, event: Event) -> u64 {
         let local_index = self.events.len() as u32;
         let hash = event.hash();
@@ -227,7 +227,7 @@ impl Drop for Bucket {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ic_history_types::transaction::EventKind;
+    use crate::transaction::EventKind;
     use ic_kit::mock_principals;
 
     fn e(memo: u32, caller: Principal, token: Principal) -> Event {

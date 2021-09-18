@@ -7,8 +7,7 @@ authors = ["Parsa Ghadimi <parsa@fleek.co>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ic-history-bucket = { path="../../bucket" }
-ic-history-types = { path="../../types" }
+ic-history-common = { path= "../../common" }
 ic-kit = "0.4.2"
 ic-cdk = "0.3.1"
 

@@ -691,15 +691,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "ic-history-bucket"
+name = "ic-history-common"
 version = "0.1.0"
 dependencies = [
  "async-std",
  "ic-cdk",
  "ic-certified-map",
- "ic-history-types",
  "ic-kit",
  "serde",
+ "serde_bytes",
  "serde_cbor",
  "sha2",
 ]
@@ -710,22 +710,8 @@ version = "0.1.0"
 dependencies = [
  "async-std",
  "ic-cdk",
- "ic-history-bucket",
- "ic-history-types",
+ "ic-history-common",
  "ic-kit",
-]
-
-[[package]]
-name = "ic-history-types"
-version = "0.1.0"
-dependencies = [
- "ic-cdk",
- "ic-certified-map",
- "ic-kit",
- "serde",
- "serde_bytes",
- "serde_cbor",
- "sha2",
 ]
 
 [[package]]

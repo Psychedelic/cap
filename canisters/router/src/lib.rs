@@ -1,5 +1,4 @@
-use ic_history_bucket::Bucket;
-use ic_history_types::{readable, writable};
+use ic_history_common::{readable, writable, Bucket};
 use ic_kit::macros::query;
 
 struct CanisterStorage {
