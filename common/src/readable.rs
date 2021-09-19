@@ -1,5 +1,5 @@
 use crate::transaction::Event;
-use ic_certified_map::Hash;
+use ic_certified_map::{Hash, HashTree};
 use ic_kit::candid::{CandidType, Deserialize};
 use ic_kit::Principal;
 use serde::Serialize;
@@ -28,26 +28,27 @@ pub struct WithIdArg {
     pub witness: bool,
 }
 
-#[derive(Debug, Clone, Deserialize, CandidType, Serialize)]
-pub enum GetTransactionResponse {
+#[derive(Debug, Clone, CandidType, Serialize)]
+pub enum GetTransactionResponse<'a> {
     Delegate(ReadableCanisterId, Option<Witness>),
-    Found(Event, Option<Witness>),
+    Found(&'a Event, Option<Witness>),
 }
 
 pub type PageKey = [u8; 34];
 
 pub type PageHash = Hash;
 
+#[derive(Debug, Clone, CandidType, Serialize, Deserialize)]
 pub struct WithPageArg {
     pub principal: Principal,
     pub page: u32,
     pub witness: bool,
 }
 
-#[derive(Debug, Clone, Deserialize, CandidType, Serialize)]
-pub enum GetTransactionsResponse {
-    Delegate(ReadableCanisterId, Option<Witness>),
-    Found(Vec<Event>, Option<Witness>),
+#[derive(Debug, Clone, CandidType, Serialize)]
+pub struct GetTransactionsResponse<'a> {
+    pub data: Vec<&'a Event>,
+    pub witness: Option<Witness>,
 }
 
 #[derive(Debug, Clone, Deserialize, CandidType, Serialize)]
@@ -55,13 +56,24 @@ pub struct WithWitnessArg {
     pub witness: bool,
 }
 
-#[derive(Debug, Clone, Deserialize, CandidType, Serialize)]
-pub struct GetIndexCanistersResponse {
-    pub canisters: Vec<ReadableCanisterId>,
+#[derive(Debug, Clone, CandidType, Serialize)]
+pub struct GetIndexCanistersResponse<'a> {
+    pub canisters: &'a [ReadableCanisterId],
     pub witness: Option<Witness>,
 }
 
+#[derive(Debug, Clone, CandidType, Serialize, Deserialize)]
 pub struct GetBucketResponse {
     pub canister: ReadableCanisterId,
     pub witness: Option<Witness>,
+}
+
+impl Witness {
+    #[inline(always)]
+    pub fn new(tree: HashTree) -> Self {
+        Witness {
+            certificate: ic_kit::ic::data_certificate().expect("Data certificate to be present."),
+            tree: serde_cbor::to_vec(&tree).unwrap(),
+        }
+    }
 }

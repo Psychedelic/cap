@@ -223,11 +223,10 @@ type WithPageArg = record {
     witness: bool;
 };
 
-type GetTransactionResponse = variant {
-    // Witness type: tree<TransactionId, ReadableCanisterId>
-    Delegate(principal, opt Witness),
+type GetTransactionsResponse = struct {
+    data: vec Event;
     // Witness type: tree<PageKey, PageHash>
-    Data(vec Event, opt Witness)
+    witness: opt Witness;
 };
 
 type WithWitnessArg = record {

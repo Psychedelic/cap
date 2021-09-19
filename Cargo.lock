@@ -710,6 +710,7 @@ version = "0.1.0"
 dependencies = [
  "async-std",
  "ic-cdk",
+ "ic-certified-map",
  "ic-history-common",
  "ic-kit",
 ]

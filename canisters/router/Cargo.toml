@@ -8,6 +8,7 @@ authors = ["Parsa Ghadimi <parsa@fleek.co>"]
 
 [dependencies]
 ic-history-common = { path= "../../common" }
+ic-certified-map = "0.1.0"
 ic-kit = "0.4.2"
 ic-cdk = "0.3.1"
 
