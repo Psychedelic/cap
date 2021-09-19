@@ -41,13 +41,14 @@ pub type PageHash = Hash;
 #[derive(Debug, Clone, CandidType, Serialize, Deserialize)]
 pub struct WithPageArg {
     pub principal: Principal,
-    pub page: u32,
+    pub page: Option<u32>,
     pub witness: bool,
 }
 
 #[derive(Debug, Clone, CandidType, Serialize)]
 pub struct GetTransactionsResponse<'a> {
     pub data: Vec<&'a Event>,
+    pub page: u32,
     pub witness: Option<Witness>,
 }
 

@@ -76,6 +76,12 @@ impl Index {
             None
         }
     }
+
+    /// Returns the last page associated with the principal id.
+    #[inline]
+    pub fn last_page(&self, principal: &Principal) -> u32 {
+        self.pager.get(principal).cloned().unwrap_or(0)
+    }
 }
 
 impl AsHashTree for Index {

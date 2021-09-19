@@ -120,6 +120,12 @@ impl Bucket {
         }
     }
 
+    /// Return the last page number associated with the given user.
+    #[inline]
+    pub fn last_page_for_user(&self, principal: &Principal) -> u32 {
+        self.user_indexer.last_page(principal)
+    }
+
     /// Return the transactions associated with a token's principal id at the given page.
     #[inline]
     pub fn get_transactions_for_token(&self, principal: &Principal, page: u32) -> Vec<&Event> {
@@ -128,6 +134,12 @@ impl Bucket {
         } else {
             vec![]
         }
+    }
+
+    /// Return the last page number associated with the given token.
+    #[inline]
+    pub fn last_page_for_token(&self, principal: &Principal) -> u32 {
+        self.token_indexer.last_page(principal)
     }
 
     /// Return the witness that can be used to prove the response from get_transactions_for_user.

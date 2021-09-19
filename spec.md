@@ -219,12 +219,13 @@ type PageHash = blob;
 
 type WithPageArg = record {
     principal: principal;
-    page: nat32;
+    page: opt nat32;
     witness: bool;
 };
 
 type GetTransactionsResponse = struct {
     data: vec Event;
+    page : nat32;
     // Witness type: tree<PageKey, PageHash>
     witness: opt Witness;
 };

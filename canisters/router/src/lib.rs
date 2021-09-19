@@ -132,18 +132,23 @@ fn get_transaction(arg: readable::WithIdArg) -> readable::GetTransactionResponse
 #[query]
 fn get_user_transactions(arg: readable::WithPageArg) -> readable::GetTransactionsResponse<'static> {
     let storage = ic::get::<CanisterStorage>();
-    let page = storage
+    let page = arg
+        .page
+        .unwrap_or(storage.bucket.last_page_for_user(&arg.principal));
+
+    let data = storage
         .bucket
-        .get_transactions_for_user(&arg.principal, arg.page);
+        .get_transactions_for_user(&arg.principal, page);
 
     readable::GetTransactionsResponse {
-        data: page,
+        data,
+        page,
         witness: match arg.witness {
             false => None,
             true => Some(Witness::new(fork(
                 storage
                     .bucket
-                    .witness_transactions_for_user(&arg.principal, arg.page),
+                    .witness_transactions_for_user(&arg.principal, page),
                 Pruned(fork_hash(
                     &storage.bucket_lookup_table.root_hash(),
                     &storage.readable_canisters.root_hash(),
@@ -158,18 +163,23 @@ fn get_token_transactions(
     arg: readable::WithPageArg,
 ) -> readable::GetTransactionsResponse<'static> {
     let storage = ic::get::<CanisterStorage>();
-    let page = storage
+    let page = arg
+        .page
+        .unwrap_or(storage.bucket.last_page_for_token(&arg.principal));
+
+    let data = storage
         .bucket
-        .get_transactions_for_token(&arg.principal, arg.page);
+        .get_transactions_for_token(&arg.principal, page);
 
     readable::GetTransactionsResponse {
-        data: page,
+        data,
+        page,
         witness: match arg.witness {
             false => None,
             true => Some(Witness::new(fork(
                 storage
                     .bucket
-                    .witness_transactions_for_token(&arg.principal, arg.page),
+                    .witness_transactions_for_token(&arg.principal, page),
                 Pruned(fork_hash(
                     &storage.bucket_lookup_table.root_hash(),
                     &storage.readable_canisters.root_hash(),
