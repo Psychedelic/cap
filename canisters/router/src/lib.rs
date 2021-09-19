@@ -8,16 +8,26 @@ use ic_history_common::{readable, writable, Bucket};
 use ic_kit::ic;
 use ic_kit::macros::{query, update};
 
-/// Merkle Tree
-///                 /------ READABLE CANISTERS LIST
-///         +------+
-///        /        \------ BUCKET LOOKUP TABLE
-///       /
-/// ROOT + --------- BUCKET
+/// Tree
+///
+/// 0: Bucket
+/// 1: Bucket Lookup Table
+/// 3: Readable Canisters
+/// 4: Next Canisters
+///
+/// ```text
+///       ROOT
+///      /    \
+///     /      \
+///    V        V
+///   /  \     /  \
+///  0    1   3    4
+/// ```
 struct CanisterStorage {
     bucket: Bucket,
     bucket_lookup_table: BucketLookupTable,
     readable_canisters: CanisterList,
+    next_canisters: CanisterList,
     writable_canisters: Vec<writable::WritableCanisterId>,
 }
 
@@ -35,50 +45,83 @@ impl Default for CanisterStorage {
                 list.push(ic::id());
                 list
             },
+            next_canisters: CanisterList::default(),
             writable_canisters: vec![ic::id()],
         }
+    }
+}
+
+impl CanisterStorage {
+    #[inline(always)]
+    fn left_subtree_hash(&self) -> Hash {
+        fork_hash(
+            &self.bucket.root_hash(),
+            &self.bucket_lookup_table.root_hash(),
+        )
+    }
+
+    #[inline(always)]
+    fn right_subtree_hash(&self) -> Hash {
+        fork_hash(
+            &self.readable_canisters.root_hash(),
+            &self.next_canisters.root_hash(),
+        )
     }
 }
 
 impl AsHashTree for CanisterStorage {
     #[inline(always)]
     fn root_hash(&self) -> Hash {
-        fork_hash(
-            &self.bucket.root_hash(),
-            &fork_hash(
-                &self.bucket_lookup_table.root_hash(),
-                &self.readable_canisters.root_hash(),
-            ),
-        )
+        fork_hash(&self.left_subtree_hash(), &self.right_subtree_hash())
     }
 
     #[inline(always)]
     fn as_hash_tree(&self) -> HashTree {
         fork(
-            self.bucket.as_hash_tree(),
             fork(
+                self.bucket.as_hash_tree(),
                 self.bucket_lookup_table.as_hash_tree(),
+            ),
+            fork(
                 self.readable_canisters.as_hash_tree(),
+                self.next_canisters.as_hash_tree(),
             ),
         )
     }
 }
 
 #[query]
-fn get_index_canisters(
-    arg: readable::WithWitnessArg,
-) -> readable::GetIndexCanistersResponse<'static> {
+fn get_index_canisters(arg: readable::WithWitnessArg) -> readable::GetCanistersResponse<'static> {
     let storage = ic::get::<CanisterStorage>();
 
-    readable::GetIndexCanistersResponse {
+    readable::GetCanistersResponse {
         canisters: storage.readable_canisters.as_slice(),
         witness: match arg.witness {
             false => None,
             true => Some(Witness::new(fork(
-                Pruned(storage.bucket.root_hash()),
+                Pruned(storage.left_subtree_hash()),
                 fork(
-                    Pruned(storage.bucket_lookup_table.root_hash()),
                     storage.readable_canisters.as_hash_tree(),
+                    Pruned(storage.next_canisters.root_hash()),
+                ),
+            ))),
+        },
+    }
+}
+
+#[query]
+fn get_next_canisters(arg: readable::WithWitnessArg) -> readable::GetCanistersResponse<'static> {
+    let storage = ic::get::<CanisterStorage>();
+
+    readable::GetCanistersResponse {
+        canisters: storage.next_canisters.as_slice(),
+        witness: match arg.witness {
+            false => None,
+            true => Some(Witness::new(fork(
+                Pruned(storage.left_subtree_hash()),
+                fork(
+                    Pruned(storage.readable_canisters.root_hash()),
+                    storage.next_canisters.as_hash_tree(),
                 ),
             ))),
         },
@@ -94,11 +137,11 @@ fn get_bucket_for(arg: readable::WithIdArg) -> readable::GetBucketResponse {
         witness: match arg.witness {
             false => None,
             true => Some(Witness::new(fork(
-                Pruned(storage.bucket.root_hash()),
                 fork(
+                    Pruned(storage.bucket.root_hash()),
                     storage.bucket_lookup_table.gen_witness(arg.id),
-                    Pruned(storage.readable_canisters.root_hash()),
                 ),
+                Pruned(storage.right_subtree_hash()),
             ))),
         },
     }
@@ -115,11 +158,11 @@ fn get_transaction(arg: readable::WithIdArg) -> readable::GetTransactionResponse
             match arg.witness {
                 false => None,
                 true => Some(Witness::new(fork(
-                    storage.bucket.witness_transaction(arg.id),
-                    Pruned(fork_hash(
-                        &storage.bucket_lookup_table.root_hash(),
-                        &storage.readable_canisters.root_hash(),
-                    )),
+                    fork(
+                        storage.bucket.witness_transaction(arg.id),
+                        Pruned(storage.bucket_lookup_table.root_hash()),
+                    ),
+                    Pruned(storage.right_subtree_hash()),
                 ))),
             },
         )
@@ -146,13 +189,13 @@ fn get_user_transactions(arg: readable::WithPageArg) -> readable::GetTransaction
         witness: match arg.witness {
             false => None,
             true => Some(Witness::new(fork(
-                storage
-                    .bucket
-                    .witness_transactions_for_user(&arg.principal, page),
-                Pruned(fork_hash(
-                    &storage.bucket_lookup_table.root_hash(),
-                    &storage.readable_canisters.root_hash(),
-                )),
+                fork(
+                    storage
+                        .bucket
+                        .witness_transactions_for_user(&arg.principal, page),
+                    Pruned(storage.bucket_lookup_table.root_hash()),
+                ),
+                Pruned(storage.right_subtree_hash()),
             ))),
         },
     }
@@ -177,13 +220,13 @@ fn get_token_transactions(
         witness: match arg.witness {
             false => None,
             true => Some(Witness::new(fork(
-                storage
-                    .bucket
-                    .witness_transactions_for_token(&arg.principal, page),
-                Pruned(fork_hash(
-                    &storage.bucket_lookup_table.root_hash(),
-                    &storage.readable_canisters.root_hash(),
-                )),
+                fork(
+                    storage
+                        .bucket
+                        .witness_transactions_for_token(&arg.principal, page),
+                    Pruned(storage.bucket_lookup_table.root_hash()),
+                ),
+                Pruned(storage.right_subtree_hash()),
             ))),
         },
     }

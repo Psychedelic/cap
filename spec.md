@@ -234,7 +234,7 @@ type WithWitnessArg = record {
     witness: bool;
 };
 
-type GetIndexCanistersResponse = record {
+type GetCanistersResponse = record {
     canisters: vec ReadableCanisterId;
     // Witness type: leaf(CanistersListHash)
     // CanistersListHash is computed like events page.
@@ -249,7 +249,10 @@ type GetBucketResponse = record {
 
 service readable : {
     // Return the list of canisters that can be used for routing the requests.
-    get_index_canisters : (WithWitnessArg) -> (GetIndexCanistersResponse) query;
+    get_index_canisters : (WithWitnessArg) -> (GetCanistersResponse) query;
+
+    // Return the list of canisters to obtain more pages of data.
+    get_next_canisters : (WithWitnessArg) -> (GetxCanistersResponse) query;
 
     // Return a bucket that can be used to query for the given transaction id.
     get_bucket_for : (WithIdArg) -> (GetBucketResponse) query;

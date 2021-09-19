@@ -16,7 +16,7 @@ use std::ptr::NonNull;
 /// 3: user_indexer
 /// 4: token_indexer
 ///
-/// ```txt
+/// ```text
 ///       ROOT
 ///      /    \
 ///     /      \

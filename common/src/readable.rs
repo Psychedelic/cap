@@ -58,7 +58,7 @@ pub struct WithWitnessArg {
 }
 
 #[derive(Debug, Clone, CandidType, Serialize)]
-pub struct GetIndexCanistersResponse<'a> {
+pub struct GetCanistersResponse<'a> {
     pub canisters: &'a [ReadableCanisterId],
     pub witness: Option<Witness>,
 }
