@@ -6,8 +6,8 @@ document.
 
 The ICHS is a service which provides scalable transaction history that can be used by any
 number of tokens or NFTs to store their event log and issue a transaction id to the end
-user. It also provides a unified view to the history for every token that integrates this
-service for client-facing wallets and network scan UIs.
+user. It also provides a unified view to the history for every token contract that
+integrates this service for client-facing wallets and network scan UIs.
 
 The primary goal of this project is filling the gap for a native unified ETH-like history
 on the Internet Computer.
@@ -107,15 +107,14 @@ A transaction is described by the following candid interface:
 ```
 type Event = variant {
     // The original caller to the `insert` method.
-    token  : principal;
+    contract : principal;
     // The time the transaction was inserted to ICHS in ms.
-    time   : u64;
+    time     : u64;
     // Should be the original caller who invoked the call on the token canister.
     caller : principal;
     // The amount touched in the event.
     amount : u64;
-    // The fee that was captured by the token.
-    // --- QUESTION: What is the unit for the fee?
+    // The fee that was captured by the token contract.
     fee    : u64;
     // A memo for this transaction.
     memo   : u32;
@@ -140,8 +139,11 @@ type EventKind = variant {
         to   : principal;
     };
     Burn     : record {
-        from: principal;
-        to: opt principal;
+        from : principal;
+        to   : opt principal;
+    };
+    Approve  : record {
+        to   : principal;
     };
     Custom   : record {
         name : text;
@@ -155,31 +157,36 @@ Now we describe how you can obtain a hash from a `Event`, the most important rul
 every field in the `Event` should be part of the process of generating the hash.
 
 ```
-hash_event(Event token time caller amount fee memo Transfer from to) =
+hash_event(Event contract time caller amount fee memo Transfer from to) =
     H(domain_sep("transfer")
     . byte(time) . byte(amount) . byte(fee) . byte(memo)
-    . token . caller . from . to)
+    . contract . caller . from . to)
 
-hash_event(Event token time caller amount fee memo Mint to) =
+hash_event(Event contract time caller amount fee memo Mint to) =
     H(domain_sep("mint")
     . byte(time) . byte(amount) . byte(fee) . byte(memo)
-    . token . caller . to)
-    
-hash_event(Event token time caller amount fee memo Burn from null) =
+    . contract . caller . to)
+
+hash_event(Event contract time caller amount fee memo Burn from null) =
     H(domain_sep("burn")
     . byte(time) . byte(amount) . byte(fee) . byte(memo)
-    . token . caller . from)
-    
-hash_event(Event token time caller amount fee memo Burn from to) =
+    . contract . caller . from)
+
+hash_event(Event contract time caller amount fee memo Burn from to) =
     H(domain_sep("burn")
     . byte(time) . byte(amount) . byte(fee) . byte(memo)
-    . token . caller . from . to)
-    
-hash_event(Event token time caller amount fee memo Custom name spenders receivers) =
+    . contract . caller . from . to)
+
+hash_event(Event contract time caller amount fee memo Approve to) =
+    H(domain_sep("approve")
+    . byte(time) . byte(amount) . byte(fee) . byte(memo)
+    . contract . caller . to)
+
+hash_event(Event contract time caller amount fee memo Custom name spenders receivers) =
     H(domain_sep("burn")
     . name
     . byte(time) . byte(amount) . byte(fee) . byte(memo)
-    . token . caller . concat(spenders) . concat(receivers))
+    . contract . caller . concat(spenders) . concat(receivers))
 ```
 
 ## Readable Canister
@@ -252,7 +259,7 @@ service readable : {
     get_index_canisters : (WithWitnessArg) -> (GetCanistersResponse) query;
 
     // Return the list of canisters to obtain more pages of data.
-    get_next_canisters : (WithWitnessArg) -> (GetxCanistersResponse) query;
+    get_next_canisters : (WithWitnessArg) -> (GetCanistersResponse) query;
 
     // Return a bucket that can be used to query for the given transaction id.
     get_bucket_for : (WithIdArg) -> (GetBucketResponse) query;
@@ -263,8 +270,8 @@ service readable : {
     // Return all of the transactions associated with the given user.
     get_user_transactions : (WithPageArg) -> (GetTransactionsResponse) query;
 
-    // Return all of the transactions associated with the given token.
-    get_token_transactions : (WithPageArg) -> (GetTransactionsResponse) query;
+    // Return all of the transactions associated with the given token contract.
+    get_contract_transactions : (WithPageArg) -> (GetTransactionsResponse) query;
 };
 ```
 

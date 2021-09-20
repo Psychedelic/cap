@@ -8,7 +8,7 @@ use std::collections::BTreeSet;
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
 pub struct Event {
     /// The canister that inserted this event to the history.
-    pub token: Principal,
+    pub contract: Principal,
     /// The timestamp in ms.
     pub time: u64,
     /// The caller that initiated the call on the token.
@@ -50,6 +50,9 @@ pub enum EventKind {
         from: Principal,
         to: Option<Principal>,
     },
+    Approve {
+        to: Principal,
+    },
     Custom {
         name: String,
         spenders: Vec<Principal>,
@@ -78,6 +81,9 @@ impl Event {
                     principals.insert(to);
                 }
             }
+            EventKind::Approve { to } => {
+                principals.insert(to);
+            }
             EventKind::Custom {
                 spenders,
                 receivers,
@@ -102,6 +108,7 @@ impl Event {
             EventKind::Transfer { .. } => domain_sep("transfer"),
             EventKind::Mint { .. } => domain_sep("mint"),
             EventKind::Burn { .. } => domain_sep("burn"),
+            EventKind::Approve { .. } => domain_sep("approve"),
             EventKind::Custom { name, .. } => {
                 let mut h = domain_sep("custom");
                 h.update(name.as_bytes());
@@ -115,7 +122,7 @@ impl Event {
         h.update(&self.memo.to_be_bytes());
 
         // And now all of the Principal IDs
-        h.update(&self.token);
+        h.update(&self.contract);
         h.update(&self.caller);
 
         match &self.kind {
@@ -131,6 +138,9 @@ impl Event {
                 if let Some(to) = to {
                     h.update(to);
                 }
+            }
+            EventKind::Approve { to } => {
+                h.update(to);
             }
             EventKind::Custom {
                 spenders,
@@ -155,7 +165,7 @@ impl IndefiniteEvent {
     #[inline]
     pub fn to_event(self, token: Principal, time: u64) -> Event {
         Event {
-            token,
+            contract: token,
             time,
             caller: self.caller,
             amount: self.amount,
@@ -182,7 +192,7 @@ mod tests {
     #[test]
     fn extract_principal_transfer() {
         let event = Event {
-            token: mock_principals::xtc(),
+            contract: mock_principals::xtc(),
             time: 0,
             caller: mock_principals::bob(),
             amount: 0,
@@ -205,7 +215,7 @@ mod tests {
     #[test]
     fn extract_principal_mint() {
         let event = Event {
-            token: mock_principals::xtc(),
+            contract: mock_principals::xtc(),
             time: 0,
             caller: mock_principals::bob(),
             amount: 0,
@@ -226,7 +236,7 @@ mod tests {
     #[test]
     fn extract_principal_burn() {
         let event = Event {
-            token: mock_principals::xtc(),
+            contract: mock_principals::xtc(),
             time: 0,
             caller: mock_principals::bob(),
             amount: 0,
@@ -249,7 +259,7 @@ mod tests {
     #[test]
     fn extract_principal_custom() {
         let event = Event {
-            token: mock_principals::xtc(),
+            contract: mock_principals::xtc(),
             time: 0,
             caller: mock_principals::bob(),
             amount: 0,

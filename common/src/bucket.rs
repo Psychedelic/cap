@@ -35,8 +35,8 @@ pub struct Bucket {
     global_offset_be: [u8; 8],
     /// Maps each user principal id to the vector of events they have.
     user_indexer: Index,
-    /// Maps each token principal id to the vector of events inserted by that token.
-    token_indexer: Index,
+    /// Maps each token contract principal id to the vector of events inserted by that token.
+    contract_indexer: Index,
     /// All of the events in this common, we store a pointer to an allocated memory. Which is used
     /// only internally in this struct. And this Vec should be considered the actual owner of this
     /// pointers.
@@ -70,7 +70,7 @@ impl Bucket {
             global_offset: offset,
             global_offset_be: offset.to_be_bytes(),
             user_indexer: Index::default(),
-            token_indexer: Index::default(),
+            contract_indexer: Index::default(),
         }
     }
 
@@ -82,7 +82,7 @@ impl Bucket {
         let eve = unsafe { event.as_ref() };
 
         // Update the indexers for the transaction.
-        self.token_indexer.insert(&eve.token, event, &hash);
+        self.contract_indexer.insert(&eve.contract, event, &hash);
         for user in eve.extract_principal_ids() {
             self.user_indexer.insert(user, event, &hash);
         }
@@ -106,7 +106,7 @@ impl Bucket {
     fn right_v_hash(&self) -> Hash {
         fork_hash(
             &self.user_indexer.root_hash(),
-            &self.token_indexer.root_hash(),
+            &self.contract_indexer.root_hash(),
         )
     }
 
@@ -128,8 +128,8 @@ impl Bucket {
 
     /// Return the transactions associated with a token's principal id at the given page.
     #[inline]
-    pub fn get_transactions_for_token(&self, principal: &Principal, page: u32) -> Vec<&Event> {
-        if let Some(data) = self.token_indexer.get(principal, page) {
+    pub fn get_transactions_for_contract(&self, principal: &Principal, page: u32) -> Vec<&Event> {
+        if let Some(data) = self.contract_indexer.get(principal, page) {
             data.iter().map(|v| unsafe { v.as_ref() }).collect()
         } else {
             vec![]
@@ -139,7 +139,7 @@ impl Bucket {
     /// Return the last page number associated with the given token.
     #[inline]
     pub fn last_page_for_token(&self, principal: &Principal) -> u32 {
-        self.token_indexer.last_page(principal)
+        self.contract_indexer.last_page(principal)
     }
 
     /// Return the witness that can be used to prove the response from get_transactions_for_user.
@@ -149,7 +149,7 @@ impl Bucket {
             Pruned(self.left_v_hash()),
             fork(
                 self.user_indexer.witness(principal, page),
-                Pruned(self.token_indexer.root_hash()),
+                Pruned(self.contract_indexer.root_hash()),
             ),
         )
     }
@@ -161,7 +161,7 @@ impl Bucket {
             Pruned(self.left_v_hash()),
             fork(
                 Pruned(self.user_indexer.root_hash()),
-                self.token_indexer.witness(principal, page),
+                self.contract_indexer.witness(principal, page),
             ),
         )
     }
@@ -218,7 +218,7 @@ impl AsHashTree for Bucket {
             ),
             fork(
                 self.user_indexer.as_hash_tree(),
-                self.token_indexer.as_hash_tree(),
+                self.contract_indexer.as_hash_tree(),
             ),
         )
     }
@@ -244,7 +244,7 @@ mod tests {
 
     fn e(memo: u32, caller: Principal, token: Principal) -> Event {
         Event {
-            token,
+            contract: token,
             time: 0,
             caller,
             amount: 0,
@@ -357,7 +357,7 @@ mod tests {
 
         for page in 0.. {
             let principal = mock_principals::bob();
-            let data = bucket.get_transactions_for_token(&principal, page);
+            let data = bucket.get_transactions_for_contract(&principal, page);
             let witness = bucket.witness_transactions_for_token(&principal, page);
             let len = data.len();
 

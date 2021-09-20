@@ -202,7 +202,7 @@ fn get_user_transactions(arg: readable::WithPageArg) -> readable::GetTransaction
 }
 
 #[query]
-fn get_token_transactions(
+fn get_contract_transactions(
     arg: readable::WithPageArg,
 ) -> readable::GetTransactionsResponse<'static> {
     let storage = ic::get::<CanisterStorage>();
@@ -212,7 +212,7 @@ fn get_token_transactions(
 
     let data = storage
         .bucket
-        .get_transactions_for_token(&arg.principal, page);
+        .get_transactions_for_contract(&arg.principal, page);
 
     readable::GetTransactionsResponse {
         data,
