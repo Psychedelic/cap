@@ -111,45 +111,36 @@ type Event = variant {
     // The time the transaction was inserted to ICHS in ms.
     time     : u64;
     // Should be the original caller who invoked the call on the token canister.
-    caller : principal;
+    caller   : principal;
     // The amount touched in the event.
-    amount : u64;
+    amount   : u64;
     // The fee that was captured by the token contract.
-    fee    : u64;
+    fee      : u64;
     // A memo for this transaction.
-    memo   : u32;
-    // Details of the event.
-    kind   : EventKind;
+    memo     : u32;
+    // The `from` field, only needs to be non-null for transferFrom kind of events.
+    from     : opt principal,
+    // The receiver end of this transaction.
+    to       : principal,
+    // The operation that took place.
+    operation: Operation,
 };
 
 type IndefiniteEvent = variant {
-    caller : principal;
-    amount : u64;
-    fee    : u64;
-    memo   : u32;
-    kind   : EventKind;
+    caller    : principal;
+    amount    : u64;
+    fee       : u64;
+    memo      : u32;
+    from      : opt principal,
+    to        : principal,
+    operation : Operation,
 };
 
-type EventKind = variant {
-    Transfer : record {
-        from : principal;
-        to   : principal;
-    };
-    Mint     : record {
-        to   : principal;
-    };
-    Burn     : record {
-        from : principal;
-        to   : opt principal;
-    };
-    Approve  : record {
-        to   : principal;
-    };
-    Custom   : record {
-        name : text;
-        spenders: vec principal;
-        receivers: vec principal;
-    };
+type Operation = variant {
+    Transfer,
+    Approve,
+    Mint,
+    Burn,
 };
 ```
 
@@ -157,36 +148,21 @@ Now we describe how you can obtain a hash from a `Event`, the most important rul
 every field in the `Event` should be part of the process of generating the hash.
 
 ```
-hash_event(Event contract time caller amount fee memo Transfer from to) =
-    H(domain_sep("transfer")
-    . byte(time) . byte(amount) . byte(fee) . byte(memo)
-    . contract . caller . from . to)
+domain_sep_for_operation(Transfer) = domain_sep("transfer")
+domain_sep_for_operation(Approve) = domain_sep("approve")
+domain_sep_for_operation(Mint) = domain_sep("mint")
+domain_sep_for_operation(Burn) = domain_sep("burn")
 
-hash_event(Event contract time caller amount fee memo Mint to) =
-    H(domain_sep("mint")
+hash_event(Event contract time caller amount fee memo NIL to operation) =
+    H(domain_sep_for_operation(operation)
     . byte(time) . byte(amount) . byte(fee) . byte(memo)
     . contract . caller . to)
 
-hash_event(Event contract time caller amount fee memo Burn from null) =
-    H(domain_sep("burn")
-    . byte(time) . byte(amount) . byte(fee) . byte(memo)
-    . contract . caller . from)
-
-hash_event(Event contract time caller amount fee memo Burn from to) =
-    H(domain_sep("burn")
+hash_event(Event contract time caller amount fee memo from to operation) =
+    H(domain_sep_for_operation(operation)
     . byte(time) . byte(amount) . byte(fee) . byte(memo)
     . contract . caller . from . to)
 
-hash_event(Event contract time caller amount fee memo Approve to) =
-    H(domain_sep("approve")
-    . byte(time) . byte(amount) . byte(fee) . byte(memo)
-    . contract . caller . to)
-
-hash_event(Event contract time caller amount fee memo Custom name spenders receivers) =
-    H(domain_sep("burn")
-    . name
-    . byte(time) . byte(amount) . byte(fee) . byte(memo)
-    . contract . caller . concat(spenders) . concat(receivers))
 ```
 
 ## Readable Canister

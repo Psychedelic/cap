@@ -11,7 +11,7 @@ pub struct Event {
     pub contract: Principal,
     /// The timestamp in ms.
     pub time: u64,
-    /// The caller that initiated the call on the token.
+    /// The caller that initiated the call on the token contract.
     pub caller: Principal,
     /// The amount of tokens that was touched in this event.
     pub amount: u64,
@@ -19,13 +19,25 @@ pub struct Event {
     pub fee: u64,
     /// The transaction memo.
     pub memo: u32,
-    /// The transaction detail
-    pub kind: EventKind,
+    /// The `from` field, only needs to be non-null for transferFrom kind of events.
+    pub from: Option<Principal>,
+    /// The receiver end of this transaction.
+    pub to: Principal,
+    /// The operation that took place.
+    pub operation: Operation,
+}
+
+#[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
+pub enum Operation {
+    Transfer,
+    Approve,
+    Mint,
+    Burn,
 }
 
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
 pub struct IndefiniteEvent {
-    /// The caller that initiated the call on the token.
+    /// The caller that initiated the call on the token contract.
     pub caller: Principal,
     /// The amount of tokens that was touched in this event.
     pub amount: u64,
@@ -33,31 +45,12 @@ pub struct IndefiniteEvent {
     pub fee: u64,
     /// The transaction memo.
     pub memo: u32,
-    /// The transaction detail
-    pub kind: EventKind,
-}
-
-#[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
-pub enum EventKind {
-    Transfer {
-        from: Principal,
-        to: Principal,
-    },
-    Mint {
-        to: Principal,
-    },
-    Burn {
-        from: Principal,
-        to: Option<Principal>,
-    },
-    Approve {
-        to: Principal,
-    },
-    Custom {
-        name: String,
-        spenders: Vec<Principal>,
-        receivers: Vec<Principal>,
-    },
+    /// The `from` field, only needs to be non-null for transferFrom kind of events.
+    pub from: Option<Principal>,
+    /// The receiver end of this transaction.
+    pub to: Principal,
+    /// The operation that took place.
+    pub operation: Operation,
 }
 
 impl Event {
@@ -67,53 +60,21 @@ impl Event {
         let mut principals = BTreeSet::new();
 
         principals.insert(&self.caller);
-        match &self.kind {
-            EventKind::Transfer { from, to } => {
-                principals.insert(from);
-                principals.insert(to);
-            }
-            EventKind::Mint { to } => {
-                principals.insert(to);
-            }
-            EventKind::Burn { from, to } => {
-                principals.insert(from);
-                if let Some(to) = to {
-                    principals.insert(to);
-                }
-            }
-            EventKind::Approve { to } => {
-                principals.insert(to);
-            }
-            EventKind::Custom {
-                spenders,
-                receivers,
-                ..
-            } => {
-                for id in spenders {
-                    principals.insert(id);
-                }
-
-                for id in receivers {
-                    principals.insert(id);
-                }
-            }
+        if let Some(from) = &self.from {
+            principals.insert(from);
         }
+        principals.insert(&self.to);
 
         principals
     }
 
     /// Compute the hash for the given event.
     pub fn hash(&self) -> EventHash {
-        let mut h = match &self.kind {
-            EventKind::Transfer { .. } => domain_sep("transfer"),
-            EventKind::Mint { .. } => domain_sep("mint"),
-            EventKind::Burn { .. } => domain_sep("burn"),
-            EventKind::Approve { .. } => domain_sep("approve"),
-            EventKind::Custom { name, .. } => {
-                let mut h = domain_sep("custom");
-                h.update(name.as_bytes());
-                h
-            }
+        let mut h = match &self.operation {
+            Operation::Transfer => domain_sep("transfer"),
+            Operation::Approve => domain_sep("approve"),
+            Operation::Mint => domain_sep("mint"),
+            Operation::Burn => domain_sep("burn"),
         };
 
         h.update(&self.time.to_be_bytes() as &[u8]);
@@ -124,37 +85,10 @@ impl Event {
         // And now all of the Principal IDs
         h.update(&self.contract);
         h.update(&self.caller);
-
-        match &self.kind {
-            EventKind::Transfer { from, to } => {
-                h.update(from);
-                h.update(to);
-            }
-            EventKind::Mint { to } => {
-                h.update(to);
-            }
-            EventKind::Burn { from, to } => {
-                h.update(from);
-                if let Some(to) = to {
-                    h.update(to);
-                }
-            }
-            EventKind::Approve { to } => {
-                h.update(to);
-            }
-            EventKind::Custom {
-                spenders,
-                receivers,
-                ..
-            } => {
-                for id in spenders {
-                    h.update(id);
-                }
-                for id in receivers {
-                    h.update(id);
-                }
-            }
+        if let Some(from) = &self.from {
+            h.update(from);
         }
+        h.update(&self.to);
 
         h.finalize().into()
     }
@@ -163,15 +97,17 @@ impl Event {
 impl IndefiniteEvent {
     /// Convert an indefinite event to a definite one by adding the token and time fields.
     #[inline]
-    pub fn to_event(self, token: Principal, time: u64) -> Event {
+    pub fn to_event(self, contract: Principal, time: u64) -> Event {
         Event {
-            contract: token,
+            contract,
             time,
             caller: self.caller,
             amount: self.amount,
             fee: self.fee,
             memo: self.memo,
-            kind: self.kind,
+            from: self.from,
+            to: self.to,
+            operation: self.operation,
         }
     }
 }
@@ -184,99 +120,4 @@ fn domain_sep(s: &str) -> sha2::Sha256 {
     h
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use ic_kit::mock_principals;
-
-    #[test]
-    fn extract_principal_transfer() {
-        let event = Event {
-            contract: mock_principals::xtc(),
-            time: 0,
-            caller: mock_principals::bob(),
-            amount: 0,
-            fee: 0,
-            memo: 0,
-            kind: EventKind::Transfer {
-                from: mock_principals::alice(),
-                to: mock_principals::john(),
-            },
-        };
-
-        let ids = event.extract_principal_ids();
-        assert!(ids.contains(&mock_principals::bob()));
-        assert!(ids.contains(&mock_principals::alice()));
-        assert!(ids.contains(&mock_principals::john()));
-        // Should not panic.
-        event.hash();
-    }
-
-    #[test]
-    fn extract_principal_mint() {
-        let event = Event {
-            contract: mock_principals::xtc(),
-            time: 0,
-            caller: mock_principals::bob(),
-            amount: 0,
-            fee: 0,
-            memo: 0,
-            kind: EventKind::Mint {
-                to: mock_principals::alice(),
-            },
-        };
-
-        let ids = event.extract_principal_ids();
-        assert!(ids.contains(&mock_principals::bob()));
-        assert!(ids.contains(&mock_principals::alice()));
-        // Should not panic.
-        event.hash();
-    }
-
-    #[test]
-    fn extract_principal_burn() {
-        let event = Event {
-            contract: mock_principals::xtc(),
-            time: 0,
-            caller: mock_principals::bob(),
-            amount: 0,
-            fee: 0,
-            memo: 0,
-            kind: EventKind::Burn {
-                from: mock_principals::alice(),
-                to: Some(mock_principals::john()),
-            },
-        };
-
-        let ids = event.extract_principal_ids();
-        assert!(ids.contains(&mock_principals::bob()));
-        assert!(ids.contains(&mock_principals::alice()));
-        assert!(ids.contains(&mock_principals::john()));
-        // Should not panic.
-        event.hash();
-    }
-
-    #[test]
-    fn extract_principal_custom() {
-        let event = Event {
-            contract: mock_principals::xtc(),
-            time: 0,
-            caller: mock_principals::bob(),
-            amount: 0,
-            fee: 0,
-            memo: 0,
-            kind: EventKind::Custom {
-                name: "".to_string(),
-                spenders: vec![mock_principals::john()],
-                receivers: vec![mock_principals::alice()],
-            },
-        };
-
-        let ids = event.extract_principal_ids();
-        assert!(ids.contains(&mock_principals::bob()));
-        assert!(ids.contains(&mock_principals::john()));
-        assert!(ids.contains(&mock_principals::alice()));
-        // Should not panic.
-        event.hash();
-    }
-}
+// TODO(qti3e) Test
