@@ -15,34 +15,13 @@ on the Internet Computer.
 In this document we go thought the overall architecture of such a service and provide the
 schema for the canisters that the system has.
 
-This interface should work regardless of the number of canister the ICHS uses. We define
-two groups of canisters. `Readable` and `Writable`. Every canister on the ICHS implements
-one or both of these interfaces. For example the entry/router canister implements both
-*Readable* and *Writable*
-
 The goal of defining this interfaces is to have implementation agnostic layer of
 interaction with this open internet service and future proofing the OIS.
 
-## Readable
-
-The *Readable* interface describes a common schema for performing read-only queries on
-the ICHS. We refer to a canister that implements this interface as a Readable Canister.
-This interface does not define any operation on the canister that can mutate the state
-of the canister.
-
-Not every readable canister is capable of returning the response for the entire data,
-and they should be called in the right context. Starting from the entry canister should
-always result in valid responses.
-
-## Writable
-
-The *Writable* interface describes an interface for canisters that can mutate the state
-of the ICHS. For example inserting a new event to the history.
-
 ## Certified Trees
 
-Each `Readable` canister should have one merkle-tree whose root hash is stored as the
-certified data of the entire canister.
+Each canister should have one merkle-tree whose root hash is stored as the certified data
+of the entire canister.
 
 This tree is defined using the following structure:
 
@@ -165,10 +144,13 @@ hash_event(Event contract time caller amount fee memo from to operation) =
 
 ```
 
-## Readable Canister
+## Index canister
 
-```
-type ReadableCanisterId = principal;
+```candid
+type TokenContractId = principal
+type RootBucketId = principal;
+type RouterId = principal;
+type UserId = principal;
 
 type Witness = record {
     certificate: blob;
@@ -176,8 +158,75 @@ type Witness = record {
     tree: blob;
 };
 
-type EventHash = blob;
+type GetTokenContractRootBucketArg = record {
+    canister: TokenContractId;
+    witness: bool;
+};
 
+type GetTokenContractRootBucketResponse = record {
+    canister: opt RootBucketId;
+    // Witness type: tree<TokenContractId, PrincipalHash>
+    witness: opt Witness
+}
+
+type GetUserRootBucketsArg = record {
+    user: UserId;
+    witness: bool;
+};
+
+type GetUserRootBucketsResponse = record {
+    contracts: vec RootBucketId;
+    // Witness type: tree<UserId, CanistersListHash>
+    witness: opt Witness;
+};
+
+type WithWitnessArg = record {
+    witness: bool;
+};
+
+type GetCanistersResponse = record {
+    canisters: vec RouterId;
+    // Witness type: leaf(CanistersListHash)
+    // CanistersListHash is computed like events page.
+    witness: opt Witness;
+};
+
+service : {
+    // Return the root bucket canister associated with the given token contract.
+    get_token_contract_root_bucket : (GetTokenContractRootBucketArg) -> (GetTokenContractRootBucketResponse) query;
+
+    // Return the root bucket of all the token contracts a user has transactions on.
+    get_user_root_buckets : (GetUserRootBucketsArg) -> (GetUserRootBucketsResponse) query;
+
+    // Return the list of canisters that can be used for quering the indexes. THes
+    get_router_canisters : (WithWitnessArg) -> (GetRouterCanistersResponse) query;
+};
+
+```
+
+## Main Router
+
+The main router extends the `Indexer` canister, and has the following additional methods:
+It is the entry point of the ICHS service, it is an aggregation layer over all the history
+buckets that exists on the network. It should facilitate creating new buckets for the token
+contracts, and also provide global indexes for the users.
+
+```candid
+service : {
+    // Called by a token contract: Install the bucket code on the given canister and setup
+    // the caller as the writer on the bucket.
+    // The given principal ID should be of a newly created bucket that has ICHS as the only
+    // controller.
+    // This method simply panics if the required criterias are not met.
+    install_bucket_code : (RootBucketId) -> ();
+};
+```
+
+## Bucket Canister
+
+```
+type ReadableCanisterId = principal;
+type EventHash = blob;
 type TransactionId = nat64;
 
 type WithIdArg = record {
@@ -217,7 +266,7 @@ type WithWitnessArg = record {
     witness: bool;
 };
 
-type GetCanistersResponse = record {
+type GetRouterCanistersResponse = record {
     canisters: vec ReadableCanisterId;
     // Witness type: leaf(CanistersListHash)
     // CanistersListHash is computed like events page.
@@ -230,25 +279,35 @@ type GetBucketResponse = record {
     witness: opt Witness;
 };
 
-service readable : {
-    // Return the list of canisters that can be used for routing the requests.
-    get_index_canisters : (WithWitnessArg) -> (GetCanistersResponse) query;
-
+service : {
     // Return the list of canisters to obtain more pages of data.
     get_next_canisters : (WithWitnessArg) -> (GetCanistersResponse) query;
-
-    // Return a bucket that can be used to query for the given transaction id.
-    get_bucket_for : (WithIdArg) -> (GetBucketResponse) query;
 
     // Return the given transaction.
     get_transaction : (WithIdArg) -> (GetTransactionResponse) query;
 
     // Return all of the transactions associated with the given user.
     get_user_transactions : (WithPageArg) -> (GetTransactionsResponse) query;
-
-    // Return all of the transactions associated with the given token contract.
-    get_contract_transactions : (WithPageArg) -> (GetTransactionsResponse) query;
 };
+```
+
+## Root Bucket
+
+The root bucket extends the `Bucket`, but has some additional methods.
+
+```candid
+service root_bucket : {
+    // Return a bucket that can be used to query for the given transaction id.
+    get_bucket_for : (WithIdArg) -> (GetBucketResponse) query;
+
+    // Insert the given transaction to the ICHS and issue a transaction id.
+    insert : (IndefiniteEvent) -> (TransactionId);
+
+    // The time on the canister. The time can be used to check if this bucket is
+    // on the same subnet as the caller.
+    time : () -> (nat64) query;
+};
+
 ```
 
 ### Page Hash
@@ -256,24 +315,4 @@ service readable : {
 ```
 hash_page(vec) = [0; 32]
 hash_page(vec ..events event) = H(hash_page(events) . hash_event(event))
-```
-
-## Writable Canister
-
-```
-type WritableCanisterId = principal;
-
-type TransactionId = nat64;
-
-service writable : {
-    // Return the canisters that can be used to write data to.
-    get_writer_canisters : () -> (vec WritableCanisterId);
-
-    // Insert the given transaction to the ICHS and issue a transaction id.
-    insert : (IndefiniteEvent) -> (TransactionId);
-
-    // The time on the canister. The time can be used to check if this WritableCanister
-    // is on the same subnet as the caller.
-    time : () -> (nat64) query;
-};
 ```
