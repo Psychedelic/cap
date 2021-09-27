@@ -249,6 +249,11 @@ type PageKey = blob;
 // Hash a page of events. See the section below for Page Hash.
 type PageHash = blob;
 
+type GetTransactionsArg = record {
+    page: opt nat32;
+    witness: bool;
+};
+
 type WithPageArg = record {
     principal: principal;
     page: opt nat32;
@@ -285,6 +290,9 @@ service : {
 
     // Return the given transaction.
     get_transaction : (WithIdArg) -> (GetTransactionResponse) query;
+
+    // Return all of the transactions for this contract.
+    get_transactions : (GetTransactionsArg) -> (GetTransactionsResponse) query;
 
     // Return all of the transactions associated with the given user.
     get_user_transactions : (WithPageArg) -> (GetTransactionsResponse) query;
