@@ -1,7 +1,9 @@
 [workspace]
 members = [
     "common",
-    "canisters/router"
+    "canisters/router",
+    "canisters/root",
+    "canisters/bucket",
 ]
 
 [profile.release]
