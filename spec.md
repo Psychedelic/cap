@@ -165,7 +165,7 @@ type GetTokenContractRootBucketArg = record {
 
 type GetTokenContractRootBucketResponse = record {
     canister: opt RootBucketId;
-    // Witness type: tree<TokenContractId, PrincipalHash>
+    // Witness type: tree<TokenContractId, PrincipalBytes>
     witness: opt Witness
 }
 

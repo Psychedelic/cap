@@ -1,0 +1,19 @@
+[package]
+name = "root"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ic-history-common = { path= "../../common" }
+ic-certified-map = "0.1.0"
+ic-kit = "0.4.2"
+ic-cdk = "0.3.1"
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+async-std = { version="1.10.0", features = ["attributes"] }
+
+[lib]
+crate-type = ["cdylib"]
+path = "src/lib.rs"

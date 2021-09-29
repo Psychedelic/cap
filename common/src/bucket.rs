@@ -239,18 +239,20 @@ impl Drop for Bucket {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::transaction::EventKind;
+    use crate::transaction::{EventKind, Operation};
     use ic_kit::mock_principals;
 
-    fn e(memo: u32, caller: Principal, token: Principal) -> Event {
+    fn e(memo: u32, caller: Principal, contract: Principal) -> Event {
         Event {
-            contract: token,
+            contract,
             time: 0,
             caller,
             amount: 0,
             fee: 0,
             memo,
-            kind: EventKind::Mint { to: caller },
+            from: None,
+            to: caller,
+            operation: Operation::Transfer,
         }
     }
 
