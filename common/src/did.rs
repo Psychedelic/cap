@@ -1,8 +1,9 @@
 //! This file contains all of the type definitions used in the candid
 //! files across the different canisters and the services.
 
-use ic_certified_map::Hash;
+use ic_certified_map::{Hash, HashTree};
 use ic_kit::candid::{CandidType, Deserialize};
+use ic_kit::ic;
 use ic_kit::Principal;
 use serde::Serialize;
 
@@ -68,4 +69,13 @@ pub struct WithWitnessArg {
 pub struct GetIndexCanistersResponse {
     pub canisters: Vec<IndexCanisterId>,
     pub witness: Option<Witness>,
+}
+
+impl From<HashTree<'_>> for Witness {
+    fn from(tree: HashTree) -> Self {
+        Self {
+            certificate: ic::data_certificate().unwrap(),
+            tree: serde_cbor::to_vec(&tree).unwrap(),
+        }
+    }
 }

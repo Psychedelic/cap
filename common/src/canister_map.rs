@@ -3,6 +3,7 @@ use ic_certified_map::{leaf_hash, AsHashTree, Hash, HashTree, RbTree};
 use ic_kit::Principal;
 
 /// A data structure that maps a canister id to another canister id and
+#[derive(Default)]
 pub struct CanisterMap {
     data: RbTree<Principal, PrincipalBytes>,
 }
@@ -48,5 +49,15 @@ impl CanisterMap {
     #[inline]
     pub fn gen_witness(&self, key: &Principal) -> HashTree {
         self.data.witness(key.as_ref())
+    }
+}
+
+impl AsHashTree for CanisterMap {
+    fn root_hash(&self) -> Hash {
+        self.data.root_hash()
+    }
+
+    fn as_hash_tree(&self) -> HashTree<'_> {
+        self.data.as_hash_tree()
     }
 }

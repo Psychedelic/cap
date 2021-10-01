@@ -26,6 +26,12 @@ impl CanisterList {
     pub fn as_slice(&self) -> &[Principal] {
         self.data.as_slice()
     }
+
+    /// Return the list as a vector.
+    #[inline(always)]
+    pub fn to_vec(&self) -> Vec<Principal> {
+        self.data.clone()
+    }
 }
 
 impl AsHashTree for CanisterList {
