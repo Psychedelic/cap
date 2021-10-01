@@ -1,4 +1,4 @@
-use crate::primitives::TransactionId;
+use crate::did::TransactionId;
 use ic_certified_map::{AsHashTree, Hash, HashTree, RbTree};
 use ic_kit::Principal;
 use sha2::{Digest, Sha256};

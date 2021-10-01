@@ -1,4 +1,4 @@
-use crate::primitives::EventHash;
+use crate::did::EventHash;
 use ic_kit::candid::{CandidType, Deserialize};
 use ic_kit::Principal;
 use serde::Serialize;

@@ -184,7 +184,7 @@ type WithWitnessArg = record {
     witness: bool;
 };
 
-type GetCanistersResponse = record {
+type GetIndexCanistersResponse = record {
     canisters: vec RouterId;
     // Witness type: leaf(CanistersListHash)
     // CanistersListHash is computed like events page.
@@ -199,7 +199,7 @@ service : {
     get_user_root_buckets : (GetUserRootBucketsArg) -> (GetUserRootBucketsResponse) query;
 
     // Return the list of canisters that can be used for quering the indexes. THes
-    get_router_canisters : (WithWitnessArg) -> (GetRouterCanistersResponse) query;
+    get_index_canisters : (WithWitnessArg) -> (GetIndexCanistersResponse) query;
 };
 
 ```
