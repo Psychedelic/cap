@@ -1,6 +1,8 @@
 use ic_certified_map::HashTree::Leaf;
 use ic_certified_map::{leaf_hash, AsHashTree, Hash, HashTree, RbTree};
 use ic_kit::Principal;
+use serde::ser::SerializeMap;
+use serde::{Serialize, Serializer};
 
 /// A data structure that maps a canister id to another canister id and
 #[derive(Default)]
@@ -59,5 +61,21 @@ impl AsHashTree for CanisterMap {
 
     fn as_hash_tree(&self) -> HashTree<'_> {
         self.data.as_hash_tree()
+    }
+}
+
+impl Serialize for CanisterMap {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut s = serializer.serialize_map(None)?;
+
+        self.data.for_each(|key, value| {
+            s.serialize_entry(key, value.0.as_ref())
+                .expect("Serialization failed.");
+        });
+
+        s.end()
     }
 }

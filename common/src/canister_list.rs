@@ -1,5 +1,7 @@
 use ic_certified_map::{AsHashTree, Hash, HashTree};
 use ic_kit::Principal;
+use serde::ser::SerializeSeq;
+use serde::{Serialize, Serializer};
 use sha2::{Digest, Sha256};
 
 /// An array of Canister IDs with incremental hashing, this can be used as a leaf node in a
@@ -43,6 +45,19 @@ impl AsHashTree for CanisterList {
     #[inline(always)]
     fn as_hash_tree(&self) -> HashTree<'_> {
         self.hash.as_hash_tree()
+    }
+}
+
+impl Serialize for CanisterList {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut s = serializer.serialize_seq(Some(self.data.len()))?;
+        for principal in &self.data {
+            s.serialize_element(principal)?;
+        }
+        s.end()
     }
 }
 

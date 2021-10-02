@@ -54,9 +54,9 @@ pub struct GetUserRootBucketsArg {
     pub witness: bool,
 }
 
-#[derive(Serialize, Deserialize, CandidType)]
-pub struct GetUserRootBucketsResponse {
-    pub contracts: Vec<RootBucketId>,
+#[derive(Serialize, CandidType)]
+pub struct GetUserRootBucketsResponse<'a> {
+    pub contracts: &'a [RootBucketId],
     pub witness: Option<Witness>,
 }
 
