@@ -75,14 +75,14 @@ impl Bucket {
     }
 
     /// Try to insert an event into the common.
-    pub fn insert(&mut self, event: Event) -> u64 {
+    pub fn insert(&mut self, contract: &Principal, event: Event) -> u64 {
         let local_index = self.events.len() as u32;
         let hash = event.hash();
         let event: NonNull<Event> = Box::leak(Box::new(event)).into();
         let eve = unsafe { event.as_ref() };
 
         // Update the indexers for the transaction.
-        self.contract_indexer.insert(&eve.contract, event, &hash);
+        self.contract_indexer.insert(contract, event, &hash);
         for user in eve.extract_principal_ids() {
             self.user_indexer.insert(user, event, &hash);
         }
@@ -138,7 +138,7 @@ impl Bucket {
 
     /// Return the last page number associated with the given token.
     #[inline]
-    pub fn last_page_for_token(&self, principal: &Principal) -> u32 {
+    pub fn last_page_for_contract(&self, principal: &Principal) -> u32 {
         self.contract_indexer.last_page(principal)
     }
 
@@ -156,7 +156,7 @@ impl Bucket {
 
     /// Return the witness that can be used to prove the response from get_transactions_for_token.
     #[inline]
-    pub fn witness_transactions_for_token(&self, principal: &Principal, page: u32) -> HashTree {
+    pub fn witness_transactions_for_contract(&self, principal: &Principal, page: u32) -> HashTree {
         fork(
             Pruned(self.left_v_hash()),
             fork(
@@ -242,9 +242,8 @@ mod tests {
     use crate::transaction::{EventKind, Operation};
     use ic_kit::mock_principals;
 
-    fn e(memo: u32, caller: Principal, contract: Principal) -> Event {
+    fn e(memo: u32, caller: Principal) -> Event {
         Event {
-            contract,
             time: 0,
             caller,
             amount: 0,
@@ -260,10 +259,10 @@ mod tests {
     #[test]
     fn test_hash_tree() {
         let mut bucket = Bucket::new(0);
-        bucket.insert(e(0, mock_principals::alice(), mock_principals::xtc()));
-        bucket.insert(e(1, mock_principals::alice(), mock_principals::xtc()));
-        bucket.insert(e(2, mock_principals::alice(), mock_principals::xtc()));
-        bucket.insert(e(3, mock_principals::alice(), mock_principals::xtc()));
+        bucket.insert(&mock_principals::xtc(), e(0, mock_principals::alice()));
+        bucket.insert(&mock_principals::xtc(), e(1, mock_principals::alice()));
+        bucket.insert(&mock_principals::xtc(), e(2, mock_principals::alice()));
+        bucket.insert(&mock_principals::xtc(), e(3, mock_principals::alice()));
         assert_eq!(bucket.as_hash_tree().reconstruct(), bucket.root_hash());
     }
 
@@ -272,10 +271,10 @@ mod tests {
     #[test]
     fn test_witness_transaction() {
         let mut bucket = Bucket::new(0);
-        bucket.insert(e(0, mock_principals::alice(), mock_principals::xtc()));
-        bucket.insert(e(1, mock_principals::alice(), mock_principals::xtc()));
-        bucket.insert(e(2, mock_principals::alice(), mock_principals::xtc()));
-        bucket.insert(e(3, mock_principals::alice(), mock_principals::xtc()));
+        bucket.insert(&mock_principals::xtc(), e(0, mock_principals::alice()));
+        bucket.insert(&mock_principals::xtc(), e(1, mock_principals::alice()));
+        bucket.insert(&mock_principals::xtc(), e(2, mock_principals::alice()));
+        bucket.insert(&mock_principals::xtc(), e(3, mock_principals::alice()));
 
         let event = bucket.get_transaction(1).unwrap();
         let witness = bucket.witness_transaction(1);
@@ -286,10 +285,10 @@ mod tests {
     #[test]
     fn test_witness_transaction_large() {
         let mut bucket = Bucket::new(0);
-        bucket.insert(e(0, mock_principals::alice(), mock_principals::xtc()));
-        bucket.insert(e(1, mock_principals::alice(), mock_principals::xtc()));
-        bucket.insert(e(2, mock_principals::alice(), mock_principals::xtc()));
-        bucket.insert(e(3, mock_principals::alice(), mock_principals::xtc()));
+        bucket.insert(&mock_principals::xtc(), e(0, mock_principals::alice()));
+        bucket.insert(&mock_principals::xtc(), e(1, mock_principals::alice()));
+        bucket.insert(&mock_principals::xtc(), e(2, mock_principals::alice()));
+        bucket.insert(&mock_principals::xtc(), e(3, mock_principals::alice()));
 
         assert_eq!(bucket.get_transaction(4).is_none(), true);
 
@@ -300,10 +299,10 @@ mod tests {
     #[test]
     fn test_witness_transaction_below_offset() {
         let mut bucket = Bucket::new(10);
-        bucket.insert(e(10, mock_principals::alice(), mock_principals::xtc()));
-        bucket.insert(e(11, mock_principals::alice(), mock_principals::xtc()));
-        bucket.insert(e(12, mock_principals::alice(), mock_principals::xtc()));
-        bucket.insert(e(13, mock_principals::alice(), mock_principals::xtc()));
+        bucket.insert(&mock_principals::xtc(), e(10, mock_principals::alice()));
+        bucket.insert(&mock_principals::xtc(), e(11, mock_principals::alice()));
+        bucket.insert(&mock_principals::xtc(), e(12, mock_principals::alice()));
+        bucket.insert(&mock_principals::xtc(), e(13, mock_principals::alice()));
 
         assert_eq!(bucket.get_transaction(5).is_none(), true);
         let witness = bucket.witness_transaction(5);
@@ -316,9 +315,9 @@ mod tests {
 
         for i in 0..5000 {
             if i % 27 == 0 {
-                bucket.insert(e(i, mock_principals::bob(), mock_principals::xtc()));
+                bucket.insert(&mock_principals::xtc(), e(i, mock_principals::bob()));
             } else {
-                bucket.insert(e(i, mock_principals::alice(), mock_principals::xtc()));
+                bucket.insert(&mock_principals::xtc(), e(i, mock_principals::alice()));
             }
         }
 
@@ -349,9 +348,9 @@ mod tests {
 
         for i in 0..2500 {
             if i % 13 == 0 {
-                bucket.insert(e(i, mock_principals::xtc(), mock_principals::bob()));
+                bucket.insert(&mock_principals::bob(), e(i, mock_principals::xtc()));
             } else {
-                bucket.insert(e(i, mock_principals::alice(), mock_principals::xtc()));
+                bucket.insert(&mock_principals::xtc(), e(i, mock_principals::alice()));
             }
         }
 
@@ -360,7 +359,7 @@ mod tests {
         for page in 0.. {
             let principal = mock_principals::bob();
             let data = bucket.get_transactions_for_contract(&principal, page);
-            let witness = bucket.witness_transactions_for_token(&principal, page);
+            let witness = bucket.witness_transactions_for_contract(&principal, page);
             let len = data.len();
 
             assert_eq!(witness.reconstruct(), bucket.root_hash());
@@ -374,42 +373,5 @@ mod tests {
 
         // floor(2500 / 13) + 1 = 193
         assert_eq!(count, 193);
-    }
-
-    fn witness_size() {
-        // Output for length 25_000
-        // Step: 1
-        // Size: 454
-        // Step: 5
-        // Size: 454
-        // Step: 137
-        // Size: 492
-
-        // Output for length 100_000
-        // Step: 1
-        // Size: 530
-        // Step: 5
-        // Size: 530
-        // Step: 137
-        // Size: 568
-
-        for s in vec![1, 5, 137] {
-            println!("Step: {}", s);
-
-            let mut bucket = Bucket::new(0);
-
-            for i in 0..25_000 {
-                if i % s == 0 {
-                    bucket.insert(e(i, mock_principals::bob(), mock_principals::xtc()));
-                } else {
-                    bucket.insert(e(i, mock_principals::alice(), mock_principals::xtc()));
-                }
-            }
-
-            let principal = mock_principals::bob();
-            let witness = bucket.witness_transactions_for_user(&principal, 0);
-            let vec = serde_cbor::to_vec(&witness).unwrap();
-            println!("Size: {}", vec.len());
-        }
     }
 }

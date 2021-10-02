@@ -1136,6 +1136,8 @@ dependencies = [
  "ic-certified-map",
  "ic-history-common",
  "ic-kit",
+ "serde",
+ "serde_cbor",
 ]
 
 [[package]]

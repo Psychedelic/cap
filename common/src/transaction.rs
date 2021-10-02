@@ -7,8 +7,6 @@ use std::collections::BTreeSet;
 
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
 pub struct Event {
-    /// The canister that inserted this event to the history.
-    pub contract: Principal,
     /// The timestamp in ms.
     pub time: u64,
     /// The caller that initiated the call on the token contract.
@@ -83,7 +81,6 @@ impl Event {
         h.update(&self.memo.to_be_bytes());
 
         // And now all of the Principal IDs
-        h.update(&self.contract);
         h.update(&self.caller);
         if let Some(from) = &self.from {
             h.update(from);
@@ -97,9 +94,8 @@ impl Event {
 impl IndefiniteEvent {
     /// Convert an indefinite event to a definite one by adding the token and time fields.
     #[inline]
-    pub fn to_event(self, contract: Principal, time: u64) -> Event {
+    pub fn to_event(self, time: u64) -> Event {
         Event {
-            contract,
             time,
             caller: self.caller,
             amount: self.amount,

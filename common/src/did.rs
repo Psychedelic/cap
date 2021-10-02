@@ -1,12 +1,12 @@
 //! This file contains all of the type definitions used in the candid
 //! files across the different canisters and the services.
 
+use crate::transaction::Event;
 use ic_certified_map::{Hash, HashTree};
 use ic_kit::candid::{CandidType, Deserialize};
 use ic_kit::ic;
 use ic_kit::Principal;
 use serde::Serialize;
-use crate::transaction::Event;
 
 /// The numeric type used to represent a transaction id.
 pub type TransactionId = u64;
@@ -87,7 +87,7 @@ pub struct WithIdArg {
 #[derive(Serialize, Deserialize, CandidType)]
 pub enum GetTransactionResponse {
     Delegate(BucketId, Option<Witness>),
-    Found(Event, Option<Witness>),
+    Found(Option<Event>, Option<Witness>),
 }
 
 #[derive(Serialize, Deserialize, CandidType)]
@@ -100,12 +100,12 @@ pub struct GetTransactionsArg {
 pub struct GetTransactionsResponse {
     pub data: Vec<Event>,
     pub page: u32,
-    pub witness: Option<Witness>
+    pub witness: Option<Witness>,
 }
 
 #[derive(Serialize, CandidType)]
 pub struct GetTransactionsResponseBorrowed<'a> {
-    pub data: &'a [Event],
+    pub data: Vec<&'a Event>,
     pub page: u32,
     pub witness: Option<Witness>,
 }
@@ -119,8 +119,8 @@ pub struct GetUserTransactionsArg {
 
 #[derive(Serialize, Deserialize, CandidType)]
 pub struct GetBucketResponse {
-    canister: BucketId,
-    witness: Option<Witness>
+    pub canister: BucketId,
+    pub witness: Option<Witness>,
 }
 
 impl From<HashTree<'_>> for Witness {

@@ -10,6 +10,8 @@ ic-history-common = { path= "../../common" }
 ic-certified-map = "0.1.0"
 ic-kit = "0.4.2"
 ic-cdk = "0.3.1"
+serde = "1.0.116"
+serde_cbor = "0.11.2"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 async-std = { version="1.10.0", features = ["attributes"] }
