@@ -6,6 +6,7 @@ use ic_kit::candid::{CandidType, Deserialize};
 use ic_kit::ic;
 use ic_kit::Principal;
 use serde::Serialize;
+use crate::transaction::Event;
 
 /// The numeric type used to represent a transaction id.
 pub type TransactionId = u64;
@@ -69,6 +70,57 @@ pub struct WithWitnessArg {
 pub struct GetIndexCanistersResponse {
     pub canisters: Vec<IndexCanisterId>,
     pub witness: Option<Witness>,
+}
+
+#[derive(Serialize, Deserialize, CandidType)]
+pub struct GetNextCanistersResponse {
+    pub canisters: Vec<IndexCanisterId>,
+    pub witness: Option<Witness>,
+}
+
+#[derive(Serialize, Deserialize, CandidType)]
+pub struct WithIdArg {
+    pub id: TransactionId,
+    pub witness: bool,
+}
+
+#[derive(Serialize, Deserialize, CandidType)]
+pub enum GetTransactionResponse {
+    Delegate(BucketId, Option<Witness>),
+    Found(Event, Option<Witness>),
+}
+
+#[derive(Serialize, Deserialize, CandidType)]
+pub struct GetTransactionsArg {
+    pub page: Option<u32>,
+    pub witness: bool,
+}
+
+#[derive(Serialize, Deserialize, CandidType)]
+pub struct GetTransactionsResponse {
+    pub data: Vec<Event>,
+    pub page: u32,
+    pub witness: Option<Witness>
+}
+
+#[derive(Serialize, CandidType)]
+pub struct GetTransactionsResponseBorrowed<'a> {
+    pub data: &'a [Event],
+    pub page: u32,
+    pub witness: Option<Witness>,
+}
+
+#[derive(Serialize, Deserialize, CandidType)]
+pub struct GetUserTransactionsArg {
+    pub user: UserId,
+    pub page: Option<u32>,
+    pub witness: bool,
+}
+
+#[derive(Serialize, Deserialize, CandidType)]
+pub struct GetBucketResponse {
+    canister: BucketId,
+    witness: Option<Witness>
 }
 
 impl From<HashTree<'_>> for Witness {
