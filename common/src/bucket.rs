@@ -239,7 +239,7 @@ impl Drop for Bucket {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::transaction::{EventKind, Operation};
+    use crate::transaction::Operation;
     use ic_kit::mock_principals;
 
     fn e(memo: u32, caller: Principal) -> Event {

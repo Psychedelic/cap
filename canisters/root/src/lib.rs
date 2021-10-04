@@ -1,11 +1,12 @@
-use ic_history_common::transaction::IndefiniteEvent;
-use ic_history_common::Bucket;
-use ic_kit::{ic, Principal};
-use std::collections::BTreeSet;
-
 use ic_certified_map::{fork, fork_hash, AsHashTree, HashTree};
 use ic_history_common::bucket_lookup_table::BucketLookupTable;
 use ic_history_common::canister_list::CanisterList;
+use ic_history_common::transaction::IndefiniteEvent;
+use ic_history_common::Bucket;
+use ic_kit::candid::{candid_method, export_service};
+use ic_kit::{ic, Principal};
+use std::collections::BTreeSet;
+
 use ic_history_common::did::*;
 use ic_kit::macros::*;
 
@@ -44,6 +45,7 @@ impl Default for Data {
 }
 
 #[query]
+#[candid_method(query)]
 fn get_next_canisters(arg: WithWitnessArg) -> GetNextCanistersResponse {
     let data = ic::get::<Data>();
 
@@ -67,6 +69,7 @@ fn get_next_canisters(arg: WithWitnessArg) -> GetNextCanistersResponse {
 }
 
 #[query]
+#[candid_method(query)]
 fn get_transaction(arg: WithIdArg) -> GetTransactionResponse {
     let data = ic::get::<Data>();
 
@@ -91,6 +94,7 @@ fn get_transaction(arg: WithIdArg) -> GetTransactionResponse {
 }
 
 #[query]
+#[candid_method(query)]
 fn get_transactions(arg: GetTransactionsArg) -> GetTransactionsResponseBorrowed<'static> {
     let data = ic::get::<Data>();
 
@@ -125,6 +129,7 @@ fn get_transactions(arg: GetTransactionsArg) -> GetTransactionsResponseBorrowed<
 }
 
 #[query]
+#[candid_method(query)]
 fn get_user_transactions(arg: GetUserTransactionsArg) -> GetTransactionsResponseBorrowed<'static> {
     let data = ic::get::<Data>();
 
@@ -156,6 +161,7 @@ fn get_user_transactions(arg: GetUserTransactionsArg) -> GetTransactionsResponse
 }
 
 #[query]
+#[candid_method(query)]
 fn get_bucket_for(arg: WithIdArg) -> GetBucketResponse {
     let data = ic::get::<Data>();
 
@@ -179,11 +185,13 @@ fn get_bucket_for(arg: WithIdArg) -> GetBucketResponse {
 }
 
 #[query]
+#[candid_method(query)]
 fn time() -> u64 {
     ic::time()
 }
 
 #[update]
+#[candid_method(query)]
 fn insert(event: IndefiniteEvent) -> TransactionId {
     let data = ic::get_mut::<Data>();
     let caller = ic::caller();
@@ -201,4 +209,26 @@ fn insert(event: IndefiniteEvent) -> TransactionId {
     ));
 
     id
+}
+
+#[query(name = "__get_candid_interface_tmp_hack")]
+fn export_candid() -> String {
+    export_service!();
+    __export_service()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn save_candid() {
+        use std::env;
+        use std::fs::write;
+        use std::path::PathBuf;
+
+        let dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+        let dir = dir.parent().unwrap().parent().unwrap().join("candid");
+        write(dir.join("root.did"), export_candid()).expect("Write failed.");
+    }
 }

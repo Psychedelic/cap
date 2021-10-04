@@ -2,11 +2,12 @@ use ic_certified_map::{fork, HashTree};
 use ic_certified_map::{fork_hash, AsHashTree};
 use ic_history_common::canister_list::CanisterList;
 use ic_history_common::canister_map::CanisterMap;
+use ic_history_common::user_canisters::UserCanisters;
+use ic_kit::candid::{candid_method, export_service};
 use ic_kit::ic;
 use serde::Serialize;
 
 // It's ok.
-use ic_history_common::user_canisters::UserCanisters;
 use ic_history_common::*;
 use ic_kit::macros::*;
 
@@ -47,6 +48,7 @@ impl Default for Data {
 }
 
 #[query]
+#[candid_method(query)]
 fn get_token_contract_root_bucket(
     arg: GetTokenContractRootBucketArg,
 ) -> GetTokenContractRootBucketResponse {
@@ -72,6 +74,7 @@ fn get_token_contract_root_bucket(
 }
 
 #[query]
+#[candid_method(query)]
 fn get_user_root_buckets(arg: GetUserRootBucketsArg) -> GetUserRootBucketsResponse<'static> {
     let data = ic::get::<Data>();
 
@@ -95,6 +98,7 @@ fn get_user_root_buckets(arg: GetUserRootBucketsArg) -> GetUserRootBucketsRespon
 }
 
 #[query]
+#[candid_method(query)]
 fn get_index_canisters(arg: WithWitnessArg) -> GetIndexCanistersResponse {
     let data = ic::get::<Data>();
 
@@ -118,6 +122,29 @@ fn get_index_canisters(arg: WithWitnessArg) -> GetIndexCanistersResponse {
 }
 
 #[update]
+#[candid_method(update)]
 fn install_bucket_code(arg: RootBucketId) {
     todo!()
+}
+
+#[query(name = "__get_candid_interface_tmp_hack")]
+fn export_candid() -> String {
+    export_service!();
+    __export_service()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn save_candid() {
+        use std::env;
+        use std::fs::write;
+        use std::path::PathBuf;
+
+        let dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+        let dir = dir.parent().unwrap().parent().unwrap().join("candid");
+        write(dir.join("router.did"), export_candid()).expect("Write failed.");
+    }
 }
