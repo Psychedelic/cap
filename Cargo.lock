@@ -314,6 +314,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "cap-core"
+version = "0.0.1"
+dependencies = [
+ "ic-history-common",
+ "ic-kit",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "cap-sdk"
+version = "0.1.0"
+dependencies = [
+ "cap-core",
+]
+
+[[package]]
 name = "cc"
 version = "1.0.70"
 source = "registry+https://github.com/rust-lang/crates.io-index"
