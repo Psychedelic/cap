@@ -11,6 +11,7 @@ use serde::Serialize;
 use ic_history_common::*;
 use ic_kit::macros::*;
 
+mod installer;
 mod upgrade;
 
 /// Merkle tree of the canister.
@@ -119,12 +120,6 @@ fn get_index_canisters(arg: WithWitnessArg) -> GetIndexCanistersResponse {
     let canisters = data.index_canisters.to_vec();
 
     GetIndexCanistersResponse { canisters, witness }
-}
-
-#[update]
-#[candid_method(update)]
-fn install_bucket_code(arg: RootBucketId) {
-    todo!()
 }
 
 #[query(name = "__get_candid_interface_tmp_hack")]
