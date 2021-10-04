@@ -3,6 +3,8 @@ use crate::transaction::Event;
 use ic_certified_map::HashTree::Pruned;
 use ic_certified_map::{fork, fork_hash, leaf_hash, AsHashTree, Hash, HashTree, RbTree};
 use ic_kit::Principal;
+use serde::ser::SerializeSeq;
+use serde::{Serialize, Serializer};
 use std::alloc::{dealloc, Layout};
 use std::ptr;
 use std::ptr::NonNull;
@@ -37,7 +39,7 @@ pub struct Bucket {
     user_indexer: Index,
     /// Maps each token contract principal id to the vector of events inserted by that token.
     contract_indexer: Index,
-    /// All of the events in this common, we store a pointer to an allocated memory. Which is used
+    /// All of the events in this bucket, we store a pointer to an allocated memory. Which is used
     /// only internally in this struct. And this Vec should be considered the actual owner of this
     /// pointers.
     /// So this should be the last thing that will be dropped.
@@ -233,6 +235,19 @@ impl Drop for Bucket {
                 dealloc(event.cast().as_ptr(), Layout::for_value(event.as_ref()));
             }
         }
+    }
+}
+
+impl Serialize for Bucket {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut s = serializer.serialize_seq(Some(self.events.len()))?;
+        for ev in &self.events {
+            s.serialize_element(unsafe { ev.as_ref() })?;
+        }
+        s.end()
     }
 }
 

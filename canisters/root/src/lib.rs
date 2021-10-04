@@ -5,10 +5,13 @@ use ic_history_common::transaction::IndefiniteEvent;
 use ic_history_common::Bucket;
 use ic_kit::candid::{candid_method, export_service};
 use ic_kit::{ic, Principal};
+use serde::Serialize;
 use std::collections::BTreeSet;
 
 use ic_history_common::did::*;
 use ic_kit::macros::*;
+
+mod upgrade;
 
 /// Merkle tree of the canister.
 ///
@@ -20,6 +23,7 @@ use ic_kit::macros::*;
 ///     /   \
 ///   / \    2
 ///  0   1
+#[derive(Serialize)]
 struct Data {
     bucket: Bucket,
     buckets: BucketLookupTable,

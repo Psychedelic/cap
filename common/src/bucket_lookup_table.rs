@@ -1,6 +1,8 @@
 use crate::did::TransactionId;
 use ic_certified_map::{AsHashTree, Hash, HashTree, RbTree};
 use ic_kit::Principal;
+use serde::ser::SerializeSeq;
+use serde::{Serialize, Serializer};
 use sha2::{Digest, Sha256};
 
 /// A data structure to store a linear list of buckets, each bucket has a starting offset which
@@ -92,6 +94,19 @@ impl AsHashTree for BucketLookupTable {
     #[inline(always)]
     fn as_hash_tree(&self) -> HashTree<'_> {
         self.certified_map.as_hash_tree()
+    }
+}
+
+impl Serialize for BucketLookupTable {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut s = serializer.serialize_seq(Some(self.data.len()))?;
+        for i in &self.data {
+            s.serialize_element(i)?;
+        }
+        s.end()
     }
 }
 
