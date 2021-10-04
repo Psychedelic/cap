@@ -254,7 +254,7 @@ type GetTransactionsArg = record {
     witness: bool;
 };
 
-type WithPageArg = record {
+type GetUserTransactionsArg = record {
     principal: principal;
     page: opt nat32;
     witness: bool;
@@ -295,7 +295,7 @@ service : {
     get_transactions : (GetTransactionsArg) -> (GetTransactionsResponse) query;
 
     // Return all of the transactions associated with the given user.
-    get_user_transactions : (WithPageArg) -> (GetTransactionsResponse) query;
+    get_user_transactions : (GetUserTransactionsArg) -> (GetTransactionsResponse) query;
 };
 ```
 
