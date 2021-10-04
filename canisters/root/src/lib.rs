@@ -104,7 +104,7 @@ fn get_transactions(arg: GetTransactionsArg) -> GetTransactionsResponseBorrowed<
 
     let page = arg
         .page
-        .unwrap_or(data.bucket.last_page_for_contract(&data.contract));
+        .unwrap_or_else(|| data.bucket.last_page_for_contract(&data.contract));
 
     let witness = match arg.witness {
         false => None,
@@ -139,7 +139,7 @@ fn get_user_transactions(arg: GetUserTransactionsArg) -> GetTransactionsResponse
 
     let page = arg
         .page
-        .unwrap_or(data.bucket.last_page_for_user(&arg.user));
+        .unwrap_or_else(|| data.bucket.last_page_for_user(&arg.user));
 
     let witness = match arg.witness {
         false => None,
@@ -183,7 +183,7 @@ fn get_bucket_for(arg: WithIdArg) -> GetBucketResponse {
         ),
     };
 
-    let canister = data.buckets.get_bucket_for(arg.id).clone();
+    let canister = *data.buckets.get_bucket_for(arg.id);
 
     GetBucketResponse { canister, witness }
 }
@@ -200,7 +200,7 @@ fn insert(event: IndefiniteEvent) -> TransactionId {
     let data = ic::get_mut::<Data>();
     let caller = ic::caller();
 
-    if !(&caller == &data.contract || data.writers.contains(&caller)) {
+    if !(caller == data.contract || data.writers.contains(&caller)) {
         panic!("The method can only be invoked by one of the writers.");
     }
 
