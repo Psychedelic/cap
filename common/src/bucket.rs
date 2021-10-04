@@ -9,7 +9,7 @@ use std::alloc::{dealloc, Layout};
 use std::ptr;
 use std::ptr::NonNull;
 
-/// A common contains a series of transactions and appropriate indexers.
+/// A bucket contains a series of transactions and appropriate indexers.
 ///
 /// This structure exposes a virtual merkle-tree in the following form:
 ///
@@ -29,7 +29,7 @@ use std::ptr::NonNull;
 pub struct Bucket {
     /// Map each local Transaction ID to its hash.
     event_hashes: RbTree<EventKey, Hash>,
-    /// The offset of this common, i.e the actual id of the first event in the common.
+    /// The offset of this bucket, i.e the actual id of the first event in the bucket.
     global_offset: u64,
     /// Same as `global_offset` but is the encoded big endian, this struct should own this data
     /// since it is used in the HashTree, so whenever we want to pass a reference to a BE encoded
@@ -63,7 +63,7 @@ impl AsRef<[u8]> for EventKey {
 }
 
 impl Bucket {
-    /// Create a new common with the given global offset.
+    /// Create a new bucket with the given global offset.
     #[inline]
     pub fn new(offset: u64) -> Self {
         Bucket {
@@ -76,7 +76,7 @@ impl Bucket {
         }
     }
 
-    /// Try to insert an event into the common.
+    /// Try to insert an event into the bucket.
     pub fn insert(&mut self, contract: &Principal, event: Event) -> u64 {
         let local_index = self.events.len() as u32;
         let hash = event.hash();
