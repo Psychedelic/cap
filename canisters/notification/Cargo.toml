@@ -1,0 +1,13 @@
+[package]
+name = "notifications"
+version = "0.1.0"
+authors = ["b0xtch <mahmoud@fleek.co>"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+ic-cdk = "0.3"
+ic-cdk-macros = "0.3"
+serde = "1.0.130"
