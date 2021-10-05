@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "dfx": "0.8.1",
+  "canisters": {
+    "ic-history-router": {
+      "build": "node build.js",
+      "candid": "candid/router.did",
+      "wasm": "target/wasm32-unknown-unknown/release/ic_history_router-rel-opt.wasm",
+      "type": "custom"
+    }
+  },
+  "networks": {
+    "local": {
+      "bind": "127.0.0.1:8000",
+      "type": "ephemeral"
+    }
+  }
+}
