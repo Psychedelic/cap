@@ -22,12 +22,12 @@ impl From<Principal> for PrincipalBytes {
 impl AsHashTree for PrincipalBytes {
     #[inline]
     fn root_hash(&self) -> Hash {
-        leaf_hash(&self.0.as_ref())
+        leaf_hash(self.0.as_ref())
     }
 
     #[inline]
     fn as_hash_tree(&self) -> HashTree<'_> {
-        Leaf(&self.0.as_ref())
+        Leaf(self.0.as_ref())
     }
 }
 

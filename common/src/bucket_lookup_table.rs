@@ -39,7 +39,7 @@ impl BucketLookupTable {
     #[inline(always)]
     pub fn insert(&mut self, starting_offset: TransactionId, canister: Principal) {
         if !self.data.is_empty() {
-            let ending_offset = *&self.data[self.data.len() - 1].0;
+            let ending_offset = self.data[self.data.len() - 1].0;
             assert!(starting_offset > ending_offset, "Invalid starting offset.");
         }
 

@@ -55,7 +55,7 @@ impl Index {
 
             let key = IndexKey::new(principal, next_page);
             self.data.insert(key, page);
-            self.pager.insert(principal.clone(), next_page);
+            self.pager.insert(*principal, next_page);
         }
     }
 
@@ -105,13 +105,10 @@ impl IndexKey {
         let page_slice = page.to_be_bytes();
 
         buffer[0] = principal_slice.len() as u8;
-        for i in 0..principal_slice.len() {
-            buffer[i + 1] = principal_slice[i];
-        }
 
-        for i in 0..4 {
-            buffer[i + 30] = page_slice[i];
-        }
+        buffer[1..(principal_slice.len() + 1)].clone_from_slice(principal_slice);
+
+        buffer[30..(4 + 30)].clone_from_slice(&page_slice[..4]);
 
         IndexKey(buffer)
     }
