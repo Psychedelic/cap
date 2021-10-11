@@ -3,10 +3,10 @@
 //! For more information on the purpose of a root bucket, see the documentation on
 //! [`RootBucket`].
 
-use ic_kit::{Principal, RejectionCode};
-use ic_kit::ic::call;
-use ic_history_common::{GetBucketResponse, WithWitnessArg};
 use ic_history_common::transaction::IndefiniteEvent;
+use ic_history_common::{GetBucketResponse, WithWitnessArg};
+use ic_kit::ic::call;
+use ic_kit::{Principal, RejectionCode};
 
 /// A root bucket.
 ///

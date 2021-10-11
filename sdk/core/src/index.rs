@@ -3,12 +3,15 @@
 //! For more information on the purpose of a index canister, see the documentation on
 //!['Index`].
 
-use ic_kit::ic::call;
-use ic_kit::{Principal, RejectionCode};
 use crate::root::RootBucket;
 use crate::router::Router;
+use ic_history_common::{
+    GetIndexCanistersResponse, GetTokenContractRootBucketArg, GetTokenContractRootBucketResponse,
+    GetUserRootBucketsArg, GetUserRootBucketsResponse, WithWitnessArg,
+};
+use ic_kit::ic::call;
+use ic_kit::{Principal, RejectionCode};
 use thiserror::Error;
-use ic_history_common::{GetIndexCanistersResponse, GetTokenContractRootBucketArg, GetTokenContractRootBucketResponse, GetUserRootBucketsArg, GetUserRootBucketsResponse, WithWitnessArg};
 
 /// An ICHS index canister.
 ///

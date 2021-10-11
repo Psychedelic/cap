@@ -1,8 +1,11 @@
-use ic_kit::{Principal, RejectionCode};
 use ic_kit::ic::call;
+use ic_kit::{Principal, RejectionCode};
 
 use crate::root::RootBucket;
-use ic_history_common::{GetIndexCanistersResponse, GetTransactionResponse, GetTransactionsArg, GetUserTransactionsArg, WithIdArg, WithWitnessArg};
+use ic_history_common::{
+    GetIndexCanistersResponse, GetTransactionResponse, GetTransactionsArg, GetUserTransactionsArg,
+    WithIdArg, WithWitnessArg,
+};
 
 /// A contract-specific bucket canister.
 ///
@@ -84,4 +87,3 @@ impl From<RootBucket> for Bucket {
         Bucket(root.0)
     }
 }
-
