@@ -39,3 +39,11 @@ which can be used by a token-contract to insert transactions into the Cap networ
 
 As the name suggests, *Root Bucket* itself is also a *Bucket*, a bucket contains the actual
 data of transactions. A *Root Bucket* can scale itself to be using multiple *Bucket*s.
+
+# Table of Interfaces
+
+1. [Router Interface](./router-interface.md)
+2. [Indexer Interface](./indexer-interface.md)
+3. [Bucket Interface](./bucket-interface.md)
+4. [Root Bucket Interface](./root-bucket-interface.md)
+5. [Event Data Type](./event.md)

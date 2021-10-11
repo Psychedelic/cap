@@ -28,6 +28,8 @@ struct Data {
     bucket: Bucket,
     buckets: BucketLookupTable,
     next_canisters: CanisterList,
+    users: BTreeSet<Principal>,
+    cap_id: Principal,
     contract: TokenContractId,
     writers: BTreeSet<TokenContractId>,
 }
@@ -42,10 +44,19 @@ impl Default for Data {
                 table
             },
             next_canisters: CanisterList::default(),
+            users: BTreeSet::new(),
+            cap_id: Principal::management_canister(),
             contract: Principal::management_canister(),
             writers: BTreeSet::new(),
         }
     }
+}
+
+#[init]
+fn init(contract: Principal) {
+    let data = ic::get_mut::<Data>();
+    data.cap_id = ic::caller();
+    data.contract = contract;
 }
 
 #[query]
@@ -205,6 +216,20 @@ fn insert(event: IndefiniteEvent) -> TransactionId {
     }
 
     let event = event.to_event(ic::time() / 1_000_000);
+
+    let mut new_users = Vec::new();
+    for principal in event.extract_principal_ids() {
+        if data.users.insert(*principal) {
+            new_users.push(*principal);
+        }
+    }
+
+    ic_cdk::block_on(write_new_users_to_cap(
+        data.cap_id,
+        data.contract,
+        new_users,
+    ));
+
     let id = data.bucket.insert(&data.contract, event);
 
     ic::set_certified_data(&fork_hash(
@@ -213,6 +238,18 @@ fn insert(event: IndefiniteEvent) -> TransactionId {
     ));
 
     id
+}
+
+async fn write_new_users_to_cap(cap_id: Principal, contract_id: Principal, users: Vec<Principal>) {
+    for _ in 0..10 {
+        let args = (contract_id, &users);
+        if ic::call::<(Principal, &Vec<Principal>), (), &str>(cap_id, "insert_new_users", args)
+            .await
+            .is_ok()
+        {
+            break;
+        }
+    }
 }
 
 #[query(name = "__get_candid_interface_tmp_hack")]

@@ -25,5 +25,6 @@ service : {
   get_user_root_buckets : (GetUserRootBucketsArg) -> (
       GetUserRootBucketsResponse,
     ) query;
+  insert_new_users : (principal, vec principal) -> ();
   install_bucket_code : (principal) -> ();
 }
