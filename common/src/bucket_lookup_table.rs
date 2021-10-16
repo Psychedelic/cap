@@ -1,8 +1,7 @@
 use crate::did::TransactionId;
 use ic_certified_map::{AsHashTree, Hash, HashTree, RbTree};
 use ic_kit::Principal;
-use serde::ser::SerializeSeq;
-use serde::{Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use sha2::{Digest, Sha256};
 
 /// A data structure to store a linear list of buckets, each bucket has a starting offset which
@@ -102,11 +101,31 @@ impl Serialize for BucketLookupTable {
     where
         S: Serializer,
     {
-        let mut s = serializer.serialize_seq(Some(self.data.len()))?;
-        for i in &self.data {
-            s.serialize_element(i)?;
+        self.data.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for BucketLookupTable {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        type T = Vec<(TransactionId, Principal)>;
+        let data = T::deserialize(deserializer)?;
+        let mut certified_map = RbTree::new();
+
+        for (id, principal) in &data {
+            let mut h = Sha256::new();
+            h.update(principal.as_slice());
+            let hash = h.finalize().into();
+
+            certified_map.insert(TransactionIdKey::from(*id), hash);
         }
-        s.end()
+
+        Ok(Self {
+            data,
+            certified_map,
+        })
     }
 }
 
@@ -214,5 +233,36 @@ mod tests {
         assert_eq!(table.gen_witness(749).reconstruct(), hash_750);
         assert_eq!(table.gen_witness(750).reconstruct(), hash_750);
         assert_eq!(table.gen_witness(751).reconstruct(), hash_750);
+    }
+
+    #[test]
+    fn serde() {
+        let mut table = BucketLookupTable::default();
+        table.insert(0, mock_principals::bob());
+        table.insert(500, mock_principals::alice());
+        table.insert(750, mock_principals::john());
+
+        let expected_hashtree = table.gen_witness(730);
+
+        let encoded = serde_cbor::to_vec(&table).expect("Failed to serialize.");
+        let table =
+            serde_cbor::from_slice::<BucketLookupTable>(&encoded).expect("Failed to deserialize.");
+
+        assert_eq!(table.get_bucket_for(0), &mock_principals::bob());
+        assert_eq!(table.get_bucket_for(50), &mock_principals::bob());
+        assert_eq!(table.get_bucket_for(150), &mock_principals::bob());
+        assert_eq!(table.get_bucket_for(499), &mock_principals::bob());
+        assert_eq!(table.get_bucket_for(500), &mock_principals::alice());
+        assert_eq!(table.get_bucket_for(600), &mock_principals::alice());
+        assert_eq!(table.get_bucket_for(749), &mock_principals::alice());
+        assert_eq!(table.get_bucket_for(750), &mock_principals::john());
+        assert_eq!(table.get_bucket_for(751), &mock_principals::john());
+        assert_eq!(table.get_bucket_for(10000), &mock_principals::john());
+
+        let actual_hashtree = table.gen_witness(730);
+        assert_eq!(
+            format!("{:?}", actual_hashtree),
+            format!("{:?}", expected_hashtree)
+        );
     }
 }
