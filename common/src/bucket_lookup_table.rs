@@ -110,4 +110,109 @@ impl Serialize for BucketLookupTable {
     }
 }
 
-// TODO(qti3e) Test
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ic_kit::mock_principals;
+
+    #[test]
+    fn lookup() {
+        let mut table = BucketLookupTable::default();
+        table.insert(0, mock_principals::bob());
+        table.insert(500, mock_principals::alice());
+        table.insert(750, mock_principals::john());
+
+        assert_eq!(table.get_bucket_for(0), &mock_principals::bob());
+        assert_eq!(table.get_bucket_for(50), &mock_principals::bob());
+        assert_eq!(table.get_bucket_for(150), &mock_principals::bob());
+        assert_eq!(table.get_bucket_for(499), &mock_principals::bob());
+        assert_eq!(table.get_bucket_for(500), &mock_principals::alice());
+        assert_eq!(table.get_bucket_for(600), &mock_principals::alice());
+        assert_eq!(table.get_bucket_for(749), &mock_principals::alice());
+        assert_eq!(table.get_bucket_for(750), &mock_principals::john());
+        assert_eq!(table.get_bucket_for(751), &mock_principals::john());
+        assert_eq!(table.get_bucket_for(10000), &mock_principals::john());
+    }
+
+    #[test]
+    #[should_panic]
+    fn lookup_before() {
+        let mut table = BucketLookupTable::default();
+        table.insert(100, mock_principals::bob());
+        table.insert(500, mock_principals::alice());
+        table.insert(750, mock_principals::john());
+
+        table.get_bucket_for(10);
+    }
+
+    #[test]
+    #[should_panic]
+    fn lookup_empty() {
+        let table = BucketLookupTable::default();
+        table.get_bucket_for(0);
+    }
+
+    #[test]
+    #[should_panic]
+    fn invalid_start_position() {
+        let mut table = BucketLookupTable::default();
+        table.insert(100, mock_principals::bob());
+        table.insert(50, mock_principals::alice());
+    }
+
+    #[test]
+    fn pop() {
+        let mut table = BucketLookupTable::default();
+        table.insert(0, mock_principals::bob());
+        table.insert(500, mock_principals::alice());
+        table.insert(750, mock_principals::john());
+
+        assert_eq!(table.pop(), Some((750, mock_principals::john())));
+
+        let id = TransactionIdKey::from(750);
+        assert_eq!(table.certified_map.get(id.as_ref()), None);
+
+        table.insert(600, mock_principals::xtc());
+        assert_eq!(table.get_bucket_for(599), &mock_principals::alice());
+        assert_eq!(table.get_bucket_for(600), &mock_principals::xtc());
+    }
+
+    #[test]
+    fn witness() {
+        let mut table = BucketLookupTable::default();
+
+        table.insert(0, mock_principals::bob());
+        let hash_0 = table.root_hash();
+        assert_eq!(table.gen_witness(0).reconstruct(), hash_0);
+        assert_eq!(table.gen_witness(10).reconstruct(), hash_0);
+
+        table.insert(500, mock_principals::alice());
+        let hash_500 = table.root_hash();
+        assert_ne!(hash_0, hash_500, "Hash of the table should change.");
+
+        assert_eq!(table.gen_witness(0).reconstruct(), hash_500);
+        assert_eq!(table.gen_witness(10).reconstruct(), hash_500);
+        assert_eq!(table.gen_witness(499).reconstruct(), hash_500);
+        assert_eq!(table.gen_witness(500).reconstruct(), hash_500);
+        assert_eq!(table.gen_witness(501).reconstruct(), hash_500);
+
+        // The same table should have the same hash.
+        table.pop();
+        assert_eq!(hash_0, table.root_hash());
+        table.insert(500, mock_principals::alice());
+
+        table.insert(750, mock_principals::john());
+        let hash_750 = table.root_hash();
+        assert_ne!(hash_0, hash_750, "Hash of the table should change.");
+        assert_ne!(hash_500, hash_750, "Hash of the table should change.");
+
+        assert_eq!(table.gen_witness(0).reconstruct(), hash_750);
+        assert_eq!(table.gen_witness(10).reconstruct(), hash_750);
+        assert_eq!(table.gen_witness(499).reconstruct(), hash_750);
+        assert_eq!(table.gen_witness(500).reconstruct(), hash_750);
+        assert_eq!(table.gen_witness(501).reconstruct(), hash_750);
+        assert_eq!(table.gen_witness(749).reconstruct(), hash_750);
+        assert_eq!(table.gen_witness(750).reconstruct(), hash_750);
+        assert_eq!(table.gen_witness(751).reconstruct(), hash_750);
+    }
+}
