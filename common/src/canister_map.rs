@@ -1,8 +1,10 @@
+use std::fmt::Formatter;
 use ic_certified_map::HashTree::Leaf;
 use ic_certified_map::{leaf_hash, AsHashTree, Hash, HashTree, RbTree};
 use ic_kit::Principal;
+use serde::{Serialize, Deserialize, Serializer, Deserializer};
+use serde::de::{EnumAccess, Error, MapAccess, SeqAccess, Visitor};
 use serde::ser::SerializeMap;
-use serde::{Serialize, Serializer};
 
 /// A data structure that maps a canister id to another canister id and
 #[derive(Default)]
@@ -77,5 +79,33 @@ impl Serialize for CanisterMap {
         });
 
         s.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for CanisterMap {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+        deserializer.deserialize_map(CanisterMapVisitor)
+    }
+}
+
+struct CanisterMapVisitor;
+
+impl<'de> Visitor<'de> for CanisterMapVisitor {
+    type Value = CanisterMap;
+
+    fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
+        write!(formatter, "a map of principal id to principal id")
+    }
+
+    fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error> where A: MapAccess<'de> {
+        let mut data = CanisterMap::default();
+        loop {
+            if let Some((key, value)) = map.next_entry::<Principal, Principal>()? {
+                data.insert(key, value);
+            } else {
+                break;
+            }
+        }
+        Ok(data)
     }
 }
