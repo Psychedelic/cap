@@ -7,7 +7,6 @@ use ic_kit::{ic, Principal};
 use serde::Deserialize;
 
 // It's ok.
-use ic_cdk::print;
 use ic_history_common::*;
 use ic_kit::macros::*;
 
@@ -26,9 +25,6 @@ async fn install_bucket_code(canister_id: RootBucketId) {
 
     let data = ic::get_mut::<Data>();
     let contract_id = ic::caller();
-
-    print(contract_id.to_string());
-    print(canister_id.to_string());
 
     if data.root_buckets.get(&contract_id).is_some() {
         panic!(
