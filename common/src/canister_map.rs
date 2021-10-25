@@ -1,10 +1,10 @@
-use std::fmt::Formatter;
 use ic_certified_map::HashTree::Leaf;
 use ic_certified_map::{leaf_hash, AsHashTree, Hash, HashTree, RbTree};
 use ic_kit::Principal;
-use serde::{Serialize, Deserialize, Serializer, Deserializer};
 use serde::de::{EnumAccess, Error, MapAccess, SeqAccess, Visitor};
 use serde::ser::SerializeMap;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::fmt::Formatter;
 
 /// A data structure that maps a canister id to another canister id and
 #[derive(Default)]
@@ -83,7 +83,10 @@ impl Serialize for CanisterMap {
 }
 
 impl<'de> Deserialize<'de> for CanisterMap {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
         deserializer.deserialize_map(CanisterMapVisitor)
     }
 }
@@ -97,7 +100,10 @@ impl<'de> Visitor<'de> for CanisterMapVisitor {
         write!(formatter, "a map of principal id to principal id")
     }
 
-    fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error> where A: MapAccess<'de> {
+    fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+    where
+        A: MapAccess<'de>,
+    {
         let mut data = CanisterMap::default();
         loop {
             if let Some((key, value)) = map.next_entry::<Principal, Principal>()? {

@@ -5,13 +5,20 @@ use sha2::{Digest, Sha256};
 
 /// An array of Canister IDs with incremental hashing, this can be used as a leaf node in a
 /// certified RbTree.
-#[derive(Default, Deserialize, Serialize)]
+#[derive(Deserialize, Serialize)]
 pub struct CanisterList {
     data: Vec<Principal>,
     hash: Hash,
 }
 
 impl CanisterList {
+    pub fn new() -> Self {
+        Self {
+            data: Vec::new(),
+            hash: [0; 32],
+        }
+    }
+
     /// Insert the given principal id to the list, and update the hash.
     #[inline]
     pub fn push(&mut self, id: Principal) {
@@ -55,13 +62,13 @@ mod tests {
     #[test]
     fn push() {
         let mut list = CanisterList::new();
-        assert_eq!(list.root_hash(), [0; 32]);
+        assert_eq!(list.hash, [0; 32]);
 
         list.push(mock_principals::alice());
-        let hash1 = list.root_hash();
+        let hash1 = list.hash;
 
         list.push(mock_principals::bob());
-        let hash2 = list.root_hash();
+        let hash2 = list.hash;
 
         assert_ne!(hash1, hash2);
         assert_eq!(

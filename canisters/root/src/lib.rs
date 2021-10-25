@@ -43,7 +43,7 @@ impl Default for Data {
                 table.insert(0, ic::id());
                 table
             },
-            next_canisters: CanisterList::default(),
+            next_canisters: CanisterList::new(),
             users: BTreeSet::new(),
             cap_id: Principal::management_canister(),
             contract: Principal::management_canister(),

@@ -41,7 +41,7 @@ impl Default for Data {
             root_buckets: CanisterMap::default(),
             user_canisters: UserCanisters::default(),
             index_canisters: {
-                let mut list = CanisterList::default();
+                let mut list = CanisterList::new();
                 list.push(ic::id());
                 list
             },

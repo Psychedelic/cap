@@ -1,13 +1,20 @@
-type Event = record {
-  to : principal;
-  fee : nat64;
-  from : opt principal;
-  memo : nat32;
-  time : nat64;
-  operation : Operation;
-  caller : principal;
-  amount : nat64;
+type DetailValue = variant {
+  I64 : int64;
+  U64 : nat64;
+  Vec : vec DetailValue;
+  Slice : vec nat8;
+  Text : text;
+  Float : float64;
+  Principal : principal;
 };
+type Event = record {
+  status : EventStatus;
+  time : nat64;
+  operation : text;
+  details : vec record { text; DetailValue };
+  caller : principal;
+};
+type EventStatus = variant { Failed; Running; Completed };
 type GetBucketResponse = record { witness : opt Witness; canister : principal };
 type GetNextCanistersResponse = record {
   witness : opt Witness;
@@ -29,15 +36,11 @@ type GetUserTransactionsArg = record {
   witness : bool;
 };
 type IndefiniteEvent = record {
-  to : principal;
-  fee : nat64;
-  from : opt principal;
-  memo : nat32;
-  operation : Operation;
+  status : EventStatus;
+  operation : text;
+  details : vec record { text; DetailValue };
   caller : principal;
-  amount : nat64;
 };
-type Operation = variant { Approve; Burn; Mint; Transfer };
 type WithIdArg = record { id : nat64; witness : bool };
 type WithWitnessArg = record { witness : bool };
 type Witness = record { certificate : vec nat8; tree : vec nat8 };
