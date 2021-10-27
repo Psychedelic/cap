@@ -16,6 +16,7 @@ use thiserror::Error;
 /// An ICHS index canister.
 ///
 ///
+#[derive(Clone)]
 pub struct Index(Principal);
 
 impl Index {

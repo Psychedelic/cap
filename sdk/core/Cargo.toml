@@ -1,0 +1,12 @@
+[package]
+name = "cap-core"
+version = "0.0.1"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ic-history-common = { path = "../../common" }
+ic-kit = "*"
+thiserror = "1"
+serde = { version = "1", features = ["derive"] }

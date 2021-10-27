@@ -328,6 +328,8 @@ name = "cap-sdk"
 version = "0.1.0"
 dependencies = [
  "cap-core",
+ "futures",
+ "ic-kit",
 ]
 
 [[package]]

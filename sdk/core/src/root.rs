@@ -4,9 +4,10 @@
 //! [`RootBucket`].
 
 use ic_history_common::transaction::IndefiniteEvent;
-use ic_history_common::{GetBucketResponse, WithWitnessArg};
+use ic_history_common::{GetBucketResponse, WithIdArg, WithWitnessArg};
 use ic_kit::ic::call;
 use ic_kit::{Principal, RejectionCode};
+use crate::Bucket;
 
 /// A root bucket.
 ///
@@ -21,15 +22,15 @@ pub struct RootBucket(pub(crate) Principal);
 
 impl RootBucket {
     /// Returns a bucket that be used to query for the given transaction ID.
-    pub async fn get_bucket_for(&self) -> Result<Principal, (RejectionCode, String)> {
+    pub async fn get_bucket_for(&self, id: u64) -> Result<Bucket, (RejectionCode, String)> {
         let result: (GetBucketResponse, ) = call(
             self.0,
             "get_bucket_for",
-            (WithWitnessArg { witness: false }, ),
+            (WithIdArg { id, witness: false }, ),
         )
             .await?;
 
-        Ok(result.0.canister)
+        Ok(Bucket(result.0.canister))
     }
 
     /// Inserts the given transaction and returns it's issued transaction ID.

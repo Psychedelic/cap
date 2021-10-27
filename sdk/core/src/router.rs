@@ -15,5 +15,3 @@ use ic_kit::Principal;
 ///
 /// Use [`Router`]'s [`Into<Index>`] implementation to use a [`Router`] as an [`Index`].
 pub struct Router(pub(crate) Principal);
-
-// TODO
