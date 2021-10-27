@@ -254,19 +254,16 @@ impl Serialize for Bucket {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::transaction::Operation;
+    use crate::transaction::EventStatus;
     use ic_kit::mock_principals;
 
-    fn e(memo: u32, caller: Principal) -> Event {
+    fn e(time: u64, caller: Principal) -> Event {
         Event {
-            time: 0,
+            time,
             caller,
-            amount: 0,
-            fee: 0,
-            memo,
-            from: None,
-            to: caller,
-            operation: Operation::Transfer,
+            status: EventStatus::Completed,
+            operation: "transfer".into(),
+            details: vec![],
         }
     }
 
@@ -293,7 +290,7 @@ mod tests {
 
         let event = bucket.get_transaction(1).unwrap();
         let witness = bucket.witness_transaction(1);
-        assert_eq!(event.memo, 1);
+        assert_eq!(event.time, 1);
         assert_eq!(witness.reconstruct(), bucket.root_hash());
     }
 

@@ -1,18 +1,24 @@
 use ic_certified_map::{AsHashTree, Hash, HashTree};
 use ic_kit::Principal;
-use serde::ser::SerializeSeq;
-use serde::{Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 /// An array of Canister IDs with incremental hashing, this can be used as a leaf node in a
 /// certified RbTree.
-#[derive(Default)]
+#[derive(Deserialize, Serialize)]
 pub struct CanisterList {
     data: Vec<Principal>,
     hash: Hash,
 }
 
 impl CanisterList {
+    pub fn new() -> Self {
+        Self {
+            data: Vec::new(),
+            hash: [0; 32],
+        }
+    }
+
     /// Insert the given principal id to the list, and update the hash.
     #[inline]
     pub fn push(&mut self, id: Principal) {
@@ -48,17 +54,26 @@ impl AsHashTree for CanisterList {
     }
 }
 
-impl Serialize for CanisterList {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut s = serializer.serialize_seq(Some(self.data.len()))?;
-        for principal in &self.data {
-            s.serialize_element(principal)?;
-        }
-        s.end()
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ic_kit::mock_principals;
+
+    #[test]
+    fn push() {
+        let mut list = CanisterList::new();
+        assert_eq!(list.hash, [0; 32]);
+
+        list.push(mock_principals::alice());
+        let hash1 = list.hash;
+
+        list.push(mock_principals::bob());
+        let hash2 = list.hash;
+
+        assert_ne!(hash1, hash2);
+        assert_eq!(
+            list.to_vec(),
+            vec![mock_principals::alice(), mock_principals::bob()]
+        );
     }
 }
-
-// TODO(qti3e) Test
