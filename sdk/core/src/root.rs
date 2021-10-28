@@ -3,11 +3,11 @@
 //! For more information on the purpose of a root bucket, see the documentation on
 //! [`RootBucket`].
 
+use crate::Bucket;
 use ic_history_common::transaction::IndefiniteEvent;
 use ic_history_common::{GetBucketResponse, WithIdArg, WithWitnessArg};
 use ic_kit::ic::call;
 use ic_kit::{Principal, RejectionCode};
-use crate::Bucket;
 
 /// A root bucket.
 ///
@@ -23,19 +23,19 @@ pub struct RootBucket(pub(crate) Principal);
 impl RootBucket {
     /// Returns a bucket that be used to query for the given transaction ID.
     pub async fn get_bucket_for(&self, id: u64) -> Result<Bucket, (RejectionCode, String)> {
-        let result: (GetBucketResponse, ) = call(
+        let result: (GetBucketResponse,) = call(
             self.0,
             "get_bucket_for",
-            (WithIdArg { id, witness: false }, ),
+            (WithIdArg { id, witness: false },),
         )
-            .await?;
+        .await?;
 
         Ok(Bucket(result.0.canister))
     }
 
     /// Inserts the given transaction and returns it's issued transaction ID.
     pub async fn insert(&self, event: IndefiniteEvent) -> Result<u64, (RejectionCode, String)> {
-        let result: (u64, ) = call(self.0, "insert", (event, )).await?;
+        let result: (u64,) = call(self.0, "insert", (event,)).await?;
 
         Ok(result.0)
     }
@@ -44,7 +44,7 @@ impl RootBucket {
     ///
     /// The time can be used to check if this bucket is on the same subnet as the caller.
     pub async fn time(&self) -> Result<u64, (RejectionCode, String)> {
-        let result: (u64, ) = call(self.0, "time", ()).await?;
+        let result: (u64,) = call(self.0, "time", ()).await?;
 
         Ok(result.0)
     }

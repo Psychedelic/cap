@@ -31,16 +31,16 @@ impl Index {
         contract: Principal,
         witness: bool,
     ) -> Result<RootBucket, GetContractRootError> {
-        let result: (GetTokenContractRootBucketResponse, ) = call(
+        let result: (GetTokenContractRootBucketResponse,) = call(
             self.0,
             "get_token_contract_root_bucket",
             (GetTokenContractRootBucketArg {
                 canister: contract,
                 witness,
-            }, ),
+            },),
         )
-            .await
-            .map_err(|err| GetContractRootError::Rejected(err.0, err.1))?;
+        .await
+        .map_err(|err| GetContractRootError::Rejected(err.0, err.1))?;
 
         if let Some(canister) = result.0.canister {
             Ok(RootBucket(canister))
@@ -55,12 +55,12 @@ impl Index {
         user: Principal,
         witness: bool,
     ) -> Result<Vec<RootBucket>, (RejectionCode, String)> {
-        let result: (GetUserRootBucketsResponse, ) = call(
+        let result: (GetUserRootBucketsResponse,) = call(
             self.0,
             "get_user_root_buckets",
-            (GetUserRootBucketsArg { user, witness }, ),
+            (GetUserRootBucketsArg { user, witness },),
         )
-            .await?;
+        .await?;
 
         Ok(result
             .0
@@ -75,12 +75,12 @@ impl Index {
         &self,
         witness: bool,
     ) -> Result<Vec<Router>, (RejectionCode, String)> {
-        let result: (GetIndexCanistersResponse, ) = call(
+        let result: (GetIndexCanistersResponse,) = call(
             self.0,
             "get_router_canisters",
-            (WithWitnessArg { witness }, ),
+            (WithWitnessArg { witness },),
         )
-            .await?;
+        .await?;
 
         Ok(result
             .0

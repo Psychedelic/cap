@@ -1,0 +1,14 @@
+[package]
+name = "cap-standards"
+version = "0.0.1"
+edition = "2021"
+
+# license = "IDK"
+description = "A collection of transaction standards that can be used with Cap."
+homepage = "https://github.com/Psychedelic/cap"
+repository = "https://github.com/Psychedelic/cap"
+readme = "https://github.com/Psychedelic/cap/README.md"
+documentation = "https://crates.io/cap_standards"
+
+
+[dependencies]

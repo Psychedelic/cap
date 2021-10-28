@@ -1,9 +1,15 @@
 [package]
-name = "cap-core"
+name = "cap-sdk-core"
 version = "0.0.1"
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+# license = "IDK"
+description = "The core for Cap's SDK. This crate shouldn't be used for implementing support for cap, see cap-sdk instead."
+homepage = "https://github.com/Psychedelic/cap"
+repository = "https://github.com/Psychedelic/cap"
+readme = "https://github.com/Psychedelic/cap/README.md"
+documentation = "https://crates.io/cap_standards"
+
 
 [dependencies]
 ic-history-common = { path = "../../common" }

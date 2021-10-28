@@ -330,7 +330,12 @@ dependencies = [
  "cap-core",
  "futures",
  "ic-kit",
+ "thiserror",
 ]
+
+[[package]]
+name = "cap-standards"
+version = "0.0.1"
 
 [[package]]
 name = "cc"

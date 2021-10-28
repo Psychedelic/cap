@@ -3,8 +3,8 @@ use ic_kit::{Principal, RejectionCode};
 
 use crate::root::RootBucket;
 use ic_history_common::{
-    GetIndexCanistersResponse, GetTransactionResponse, GetTransactionsArg, GetUserTransactionsArg,
-    WithIdArg, WithWitnessArg,
+    GetIndexCanistersResponse, GetTransactionResponse, GetTransactionsArg, GetTransactionsResponse,
+    GetUserTransactionsArg, WithIdArg, WithWitnessArg,
 };
 
 /// A contract-specific bucket canister.
@@ -21,8 +21,8 @@ impl Bucket {
         &self,
         witness: bool,
     ) -> Result<Vec<Bucket>, (RejectionCode, String)> {
-        let result: (GetIndexCanistersResponse, ) =
-            call(self.0, "get_next_canisters", (WithWitnessArg { witness }, )).await?;
+        let result: (GetIndexCanistersResponse,) =
+            call(self.0, "get_next_canisters", (WithWitnessArg { witness },)).await?;
 
         Ok(result
             .0
@@ -38,8 +38,8 @@ impl Bucket {
         id: u64,
         witness: bool,
     ) -> Result<GetTransactionResponse, (RejectionCode, String)> {
-        let result: (GetTransactionResponse, ) =
-            call(self.0, "get_transaction", (WithIdArg { id, witness }, )).await?;
+        let result: (GetTransactionResponse,) =
+            call(self.0, "get_transaction", (WithIdArg { id, witness },)).await?;
 
         Ok(result.0)
     }
@@ -49,13 +49,13 @@ impl Bucket {
         &self,
         page: Option<u32>,
         witness: bool,
-    ) -> Result<GetTransactionResponse, (RejectionCode, String)> {
-        let result: (GetTransactionResponse, ) = call(
+    ) -> Result<GetTransactionsResponse, (RejectionCode, String)> {
+        let result: (GetTransactionsResponse,) = call(
             self.0,
             "get_transactions",
-            (GetTransactionsArg { page, witness }, ),
+            (GetTransactionsArg { page, witness },),
         )
-            .await?;
+        .await?;
 
         Ok(result.0)
     }
@@ -67,16 +67,16 @@ impl Bucket {
         page: Option<u32>,
         witness: bool,
     ) -> Result<GetTransactionResponse, (RejectionCode, String)> {
-        let result: (GetTransactionResponse, ) = call(
+        let result: (GetTransactionResponse,) = call(
             self.0,
             "get_transactions",
             (GetUserTransactionsArg {
                 user,
                 page,
                 witness,
-            }, ),
+            },),
         )
-            .await?;
+        .await?;
 
         Ok(result.0)
     }

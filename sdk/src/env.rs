@@ -1,6 +1,6 @@
 use cap_core::{Bucket, GetContractRootError, Index, RootBucket, Router};
 use ic_kit::ic::{get, get_maybe, store};
-use ic_kit::Principal;
+use ic_kit::{Context, Principal};
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
 
@@ -28,7 +28,7 @@ impl CapEnv {
         store(self.clone());
     }
 
-    pub(crate) async fn get<'a>() -> &'a Self {
+    pub(crate) fn get<'a>() -> &'a Self {
         if let Some(data) = get_maybe::<CapEnv>() {
             data
         } else {
@@ -53,4 +53,21 @@ impl CapEnv {
     //         get_maybe::<CapEnv>().unwrap()
     //     }
     // }
+
+    /// Sets the [`CapEnv`] using the provided value.
+    ///
+    /// Used to restore the generated canister's ID after an upgrade.
+    pub fn load_from_archive(env: CapEnv) {
+        env.store();
+    }
+
+    /// Gets the [`CapEnv`].
+    ///
+    /// Should be used during the upgrade process of a contract canister.
+    /// Call it during `pre_upgrade` to write it somewhere in stable storage.
+    ///
+    /// Afterwards, write it back with [`CapEnv::load_from_archive`]
+    pub fn to_archive() -> Self {
+        CapEnv::get().clone()
+    }
 }
