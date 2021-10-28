@@ -4,9 +4,6 @@ use ic_kit::Principal;
 use std::str::FromStr;
 
 /// Contains data about the cap environment.
-///
-/// Used by the SDK to perform operations transparently. It's stored
-/// in the canister using [`store`].
 #[derive(Clone)]
 pub struct CapEnv {
     pub(crate) root: RootBucket,
