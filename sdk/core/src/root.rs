@@ -5,7 +5,7 @@
 
 use crate::Bucket;
 use ic_history_common::transaction::IndefiniteEvent;
-use ic_history_common::{GetBucketResponse, WithIdArg, WithWitnessArg};
+use ic_history_common::{GetBucketResponse, WithIdArg};
 use ic_kit::ic::call;
 use ic_kit::{Principal, RejectionCode};
 

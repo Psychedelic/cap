@@ -1,5 +1,5 @@
 use crate::did::EventHash;
-use ic_kit::candid::{CandidType, Deserialize, Nat};
+use ic_kit::candid::{CandidType, Deserialize};
 use ic_kit::Principal;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
@@ -149,6 +149,36 @@ impl IndefiniteEvent {
             operation: self.operation,
             details: self.details,
         }
+    }
+}
+
+impl From<u64> for DetailValue {
+    fn from(num: u64) -> Self {
+        Self::U64(num)
+    }
+}
+
+impl From<i64> for DetailValue {
+    fn from(num: i64) -> Self {
+        Self::I64(num)
+    }
+}
+
+impl From<f64> for DetailValue {
+    fn from(float: f64) -> Self {
+        Self::Float(float)
+    }
+}
+
+impl From<String> for DetailValue {
+    fn from(string: String) -> Self {
+        Self::Text(string)
+    }
+}
+
+impl From<Principal> for DetailValue {
+    fn from(principal: Principal) -> Self {
+        Self::Principal(principal)
     }
 }
 

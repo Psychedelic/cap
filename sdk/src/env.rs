@@ -1,12 +1,12 @@
-use cap_core::{Bucket, GetContractRootError, Index, RootBucket, Router};
-use ic_kit::ic::{get, get_maybe, store};
-use ic_kit::{Context, Principal};
-use std::ops::{Deref, DerefMut};
+use cap_sdk_core::{GetContractRootError, Index, RootBucket};
+use ic_kit::ic::{get_maybe, store};
+use ic_kit::Principal;
 use std::str::FromStr;
 
 /// Contains data about the cap environment.
 ///
-/// Used by the SDK to perform operations transparently.
+/// Used by the SDK to perform operations transparently. It's stored
+/// in the canister using [`store`].
 #[derive(Clone)]
 pub struct CapEnv {
     pub(crate) root: RootBucket,
@@ -14,6 +14,7 @@ pub struct CapEnv {
 }
 
 impl CapEnv {
+    /// Creates a new [`CapEnv`] with the index canister's [`Principal`] set to `index`.
     pub(crate) async fn create(index: Principal) -> Result<CapEnv, GetContractRootError> {
         let index = Index::new(index);
 
@@ -24,6 +25,7 @@ impl CapEnv {
         Ok(CapEnv { root, index })
     }
 
+    /// Stores the [`CapEnv`] in the canister.
     pub(crate) fn store(&self) {
         store(self.clone());
     }
@@ -34,9 +36,7 @@ impl CapEnv {
         } else {
             store(Self::create(Principal::from_str("TODO").unwrap()));
 
-            // Unwrap here because we just stored the freshly created env
-            // and if somehow `get_maybe` failed, there's a bigger issue
-            // occurring.
+            // Unwrap here because we just stored the freshly created env.
             get_maybe::<CapEnv>().unwrap()
         }
     }
