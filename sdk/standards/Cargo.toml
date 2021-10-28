@@ -12,4 +12,7 @@ documentation = "https://crates.io/cap_standards"
 
 
 [dependencies]
-ic-history-common = { path = "../../common" }
+cap-sdk = { path = "../" }
+candid = "*"
+serde = { version = "*", features = ["derive"] }
+bincode = "*"

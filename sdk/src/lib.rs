@@ -39,7 +39,7 @@ pub use details::*;
 mod event;
 pub use event::*;
 
-use cap_sdk_core::transaction::Event;
+pub use cap_sdk_core::transaction::{DetailValue, Event, IndefiniteEvent};
 
 type Transaction = Event;
 type TransactionId = u64;

@@ -9,6 +9,15 @@ pub trait IntoDetails {
     fn into_details(self) -> Vec<(String, DetailValue)>;
 }
 
+/// Allows trying to convert an event's details into
+/// a struct.
+///
+/// Use the `cap-standards` crate for premade standard-compliant
+/// details structs with this trait already implemented for them.
+pub trait TryFromDetails: Sized {
+    fn try_from_details(details: &Vec<(String, DetailValue)>) -> Result<Self, ()>;
+}
+
 /// Allows creating details for an event in an ergonomic fashion.
 #[derive(Debug, Default)]
 pub struct DetailsBuilder {
