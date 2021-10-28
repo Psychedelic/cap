@@ -1,5 +1,5 @@
 use crate::did::EventHash;
-use ic_kit::candid::{CandidType, Deserialize, Nat};
+use ic_kit::candid::{CandidType, Deserialize};
 use ic_kit::Principal;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
@@ -47,7 +47,7 @@ pub enum DetailValue {
     Principal(Principal),
     #[serde(with = "serde_bytes")]
     Slice(Vec<u8>),
-    Vec(Box<Vec<DetailValue>>),
+    Vec(Vec<DetailValue>),
 }
 
 impl Event {
