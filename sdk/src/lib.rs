@@ -45,8 +45,6 @@ type Transaction = Event;
 type TransactionId = u64;
 
 #[doc(hidden)]
-mod prelude {
+pub mod prelude {
     pub use crate::*;
 }
-
-pub use prelude::*;
