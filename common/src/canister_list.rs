@@ -5,7 +5,7 @@ use sha2::{Digest, Sha256};
 
 /// An array of Canister IDs with incremental hashing, this can be used as a leaf node in a
 /// certified RbTree.
-#[derive(Deserialize, Serialize)]
+#[derive(Default, Deserialize, Serialize)]
 pub struct CanisterList {
     data: Vec<Principal>,
     hash: Hash,
@@ -13,10 +13,7 @@ pub struct CanisterList {
 
 impl CanisterList {
     pub fn new() -> Self {
-        Self {
-            data: Vec::new(),
-            hash: [0; 32],
-        }
+        Self::default()
     }
 
     /// Insert the given principal id to the list, and update the hash.
