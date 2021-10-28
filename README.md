@@ -16,9 +16,7 @@ For integrations visit the [CAP-SDK repository](https://github.com/Psychedelic/c
 - Visit [CAP-SDK repository](https://github.com/Psychedelic/cap/tree/cap-sdk/sdk)
 - Visit [CAP-js repository](https://github.com/Psychedelic/cap-js/) 
 
-!!! Important
-
-    CAP is currently in development 🚧 and will release in the first week of November, thus it is not on mainnet or usable yet. You might see our documentation is light on the SDK/Main repo still. We're delayed in this to focus on testing, but will soon update this page with guides & detailed examples for developers.
+>**IMPORTANT:** CAP is currently in development 🚧 and will release in the first week of November, thus it is not on mainnet or usable yet. You might see our documentation is light on the SDK/Main repo still. We're delayed in this to focus on testing, but will soon update this page with guides & detailed examples for developers.
 
 
 ## Canisters in CAP
