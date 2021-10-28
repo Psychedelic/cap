@@ -105,13 +105,11 @@ impl<'de> Visitor<'de> for CanisterMapVisitor {
         A: MapAccess<'de>,
     {
         let mut data = CanisterMap::default();
-        loop {
-            if let Some((key, value)) = map.next_entry::<Principal, Principal>()? {
-                data.insert(key, value);
-            } else {
-                break;
-            }
+
+        while let Some((key, value)) = map.next_entry::<Principal, Principal>()? {
+            data.insert(key, value);
         }
+
         Ok(data)
     }
 }

@@ -77,6 +77,8 @@ async fn install_bucket_code(canister_id: RootBucketId) {
     .await
     .expect("Install code failed.");
 
+    data.root_buckets.insert(contract_id, canister_id);
+
     data.user_canisters
         .insert(Principal::management_canister(), canister_id);
 }

@@ -47,7 +47,7 @@ pub enum DetailValue {
     Principal(Principal),
     #[serde(with = "serde_bytes")]
     Slice(Vec<u8>),
-    Vec(Box<Vec<DetailValue>>),
+    Vec(Vec<DetailValue>),
 }
 
 impl Event {
