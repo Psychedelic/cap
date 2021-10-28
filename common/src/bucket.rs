@@ -76,6 +76,12 @@ impl Bucket {
         }
     }
 
+    /// Return the total number of items in this bucket.
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.events.len()
+    }
+
     /// Try to insert an event into the bucket.
     pub fn insert(&mut self, contract: &Principal, event: Event) -> u64 {
         let local_index = self.events.len() as u32;
