@@ -1,6 +1,6 @@
 [package]
 name = "cap-sdk"
-version = "0.1.0"
+version = "1.0.0-alpha1"
 edition = "2018"
 
 # license = "IDK"
@@ -11,7 +11,7 @@ readme = "https://github.com/Psychedelic/cap/README.md"
 documentation = "https://crates.io/cap_standards"
 
 [dependencies]
-cap-core = { path = "core" }
+cap-sdk-core = { path = "core" }
 ic-kit = "0.4"
 futures = "0.3"
 thiserror = "1"

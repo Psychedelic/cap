@@ -314,8 +314,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "cap-core"
-version = "0.0.1"
+name = "cap-sdk"
+version = "1.0.0-alpha1"
+dependencies = [
+ "cap-sdk-core",
+ "futures",
+ "ic-kit",
+ "thiserror",
+]
+
+[[package]]
+name = "cap-sdk-core"
+version = "1.0.0-alpha1"
 dependencies = [
  "ic-history-common",
  "ic-kit",
@@ -324,18 +334,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "cap-sdk"
-version = "0.1.0"
-dependencies = [
- "cap-core",
- "futures",
- "ic-kit",
- "thiserror",
-]
-
-[[package]]
 name = "cap-standards"
-version = "0.0.1"
+version = "1.0.0-alpha1"
+dependencies = [
+ "ic-history-common",
+]
 
 [[package]]
 name = "cc"
