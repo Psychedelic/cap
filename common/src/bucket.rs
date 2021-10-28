@@ -260,14 +260,12 @@ impl Serialize for Bucket {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::transaction::EventStatus;
     use ic_kit::mock_principals;
 
     fn e(time: u64, caller: Principal) -> Event {
         Event {
             time,
             caller,
-            status: EventStatus::Completed,
             operation: "transfer".into(),
             details: vec![],
         }

@@ -4,17 +4,17 @@ type DetailValue = variant {
   Vec : vec DetailValue;
   Slice : vec nat8;
   Text : text;
+  True;
+  False;
   Float : float64;
   Principal : principal;
 };
 type Event = record {
-  status : EventStatus;
   time : nat64;
   operation : text;
   details : vec record { text; DetailValue };
   caller : principal;
 };
-type EventStatus = variant { Failed; Running; Completed };
 type GetBucketResponse = record { witness : opt Witness; canister : principal };
 type GetNextCanistersResponse = record {
   witness : opt Witness;
@@ -36,7 +36,6 @@ type GetUserTransactionsArg = record {
   witness : bool;
 };
 type IndefiniteEvent = record {
-  status : EventStatus;
   operation : text;
   details : vec record { text; DetailValue };
   caller : principal;
