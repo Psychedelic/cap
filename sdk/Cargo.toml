@@ -3,9 +3,15 @@ name = "cap-sdk"
 version = "0.1.0"
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+# license = "IDK"
+description = "An SDK for implementing Cap support within your IC canister."
+homepage = "https://github.com/Psychedelic/cap"
+repository = "https://github.com/Psychedelic/cap"
+readme = "https://github.com/Psychedelic/cap/README.md"
+documentation = "https://crates.io/cap_standards"
 
 [dependencies]
 cap-core = { path = "core" }
 ic-kit = "0.4"
 futures = "0.3"
+thiserror = "1"
