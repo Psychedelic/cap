@@ -257,13 +257,13 @@ fn migrate(events: Vec<Event>) {
     let mut new_users = Vec::new();
 
     for event in events {
-        data.bucket.insert(&data.contract, event);
-
         for principal in event.extract_principal_ids() {
             if data.users.insert(*principal) {
                 new_users.push(*principal);
             }
         }
+
+        data.bucket.insert(&data.contract, event);
     }
 
     ic_cdk::block_on(write_new_users_to_cap(

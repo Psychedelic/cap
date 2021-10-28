@@ -54,6 +54,7 @@ service : {
   get_user_transactions : (GetUserTransactionsArg) -> (
       GetTransactionsResponseBorrowed,
     ) query;
-  insert : (IndefiniteEvent) -> (nat64) query;
+  insert : (IndefiniteEvent) -> (nat64);
+  migrate : (vec Event) -> ();
   time : () -> (nat64) query;
 }
