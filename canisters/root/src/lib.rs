@@ -250,7 +250,7 @@ fn migrate(events: Vec<Event>) {
         panic!("The method can only be invoked by one of the writers.");
     }
 
-    if data.bucket.len() > 0 {
+    if !data.bucket.is_empty() {
         panic!("Migration can only happen once.");
     }
 

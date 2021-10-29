@@ -82,6 +82,12 @@ impl Bucket {
         self.events.len()
     }
 
+    /// Returns `tru` if there are no events in this bucket.
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.events.is_empty()
+    }
+
     /// Try to insert an event into the bucket.
     pub fn insert(&mut self, contract: &Principal, event: Event) -> u64 {
         let local_index = self.events.len() as u32;
