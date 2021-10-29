@@ -28,10 +28,12 @@ struct Data {
     bucket: Bucket,
     buckets: BucketLookupTable,
     next_canisters: CanisterList,
+    /// List of all the users in this token contract.
     users: BTreeSet<Principal>,
     cap_id: Principal,
     contract: TokenContractId,
     writers: BTreeSet<TokenContractId>,
+    allow_migration: bool,
 }
 
 impl Default for Data {
@@ -48,6 +50,7 @@ impl Default for Data {
             cap_id: Principal::management_canister(),
             contract: Principal::management_canister(),
             writers: BTreeSet::new(),
+            allow_migration: true,
         }
     }
 }
@@ -232,6 +235,8 @@ fn insert(event: IndefiniteEvent) -> TransactionId {
 
     let id = data.bucket.insert(&data.contract, event);
 
+    data.allow_migration = false;
+
     ic::set_certified_data(&fork_hash(
         &fork_hash(&data.bucket.root_hash(), &data.buckets.root_hash()),
         &data.next_canisters.root_hash(),
@@ -250,8 +255,8 @@ fn migrate(events: Vec<Event>) {
         panic!("The method can only be invoked by one of the writers.");
     }
 
-    if !data.bucket.is_empty() {
-        panic!("Migration can only happen once.");
+    if !data.allow_migration {
+        panic!("Migration is not allowed after an insert.")
     }
 
     let mut new_users = Vec::new();
