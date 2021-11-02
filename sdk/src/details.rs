@@ -9,6 +9,12 @@ pub trait IntoDetails {
     fn into_details(self) -> Vec<(String, DetailValue)>;
 }
 
+impl IntoDetails for Vec<(String, DetailValue)> {
+    fn into_details(self) -> Vec<(String, DetailValue)> {
+        self
+    }
+}
+
 /// Allows trying to convert an event's details into
 /// a struct.
 ///
