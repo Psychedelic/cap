@@ -56,10 +56,11 @@ impl Default for Data {
 }
 
 #[init]
-fn init(contract: Principal) {
+fn init(contract: Principal, writers: BTreeSet<Principal>) {
     let data = ic::get_mut::<Data>();
     data.cap_id = ic::caller();
     data.contract = contract;
+    data.writers = writers;
 }
 
 #[query]

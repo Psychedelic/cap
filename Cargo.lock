@@ -720,6 +720,7 @@ dependencies = [
  "ic-certified-map",
  "ic-history-common",
  "ic-kit",
+ "lazy_static",
  "serde",
  "serde_bytes",
  "serde_cbor",
