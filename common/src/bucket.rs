@@ -76,6 +76,12 @@ impl Bucket {
         }
     }
 
+    /// Return the total number of transactions.
+    #[inline]
+    pub fn size(&self) -> u64 {
+        self.global_offset + (self.events.len() as u64)
+    }
+
     /// Return the total number of items in this bucket.
     #[inline]
     pub fn len(&self) -> usize {

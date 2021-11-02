@@ -208,6 +208,12 @@ fn time() -> u64 {
     ic::time()
 }
 
+#[query]
+#[candid_method(query)]
+fn size() -> u64 {
+    ic::get::<Data>().bucket.size()
+}
+
 #[update]
 #[candid_method(update)]
 fn insert(event: IndefiniteEvent) -> TransactionId {

@@ -55,5 +55,6 @@ service : {
     ) query;
   insert : (IndefiniteEvent) -> (nat64);
   migrate : (vec Event) -> ();
+  size : () -> (nat64) query;
   time : () -> (nat64) query;
 }
