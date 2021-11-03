@@ -139,6 +139,17 @@ impl Event {
     }
 }
 
+impl Into<IndefiniteEvent> for Event {
+    fn into(self) -> IndefiniteEvent {
+        IndefiniteEvent {
+            caller: self.caller,
+            status: self.status,
+            operation: self.operation,
+            details: self.details
+        }
+    }
+}
+
 impl IndefiniteEvent {
     /// Convert an indefinite event to a definite one by adding the token and time fields.
     #[inline]

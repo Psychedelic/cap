@@ -10,6 +10,10 @@ repository = "https://github.com/Psychedelic/cap"
 readme = "https://github.com/Psychedelic/cap/README.md"
 documentation = "https://crates.io/cap_standards"
 
+[features]
+default-features = []
+alpha-xtc = []
+alpha-dip721 = []
 
 [dependencies]
 cap-sdk = { path = "../" }

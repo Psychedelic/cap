@@ -1,9 +1,10 @@
 use std::{collections::HashMap, convert::TryInto};
 
 use candid::{Nat, Principal};
-use cap_sdk::{DetailValue, IntoDetails, TryFromDetails};
+use cap_sdk::{DetailValue, IndefiniteEvent, IntoEvent, TryFromEvent};
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug)]
 pub struct XTCTransactionDetailsERC20 {
     to: Principal,
     amount: Nat,
@@ -11,19 +12,21 @@ pub struct XTCTransactionDetailsERC20 {
     index: Nat,
 }
 
-impl IntoDetails for XTCTransactionDetailsERC20 {
-    fn into_details(self) -> Vec<(String, DetailValue)> {
+impl IntoEvent for XTCTransactionDetailsERC20 {
+    fn details(&self) -> Vec<(String, DetailValue)> {
         vec![
-            ("to".into(), DetailValue::Principal(self.to)),
-            ("amount".into(), self.amount.into()),
-            ("fee".into(), self.fee.into()),
-            ("index".into(), self.index.into()),
+            ("to".into(), self.to.into()),
+            ("amount".into(), self.amount.clone().into()),
+            ("fee".into(), self.fee.clone().into()),
+            ("index".into(), self.index.clone().into()),
         ]
     }
 }
 
-impl TryFromDetails for XTCTransactionDetailsERC20 {
-    fn try_from_details(details: &Vec<(String, DetailValue)>) -> Result<Self, ()> {
+impl TryFromEvent for XTCTransactionDetailsERC20 {
+    fn try_from_event(event: impl Into<IndefiniteEvent>) -> Result<Self, ()> {
+        let details = event.into().details;
+        
         let map = details.iter().cloned().collect::<HashMap<_, _>>();
 
         Ok(Self {
@@ -41,35 +44,119 @@ pub struct XTCTransactionDetailsLegacy {
     kind: XTCTransactionKindLegacy,
 }
 
-impl IntoDetails for XTCTransactionDetailsLegacy {
-    fn into_details(self) -> Vec<(String, DetailValue)> {
-        vec![
-            ("fee".into(), self.fee.into()),
-            ("cycles".into(), self.cycles.into()),
-            (
-                "kind".into(),
-                DetailValue::Slice(bincode::serialize(&self.kind).unwrap()),
-            ),
-        ]
+impl IntoEvent for XTCTransactionKindLegacy {
+    fn operation(&self) -> &'static str {
+        match *self {
+            Self::Transfer { .. } => "transfer",
+            Self::TransferFrom { .. } => "transfer_from",
+            Self::Approve { .. } => "approve",
+            Self::Burn { .. } => "burn",
+            Self::Mint { .. } => "mint",
+            Self::CanisterCalled { .. } => "canister_called",
+            Self::CanisterCreated { .. } => "canister_created"
+        }
+    }
+
+    fn details(&self) -> Vec<(String, DetailValue)> {
+        match self {
+            Self::Transfer { from, to } => {
+                vec![
+                    ("to".to_owned(), to.clone().into()),
+                    ("from".to_owned(), from.clone().into())
+                ]
+            },
+            Self::TransferFrom { from, to } => {
+                vec![
+                    ("to".to_owned(), to.clone().into()),
+                    ("from".to_owned(), from.clone().into())
+                ]                
+            },
+            Self::Approve { from, to } => {
+                vec![
+                    ("to".to_owned(), to.clone().into()),
+                    ("from".to_owned(), from.clone().into())
+                ]
+            },
+            Self::Burn { from, to } => {
+                vec![
+                    ("to".to_owned(), to.clone().into()),
+                    ("from".to_owned(), from.clone().into())
+                ]
+            },
+            Self::Mint { to } => {
+                vec![
+                    ("to".to_owned(), to.clone().into())
+                ]
+            },
+            Self::CanisterCalled { from, to, method } => {
+                vec![
+                    ("to".to_owned(), to.clone().into()),
+                    ("from".to_owned(), from.clone().into()),
+                    ("method".to_owned(), method.clone().into())
+                ]
+            },
+            Self::CanisterCreated { from, canister } => {
+                vec![
+                    ("canister".to_owned(), canister.clone().into()),
+                    ("from".to_owned(), from.clone().into())
+                ]
+            }
+        }
     }
 }
 
-impl TryFromDetails for XTCTransactionDetailsLegacy {
-    fn try_from_details(details: &Vec<(String, DetailValue)>) -> Result<Self, ()> {
+impl TryFromEvent for XTCTransactionKindLegacy {
+    fn try_from_event(event: impl Into<IndefiniteEvent>) -> Result<Self, ()> {
+        let event = event.into();
+        let details = event.details;
+
         let map = details.iter().cloned().collect::<HashMap<_, _>>();
 
-        let kind = {
-            if let Some(DetailValue::Slice(bytes)) = map.get("kind") {
-                bincode::deserialize(bytes).map_err(|_| ())
-            } else {
-                Err(())
-            }
-        }?;
 
-        Ok(Self {
-            fee: map.get("fee").unwrap().clone().try_into()?,
-            cycles: map.get("cycles").unwrap().clone().try_into()?,
-            kind,
+        Ok(match event.operation.as_str() {
+            "transfer" => {
+                XTCTransactionKindLegacy::Transfer {
+                    to: map.get("to").unwrap().clone().try_into()?,
+                    from: map.get("from").unwrap().clone().try_into()?
+                }
+            },
+            "transfer_from" => {
+                XTCTransactionKindLegacy::TransferFrom {
+                    to: map.get("to").unwrap().clone().try_into()?,
+                    from: map.get("from").unwrap().clone().try_into()?
+                }
+            },
+            "approve" => {
+                XTCTransactionKindLegacy::Approve {
+                    to: map.get("to").unwrap().clone().try_into()?,
+                    from: map.get("from").unwrap().clone().try_into()?
+                }
+            },
+            "burn" => {
+                XTCTransactionKindLegacy::Burn {
+                    to: map.get("to").unwrap().clone().try_into()?,
+                    from: map.get("from").unwrap().clone().try_into()?
+                }
+            },
+            "mint" => {
+                XTCTransactionKindLegacy::Mint {
+                    to: map.get("to").unwrap().clone().try_into()?,
+                }
+            },
+            "canister_called" => {
+                XTCTransactionKindLegacy::CanisterCalled {
+                    method: map.get("method").unwrap().clone().try_into()?,
+                    to: map.get("to").unwrap().clone().try_into()?,
+                    from: map.get("from").unwrap().clone().try_into()?
+                }
+            },
+            "canister_created" => {
+                XTCTransactionKindLegacy::CanisterCreated {
+                    canister: map.get("canister").unwrap().clone().try_into()?,
+                    from: map.get("from").unwrap().clone().try_into()?
+                }
+            }
+            _ => return Err(())
         })
     }
 }
