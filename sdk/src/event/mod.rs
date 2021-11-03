@@ -1,5 +1,5 @@
 mod builder;
-use std::{convert::Infallible, io::Error};
+use std::convert::Infallible;
 
 pub use builder::*;
 mod typed;

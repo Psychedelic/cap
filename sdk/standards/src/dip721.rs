@@ -1,5 +1,8 @@
+use std::collections::HashMap;
+
 use candid::Principal;
-use cap_sdk::{TryFromEvent, IntoEvent};
+use cap_sdk::{DetailValue, IntoEvent, TryFromEvent};
+use thiserror::Error;
 
 #[derive(Debug, Clone, Copy)]
 pub enum DIP721TransactionType {
@@ -98,17 +101,39 @@ impl TryFromEvent for DIP721TransactionType {
     type Error = ();
 
     fn try_from_event(event: impl Into<cap_sdk::IndefiniteEvent>) -> Result<Self, ()> {
-        let event = event.into();
-
-        // let details = event.details;
-
-        // let map = details.iter().cloned().collect::<HashMap<_, _>>();
-
-
-        // Ok(match event.operation.as_str() {
-        //     _ => return Err(())
-        // })
 
         todo!() 
+    }
+}
+
+
+
+#[derive(Debug, Error)]
+pub enum DIP721TransactionDecodeError {
+    #[error("missing key {0}")]
+    MissingKey(String),
+    #[error("couldn't convert item with key {0} to DetailValue")]
+    ConversionError(String),
+    #[error("invalid operation {0}")]
+    InvalidOperation(String )
+}
+
+trait MapFailed<T,E> {
+    fn map_failure(self, key: &'static str) -> Result<T, E>;
+}
+
+impl<T, O> MapFailed<T, DIP721TransactionDecodeError> for Result<T, O> {
+    fn map_failure(self, key: &'static str) -> Result<T, DIP721TransactionDecodeError> {
+        self.map_err(|_| {
+            DIP721TransactionDecodeError::ConversionError(key.to_owned())
+        })
+    }
+}
+
+fn try_get_and_clone(map: &HashMap<String, DetailValue>, key: &'static str) -> Result<DetailValue, DIP721TransactionDecodeError> {
+    if let Some(item) = map.get(key) {
+        Ok(item.clone())
+    } else {
+        Err(DIP721TransactionDecodeError::MissingKey(key.to_owned()))
     }
 }
