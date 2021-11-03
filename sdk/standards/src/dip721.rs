@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, convert::TryInto};
 
 use candid::Principal;
 use cap_sdk::{DetailValue, IntoEvent, TryFromEvent};
@@ -98,11 +98,64 @@ impl IntoEvent for DIP721TransactionType {
 }
 
 impl TryFromEvent for DIP721TransactionType {
-    type Error = ();
+    type Error = DIP721TransactionDecodeError;
 
-    fn try_from_event(event: impl Into<cap_sdk::IndefiniteEvent>) -> Result<Self, ()> {
+    fn try_from_event(event: impl Into<cap_sdk::IndefiniteEvent>) -> Result<Self, DIP721TransactionDecodeError> {
+        let event = event.into();
+        let details = event.details;
 
-        todo!() 
+        let map = details.iter().cloned().collect::<HashMap<_, _>>();
+
+        
+        Ok(match event.operation.as_str() {
+            "transfer_from" => {
+                let caller = {
+                    if let Ok(caller) = try_get_and_clone(&map, "caller") {
+                        Some(caller  .try_into().map_failure("caller")?)
+                    } else {
+                        None
+                    }
+                };
+
+                DIP721TransactionType::TransferFrom(
+                    TransferFrom {
+                        token_id: try_get_and_clone(&map, "token_id")?.try_into().map_failure("token_id")?,
+                        from: try_get_and_clone(&map, "from")?.try_into().map_failure("from")?,
+                        to: try_get_and_clone(&map, "to")?.try_into().map_failure("to")?,
+                        caller
+                    }
+                )
+            },
+            "approve" => {
+                DIP721TransactionType::Approve(
+                    Approve {
+                        token_id: try_get_and_clone(&map, "token_id")?.try_into().map_failure("token_id")?,
+                        from: try_get_and_clone(&map, "from")?.try_into().map_failure("from")?,
+                        to: try_get_and_clone(&map, "to")?.try_into().map_failure("to")?,
+                    }
+                )
+            },
+            "set_approval_for_all" => {
+                DIP721TransactionType::SetApprovalForAll(
+                    SetApprovalForAll {
+                        from: try_get_and_clone(&map, "from")?.try_into().map_failure("from")?,
+                        to: try_get_and_clone(&map, "to")?.try_into().map_failure("to")?,
+                    }
+                )
+            },
+            "mint" => {
+                DIP721TransactionType::Mint(Mint {
+                    token_id: try_get_and_clone(&map, "token_id")?.try_into().map_failure("token_id")?,
+                })
+            },
+            "burn" => {
+                DIP721TransactionType::Burn(Burn {
+                    token_id: try_get_and_clone(&map, "token_id")?.try_into().map_failure("token_id")?,
+                })
+            },
+
+            operation => return Err(DIP721TransactionDecodeError::InvalidOperation(operation.to_owned()))
+        })
     }
 }
 
@@ -137,3 +190,4 @@ fn try_get_and_clone(map: &HashMap<String, DetailValue>, key: &'static str) -> R
         Err(DIP721TransactionDecodeError::MissingKey(key.to_owned()))
     }
 }
+
