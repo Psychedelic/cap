@@ -1,7 +1,9 @@
-use std::{convert::TryFrom, path::PrefixComponent};
+use std::convert::TryFrom;
 
-use cap_sdk_core::transaction::{DetailValue, Event, EventStatus, IndefiniteEvent};
+use cap_sdk_core::transaction::{Event, EventStatus, IndefiniteEvent};
 use ic_kit::Principal;
+
+use super::{IntoEvent, TryFromEvent};
 
 /// A Cap event with typed `details`.
 ///
@@ -116,8 +118,6 @@ where
     pub caller: Principal,
     /// The status of the event, can be either `running`, `completed` or `failed`.
     pub status: EventStatus,
-    /// The operation that took place.
-    pub operation: String,
     /// Details of the transaction.
     pub details: T,
 }
@@ -127,7 +127,7 @@ impl<T: TryFromEvent + IntoEvent> Into<IndefiniteEvent> for TypedIndefiniteEvent
         IndefiniteEvent {
             caller: self.caller,
             status: self.status,
-            operation: self.operation,
+            operation: self.details.operation().to_owned(),
             details: self.details.details(),
         }
     }
@@ -140,85 +140,7 @@ impl<T: TryFromEvent + IntoEvent> TryFrom<IndefiniteEvent> for TypedIndefiniteEv
         Ok(Self {
             caller: value.caller,
             status: value.status.clone(),
-            operation: value.operation.clone(),
             details: T::try_from_event(value)?,
         })
-    }
-}
-
-/// Constructs an [`IndefiniteEvent`].
-#[derive(Default)]
-pub struct IndefiniteEventBuilder {
-    caller: Option<Principal>,
-    status: Option<EventStatus>,
-    operation: Option<String>,
-    details: Vec<(String, DetailValue)>,
-}
-
-impl IndefiniteEventBuilder {
-    pub fn new() -> Self {
-        Default::default()
-    }
-
-    pub fn caller(&mut self, caller: Principal) -> &mut Self {
-        self.caller = Some(caller);
-
-        self
-    }
-
-    pub fn status(&mut self, status: EventStatus) -> &mut Self {
-        self.status = Some(status);
-
-        self
-    }
-
-    pub fn operation(&mut self, operation: impl Into<String>) -> &mut Self {
-        self.operation = Some(operation.into());
-
-        self
-    }
-
-    pub fn details(&mut self, details: impl IntoEvent) -> &mut Self {
-        self.details.append(&mut details.details());
-
-        self
-    }
-
-    pub fn build(&mut self) -> Result<IndefiniteEvent, ()> {
-        Ok(IndefiniteEvent {
-            caller: self.caller.take().unwrap(),
-            status: self.status.take().unwrap(),
-            operation: self.operation.take().unwrap(),
-            details: self.details.clone(),
-        })
-    }
-}
-
-/// Implemented for types that set the `operation` of an
-/// event.
-pub trait IntoEvent {
-    /// The type of operation being executed
-    fn operation(&self) -> &'static str {
-        ""
-    }
-
-    fn details(&self) -> Vec<(String, DetailValue)>;
-}
-
-impl IntoEvent for Vec<(String, DetailValue)> {
-    fn details(&self) -> Vec<(String, DetailValue)> {
-        self.clone()
-    }
-}
-
-pub trait TryFromEvent: Sized {
-    fn try_from_event(event: impl Into<IndefiniteEvent>) -> Result<Self, ()>;
-}
-
-impl TryFromEvent for Vec<(String, DetailValue)> {
-    fn try_from_event(event: impl Into<IndefiniteEvent>) -> Result<Self, ()> {
-        let event = event.into();
-
-        Ok(event.details)
     }
 }

@@ -1,9 +1,6 @@
 use cap_sdk_core::GetTransactionResponse;
 
-use ic_kit::RejectionCode;
-use thiserror::Error;
-
-use crate::{env::CapEnv, Transaction, TransactionId};
+use crate::{CapEnv, GetTransactionError, Transaction, TransactionId};
 
 /// Gets the transaction with the given id.
 ///
@@ -37,13 +34,4 @@ pub async fn get_transaction(id: TransactionId) -> Result<Transaction, GetTransa
         // TODO: Delegate
         unimplemented!()
     }
-}
-
-#[derive(Error, Debug)]
-pub enum GetTransactionError {
-    /// The bucket rejected the call for an unexpected reason.
-    #[error("the query was rejected")]
-    Unexpected(RejectionCode, String),
-    #[error("no transaction found with the given id")]
-    InvalidId,
 }
