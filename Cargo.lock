@@ -356,7 +356,7 @@ dependencies = [
 
 [[package]]
 name = "cap-sdk-core"
-version = "1.0.0-alpha1"
+version = "0.1.0-alpha1"
 dependencies = [
  "ic-history-common",
  "ic-kit",
