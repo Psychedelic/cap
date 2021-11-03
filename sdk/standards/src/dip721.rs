@@ -95,6 +95,8 @@ impl IntoEvent for DIP721TransactionType {
 }
 
 impl TryFromEvent for DIP721TransactionType {
+    type Error = ();
+
     fn try_from_event(event: impl Into<cap_sdk::IndefiniteEvent>) -> Result<Self, ()> {
         let event = event.into();
 

@@ -24,6 +24,8 @@ impl IntoEvent for XTCTransactionDetailsERC20 {
 }
 
 impl TryFromEvent for XTCTransactionDetailsERC20 {
+    type Error = ();
+    
     fn try_from_event(event: impl Into<IndefiniteEvent>) -> Result<Self, ()> {
         let details = event.into().details;
         
@@ -39,9 +41,9 @@ impl TryFromEvent for XTCTransactionDetailsERC20 {
 }
 
 pub struct XTCTransactionDetailsLegacy {
-    fee: Nat,
-    cycles: Nat,
-    kind: XTCTransactionKindLegacy,
+    pub fee: Nat,
+    pub cycles: Nat,
+    pub kind: XTCTransactionKindLegacy,
 }
 
 impl IntoEvent for XTCTransactionKindLegacy {
@@ -106,6 +108,8 @@ impl IntoEvent for XTCTransactionKindLegacy {
 }
 
 impl TryFromEvent for XTCTransactionKindLegacy {
+    type Error = ();
+    
     fn try_from_event(event: impl Into<IndefiniteEvent>) -> Result<Self, ()> {
         let event = event.into();
         let details = event.details;

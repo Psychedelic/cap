@@ -102,7 +102,7 @@ impl<T: TryFromEvent + IntoEvent> Into<Event> for TypedEvent<T> {
 }
 
 impl<T: TryFromEvent + IntoEvent> TryFrom<Event> for TypedEvent<T> {
-    type Error = ();
+    type Error = T::Error;
 
     fn try_from(value: Event) -> Result<Self, Self::Error> {
         Ok(Self {
@@ -149,7 +149,7 @@ impl<T: TryFromEvent + IntoEvent> Into<IndefiniteEvent> for TypedIndefiniteEvent
 }
 
 impl<T: TryFromEvent + IntoEvent> TryFrom<IndefiniteEvent> for TypedIndefiniteEvent<T> {
-    type Error = ();
+    type Error = T::Error;
 
     fn try_from(value: IndefiniteEvent) -> Result<Self, Self::Error> {
         Ok(Self {

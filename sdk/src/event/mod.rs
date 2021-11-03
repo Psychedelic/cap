@@ -1,4 +1,6 @@
 mod builder;
+use std::{convert::Infallible, io::Error};
+
 pub use builder::*;
 mod typed;
 use cap_sdk_core::transaction::{DetailValue, IndefiniteEvent};
@@ -35,11 +37,15 @@ impl IntoEvent for Vec<(String, DetailValue)> {
 
 /// Allows a type to be decoded from an [`Event`][crate::Event] or [`IndefiniteEvent`].
 pub trait TryFromEvent: Sized {
-    fn try_from_event(event: impl Into<IndefiniteEvent>) -> Result<Self, ()>;
+    type Error;
+
+    fn try_from_event(event: impl Into<IndefiniteEvent>) -> Result<Self, Self::Error>;
 }
 
 impl TryFromEvent for Vec<(String, DetailValue)> {
-    fn try_from_event(event: impl Into<IndefiniteEvent>) -> Result<Self, ()> {
+    type Error = Infallible;
+
+    fn try_from_event(event: impl Into<IndefiniteEvent>) -> Result<Self, Self::Error> {
         let event = event.into();
 
         Ok(event.details)
