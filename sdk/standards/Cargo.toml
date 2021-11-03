@@ -20,3 +20,4 @@ cap-sdk = { path = "../" }
 candid = "*"
 serde = { version = "*", features = ["derive"] }
 bincode = "*"
+thiserror = "*"

@@ -372,6 +372,7 @@ dependencies = [
  "candid",
  "cap-sdk",
  "serde",
+ "thiserror",
 ]
 
 [[package]]
