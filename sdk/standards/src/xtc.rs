@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, convert::TryInto};
 
 use candid::{Nat, Principal};
 use cap_sdk::{DetailValue, IntoDetails, TryFromDetails};
