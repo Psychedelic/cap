@@ -25,7 +25,6 @@ pub use env::*;
 mod env;
 
 mod transactions;
-mod event;
 pub use transactions::*;
 
 mod transaction;
@@ -34,8 +33,8 @@ pub use transaction::*;
 mod details;
 pub use details::*;
 
-mod _event;
-pub use _event::*;
+mod event;
+pub use event::*;
 
 pub use cap_sdk_core::transaction::{DetailValue, Event, IndefiniteEvent};
 

@@ -6,7 +6,7 @@ use crate::{env::CapEnv, InsertTransactionError, TransactionId};
 ///
 /// # Examples
 ///
-/// ## Inserting an event from a builder.
+/// ### Inserting an event from a builder.
 ///
 /// See also: [`IndefiniteEventBuilder`][crate::IndefiniteEventBuilder], [`IntoDetails`][crate::IntoDetails], [`TryFromDetails`][crate::TryFromDetails].
 /// ```rust
@@ -61,7 +61,6 @@ use crate::{env::CapEnv, InsertTransactionError, TransactionId};
 /// // types like `TypedIndefiniteEvent` as well as `Vec<(String, DetailValue)>`
 /// insert(event).await.unwrap();
 /// ```
-/// TODO
 pub async fn insert(
     transaction: impl Into<IndefiniteEvent>,
 ) -> Result<TransactionId, InsertTransactionError> {

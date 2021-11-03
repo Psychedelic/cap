@@ -42,6 +42,8 @@ impl Into<Vec<Transaction>> for GetTransactionsResponse {
     }
 }
 
+/// Convinience trait for accepting multiple types for a transaction
+/// page argument.
 pub trait AsTransactionsPage: Copy + Sized {
     fn page(self) -> Option<u32>;
 }
@@ -58,6 +60,7 @@ impl AsTransactionsPage for &GetTransactionsResponse {
     }
 }
 
+/// An error returned when there was an error getting transactions.
 #[derive(Error, Debug)]
 pub enum GetTransactionsError {
     /// The bucket rejected the call for an unexpected reason.

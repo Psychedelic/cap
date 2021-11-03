@@ -1,6 +1,6 @@
 use cap_sdk_core::transaction::DetailValue;
 
-/// Allows creating details for an event in an ergonomic fashion.
+/// Allows creating details for an event.
 #[derive(Debug, Default)]
 pub struct DetailsBuilder {
     inner: Vec<(String, DetailValue)>,

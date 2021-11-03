@@ -32,6 +32,6 @@ pub async fn get_transaction(id: TransactionId) -> Result<Transaction, GetTransa
         }
     } else {
         // TODO: Delegate
-        unimplemented!()
+        unimplemented!("This version of cap-sdk does not support multi-canister.")
     }
 }

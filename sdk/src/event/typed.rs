@@ -78,10 +78,15 @@ where
     pub caller: Principal,
     /// The status of the event, can be either `running`, `completed` or `failed`.
     pub status: EventStatus,
-    /// The operation that took place.
-    pub operation: String,
     /// Details of the transaction.
     pub details: T,
+}
+
+impl<T: IntoEvent + TryFromEvent> TypedEvent<T> {
+    /// The operation of the event
+    pub fn operation(&self) -> &'static str {
+        self.details.operation()
+    }
 }
 
 impl<T: TryFromEvent + IntoEvent> Into<Event> for TypedEvent<T> {
@@ -90,7 +95,7 @@ impl<T: TryFromEvent + IntoEvent> Into<Event> for TypedEvent<T> {
             time: self.time,
             caller: self.caller,
             status: self.status,
-            operation: self.operation,
+            operation: self.details.operation().to_owned(),
             details: self.details.details(),
         }
     }
@@ -104,12 +109,15 @@ impl<T: TryFromEvent + IntoEvent> TryFrom<Event> for TypedEvent<T> {
             time: value.time,
             caller: value.caller,
             status: value.status.clone(),
-            operation: value.operation.clone(),
             details: T::try_from_event(value)?,
         })
     }
 }
 
+/// A typed indefinite event.
+///
+/// You can construct an [`IndefiniteEvent`] using a builder, then cast it to
+/// a [`TypedIndefiniteEvent`] with [`TryInto`][std::convert::TryInto].
 pub struct TypedIndefiniteEvent<T>
 where
     T: TryFromEvent + IntoEvent + Sized,
@@ -120,6 +128,13 @@ where
     pub status: EventStatus,
     /// Details of the transaction.
     pub details: T,
+}
+
+impl<T: IntoEvent + TryFromEvent> TypedIndefiniteEvent<T> {
+    /// The operation of the event.
+    pub fn operation(&self) -> &'static str {
+        self.details.operation()
+    }
 }
 
 impl<T: TryFromEvent + IntoEvent> Into<IndefiniteEvent> for TypedIndefiniteEvent<T> {

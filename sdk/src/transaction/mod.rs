@@ -7,6 +7,7 @@ pub use insert::insert;
 mod query;
 pub use query::get_transaction;
 
+/// An error returned during a transaction query failure.
 #[derive(Error, Debug)]
 pub enum GetTransactionError {
     /// The bucket rejected the call for an unexpected reason.
@@ -16,6 +17,7 @@ pub enum GetTransactionError {
     InvalidId,
 }
 
+/// An error returned during a transaction insertion failure.
 #[derive(Error, Debug)]
 pub enum InsertTransactionError {
     /// The bucket rejected the call for an unexpected reason.
