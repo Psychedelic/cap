@@ -1,4 +1,4 @@
-use cap_sdk_core::transaction::{DetailValue, EventStatus, IndefiniteEvent};
+use cap_sdk_core::transaction::{DetailValue, IndefiniteEvent};
 use ic_kit::Principal;
 
 use super::IntoEvent;
@@ -34,7 +34,6 @@ use super::IntoEvent;
 #[derive(Default)]
 pub struct IndefiniteEventBuilder {
     caller: Option<Principal>,
-    status: Option<EventStatus>,
     operation: Option<String>,
     details: Vec<(String, DetailValue)>,
     operation_from_event: bool,
@@ -48,13 +47,6 @@ impl IndefiniteEventBuilder {
     /// Sets the caller of the event.
     pub fn caller(&mut self, caller: Principal) -> &mut Self {
         self.caller = Some(caller);
-
-        self
-    }
-
-    /// Sets the status of the event.
-    pub fn status(&mut self, status: EventStatus) -> &mut Self {
-        self.status = Some(status);
 
         self
     }
@@ -100,12 +92,11 @@ impl IndefiniteEventBuilder {
     /// Builds an [`IndefiniteEvent`] from the builder.
     ///
     /// # Panics
-    /// Panics if caller, status, operation, or details has not
+    /// Panics if caller, operation, or details has not
     /// already been set.
     pub fn build(&mut self) -> Result<IndefiniteEvent, ()> {
         Ok(IndefiniteEvent {
             caller: self.caller.take().unwrap(),
-            status: self.status.take().unwrap(),
             operation: self.operation.take().unwrap(),
             details: self.details.clone(),
         })

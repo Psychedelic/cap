@@ -1,6 +1,6 @@
 use std::convert::TryFrom;
 
-use cap_sdk_core::transaction::{Event, EventStatus, IndefiniteEvent};
+use cap_sdk_core::transaction::{Event, IndefiniteEvent};
 use ic_kit::Principal;
 
 use super::{IntoEvent, TryFromEvent};
@@ -76,8 +76,6 @@ where
     pub time: u64,
     /// The caller that initiated the call on the token contract.
     pub caller: Principal,
-    /// The status of the event, can be either `running`, `completed` or `failed`.
-    pub status: EventStatus,
     /// Details of the transaction.
     pub details: T,
 }
@@ -94,7 +92,6 @@ impl<T: TryFromEvent + IntoEvent> Into<Event> for TypedEvent<T> {
         Event {
             time: self.time,
             caller: self.caller,
-            status: self.status,
             operation: self.details.operation().to_owned(),
             details: self.details.details(),
         }
@@ -108,7 +105,6 @@ impl<T: TryFromEvent + IntoEvent> TryFrom<Event> for TypedEvent<T> {
         Ok(Self {
             time: value.time,
             caller: value.caller,
-            status: value.status.clone(),
             details: T::try_from_event(value)?,
         })
     }
@@ -124,8 +120,6 @@ where
 {
     /// The caller that initiated the call on the token contract.
     pub caller: Principal,
-    /// The status of the event, can be either `running`, `completed` or `failed`.
-    pub status: EventStatus,
     /// Details of the transaction.
     pub details: T,
 }
@@ -141,7 +135,6 @@ impl<T: TryFromEvent + IntoEvent> Into<IndefiniteEvent> for TypedIndefiniteEvent
     fn into(self) -> IndefiniteEvent {
         IndefiniteEvent {
             caller: self.caller,
-            status: self.status,
             operation: self.details.operation().to_owned(),
             details: self.details.details(),
         }
@@ -154,7 +147,6 @@ impl<T: TryFromEvent + IntoEvent> TryFrom<IndefiniteEvent> for TypedIndefiniteEv
     fn try_from(value: IndefiniteEvent) -> Result<Self, Self::Error> {
         Ok(Self {
             caller: value.caller,
-            status: value.status.clone(),
             details: T::try_from_event(value)?,
         })
     }

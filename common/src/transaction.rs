@@ -148,7 +148,6 @@ impl Into<IndefiniteEvent> for Event {
     fn into(self) -> IndefiniteEvent {
         IndefiniteEvent {
             caller: self.caller,
-            status: self.status,
             operation: self.operation,
             details: self.details
         }
