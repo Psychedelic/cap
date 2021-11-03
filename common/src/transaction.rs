@@ -12,8 +12,6 @@ pub struct Event {
     pub time: u64,
     /// The caller that initiated the call on the token contract.
     pub caller: Principal,
-    /// The status of the event, can be either `running`, `completed` or `failed`.
-    pub status: EventStatus,
     /// The operation that took place.
     pub operation: String,
     /// Details of the transaction.
@@ -21,18 +19,9 @@ pub struct Event {
 }
 
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
-pub enum EventStatus {
-    Running,
-    Completed,
-    Failed,
-}
-
-#[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
 pub struct IndefiniteEvent {
     /// The caller that initiated the call on the token contract.
     pub caller: Principal,
-    /// The status of the event, can be either `running`, `completed` or `failed`.
-    pub status: EventStatus,
     /// The operation that took place.
     pub operation: String,
     /// Details of the transaction.
@@ -41,6 +30,8 @@ pub struct IndefiniteEvent {
 
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
 pub enum DetailValue {
+    True,
+    False,
     U64(u64),
     I64(i64),
     Float(f64),
@@ -59,14 +50,22 @@ impl Event {
 
         principals.insert(&self.caller);
 
-        // TODO(qti3e) Support nested extractions.
-        for (_, value) in &self.details {
+        fn visit<'a>(principals: &mut BTreeSet<&'a Principal>, value: &'a DetailValue) {
             match value {
                 DetailValue::Principal(p) => {
                     principals.insert(p);
                 }
+                DetailValue::Vec(items) => {
+                    for item in items {
+                        visit(principals, item);
+                    }
+                }
                 _ => {}
             }
+        }
+
+        for (_, value) in &self.details {
+            visit(&mut principals, value);
         }
 
         principals
@@ -83,44 +82,50 @@ impl Event {
 
         fn hash_value(h: &mut Sha256, value: &DetailValue) {
             match value {
-                DetailValue::U64(val) => {
-                    let bytes = val.to_be_bytes();
+                DetailValue::True => {
                     h.update(&[0]);
-                    h.update(&bytes.len().to_be_bytes() as &[u8]);
-                    h.update(bytes);
                 }
-                DetailValue::I64(val) => {
-                    let bytes = val.to_be_bytes();
+                DetailValue::False => {
                     h.update(&[1]);
-                    h.update(&bytes.len().to_be_bytes() as &[u8]);
-                    h.update(bytes);
                 }
-                DetailValue::Float(val) => {
+                DetailValue::U64(val) => {
                     let bytes = val.to_be_bytes();
                     h.update(&[2]);
                     h.update(&bytes.len().to_be_bytes() as &[u8]);
                     h.update(bytes);
                 }
+                DetailValue::I64(val) => {
+                    let bytes = val.to_be_bytes();
+                    h.update(&[3]);
+                    h.update(&bytes.len().to_be_bytes() as &[u8]);
+                    h.update(bytes);
+                }
+                DetailValue::Float(val) => {
+                    let bytes = val.to_be_bytes();
+                    h.update(&[4]);
+                    h.update(&bytes.len().to_be_bytes() as &[u8]);
+                    h.update(bytes);
+                }
                 DetailValue::Text(val) => {
                     let bytes = val.as_str().as_bytes();
-                    h.update(&[3]);
+                    h.update(&[5]);
                     h.update(&bytes.len().to_be_bytes() as &[u8]);
                     h.update(bytes);
                 }
                 DetailValue::Principal(val) => {
                     let bytes = val.as_slice();
-                    h.update(&[4]);
+                    h.update(&[6]);
                     h.update(&bytes.len().to_be_bytes() as &[u8]);
                     h.update(bytes);
                 }
                 DetailValue::Slice(val) => {
                     let bytes = val.as_slice();
-                    h.update(&[5]);
+                    h.update(&[7]);
                     h.update(&bytes.len().to_be_bytes() as &[u8]);
                     h.update(bytes);
                 }
                 DetailValue::Vec(val) => {
-                    h.update(&[6]);
+                    h.update(&[8]);
                     h.update(&val.len().to_be_bytes() as &[u8]);
                     for item in val.iter() {
                         hash_value(h, item);
@@ -157,7 +162,6 @@ impl IndefiniteEvent {
         Event {
             time,
             caller: self.caller,
-            status: self.status,
             operation: self.operation,
             details: self.details,
         }

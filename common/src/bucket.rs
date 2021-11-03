@@ -76,6 +76,24 @@ impl Bucket {
         }
     }
 
+    /// Return the total number of transactions.
+    #[inline]
+    pub fn size(&self) -> u64 {
+        self.global_offset + (self.events.len() as u64)
+    }
+
+    /// Return the total number of items in this bucket.
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.events.len()
+    }
+
+    /// Returns `tru` if there are no events in this bucket.
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.events.is_empty()
+    }
+
     /// Try to insert an event into the bucket.
     pub fn insert(&mut self, contract: &Principal, event: Event) -> u64 {
         let local_index = self.events.len() as u32;
@@ -254,14 +272,12 @@ impl Serialize for Bucket {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::transaction::EventStatus;
     use ic_kit::mock_principals;
 
     fn e(time: u64, caller: Principal) -> Event {
         Event {
             time,
             caller,
-            status: EventStatus::Completed,
             operation: "transfer".into(),
             details: vec![],
         }

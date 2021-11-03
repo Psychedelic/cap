@@ -13,6 +13,7 @@ use ic_history_common::*;
 use ic_kit::macros::*;
 
 mod installer;
+mod plug;
 mod upgrade;
 
 /// Merkle tree of the canister.

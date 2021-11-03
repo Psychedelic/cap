@@ -1,6 +1,6 @@
 use crate::Data;
 use ic_kit::candid::candid_method;
-use ic_kit::candid::encode_one;
+use ic_kit::candid::encode_args;
 use ic_kit::candid::CandidType;
 use ic_kit::interfaces::{management, Method};
 use ic_kit::{ic, Principal};
@@ -21,10 +21,14 @@ const WASM: &[u8] =
 #[update]
 #[candid_method(update)]
 async fn install_bucket_code(canister_id: RootBucketId) {
+    let contract_id = ic::caller();
+    install_code(canister_id, contract_id, &[]).await;
+}
+
+pub async fn install_code(canister_id: Principal, contract_id: Principal, writers: &[Principal]) {
     use management::{CanisterStatus, InstallMode, WithCanisterId};
 
     let data = ic::get_mut::<Data>();
-    let contract_id = ic::caller();
 
     if data.root_buckets.get(&contract_id).is_some() {
         panic!(
@@ -60,7 +64,8 @@ async fn install_bucket_code(canister_id: RootBucketId) {
         arg: Vec<u8>,
     }
 
-    let arg = encode_one(contract_id).expect("Failed to serialize the install argument.");
+    let arg =
+        encode_args((contract_id, writers)).expect("Failed to serialize the install argument.");
 
     let install_config = InstallCodeArgumentBorrowed {
         mode: InstallMode::Install,
