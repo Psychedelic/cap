@@ -1,7 +1,7 @@
 use std::{collections::HashMap, convert::TryInto};
 
 use candid::{Nat, Principal};
-use cap_sdk::{DetailValue, IndefiniteEvent, IntoEvent, TryFromEvent};
+use cap_sdk::{DetailValue, IndefiniteEvent, IntoEvent, MaybeIndefinite, TryFromEvent};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -20,9 +20,10 @@ pub enum XTCTransactionDetailsERC20Error {
     #[error("couldn't convert item with key {0} to DetailValue")]
     ConversionError(String),
     #[error("invalid operation {0}")]
-    InvalidOperation(String )
+    InvalidOperation(String),
 }
 
+#[cfg(feature = "sdk-impls")]
 impl IntoEvent for XTCTransactionDetailsERC20 {
     fn details(&self) -> Vec<(String, DetailValue)> {
         vec![
@@ -34,19 +35,23 @@ impl IntoEvent for XTCTransactionDetailsERC20 {
     }
 }
 
-trait MapFailed<T,E> {
+#[cfg(feature = "sdk-impls")]
+trait MapFailed<T, E> {
     fn map_failure(self, key: &'static str) -> Result<T, E>;
 }
 
+#[cfg(feature = "sdk-impls")]
 impl<T, O> MapFailed<T, XTCTransactionDetailsERC20Error> for Result<T, O> {
     fn map_failure(self, key: &'static str) -> Result<T, XTCTransactionDetailsERC20Error> {
-        self.map_err(|_| {
-            XTCTransactionDetailsERC20Error::ConversionError(key.to_owned())
-        })
+        self.map_err(|_| XTCTransactionDetailsERC20Error::ConversionError(key.to_owned()))
     }
 }
 
-fn try_get_and_clone(map: &HashMap<String, DetailValue>, key: &'static str) -> Result<DetailValue, XTCTransactionDetailsERC20Error> {
+#[cfg(feature = "sdk-impls")]
+fn try_get_and_clone(
+    map: &HashMap<String, DetailValue>,
+    key: &'static str,
+) -> Result<DetailValue, XTCTransactionDetailsERC20Error> {
     if let Some(item) = map.get(key) {
         Ok(item.clone())
     } else {
@@ -54,19 +59,30 @@ fn try_get_and_clone(map: &HashMap<String, DetailValue>, key: &'static str) -> R
     }
 }
 
+#[cfg(feature = "sdk-impls")]
 impl TryFromEvent for XTCTransactionDetailsERC20 {
     type Error = XTCTransactionDetailsERC20Error;
-    
-    fn try_from_event(event: impl Into<IndefiniteEvent>) -> Result<Self, XTCTransactionDetailsERC20Error> {
-        let details = event.into().details;
-        
+
+    fn try_from_event(
+        event: impl MaybeIndefinite,
+    ) -> Result<Self, XTCTransactionDetailsERC20Error> {
+        let details = event.as_indefinite().details;
+
         let map = details.iter().cloned().collect::<HashMap<_, _>>();
 
         Ok(Self {
-            to: try_get_and_clone(&map, "to")?.try_into().map_failure("to")?,
-            amount: try_get_and_clone(&map, "amount")?.try_into().map_failure("amount")?,
-            fee: try_get_and_clone(&map, "fee")?.try_into().map_failure("fee")?,
-            index: try_get_and_clone(&map, "index")?.try_into().map_failure("index")?,
+            to: try_get_and_clone(&map, "to")?
+                .try_into()
+                .map_failure("to")?,
+            amount: try_get_and_clone(&map, "amount")?
+                .try_into()
+                .map_failure("amount")?,
+            fee: try_get_and_clone(&map, "fee")?
+                .try_into()
+                .map_failure("fee")?,
+            index: try_get_and_clone(&map, "index")?
+                .try_into()
+                .map_failure("index")?,
         })
     }
 }
@@ -77,6 +93,7 @@ pub struct XTCTransactionDetailsLegacy {
     pub kind: XTCTransactionKindLegacy,
 }
 
+#[cfg(feature = "sdk-impls")]
 impl IntoEvent for XTCTransactionKindLegacy {
     fn operation(&self) -> &'static str {
         match *self {
@@ -86,7 +103,7 @@ impl IntoEvent for XTCTransactionKindLegacy {
             Self::Burn { .. } => "burn",
             Self::Mint { .. } => "mint",
             Self::CanisterCalled { .. } => "canister_called",
-            Self::CanisterCreated { .. } => "canister_created"
+            Self::CanisterCreated { .. } => "canister_created",
         }
     }
 
@@ -95,103 +112,119 @@ impl IntoEvent for XTCTransactionKindLegacy {
             Self::Transfer { from, to } => {
                 vec![
                     ("to".to_owned(), to.clone().into()),
-                    ("from".to_owned(), from.clone().into())
+                    ("from".to_owned(), from.clone().into()),
                 ]
-            },
+            }
             Self::TransferFrom { from, to } => {
                 vec![
                     ("to".to_owned(), to.clone().into()),
-                    ("from".to_owned(), from.clone().into())
-                ]                
-            },
+                    ("from".to_owned(), from.clone().into()),
+                ]
+            }
             Self::Approve { from, to } => {
                 vec![
                     ("to".to_owned(), to.clone().into()),
-                    ("from".to_owned(), from.clone().into())
+                    ("from".to_owned(), from.clone().into()),
                 ]
-            },
+            }
             Self::Burn { from, to } => {
                 vec![
                     ("to".to_owned(), to.clone().into()),
-                    ("from".to_owned(), from.clone().into())
+                    ("from".to_owned(), from.clone().into()),
                 ]
-            },
+            }
             Self::Mint { to } => {
-                vec![
-                    ("to".to_owned(), to.clone().into())
-                ]
-            },
+                vec![("to".to_owned(), to.clone().into())]
+            }
             Self::CanisterCalled { from, to, method } => {
                 vec![
                     ("to".to_owned(), to.clone().into()),
                     ("from".to_owned(), from.clone().into()),
-                    ("method".to_owned(), method.clone().into())
+                    ("method".to_owned(), method.clone().into()),
                 ]
-            },
+            }
             Self::CanisterCreated { from, canister } => {
                 vec![
                     ("canister".to_owned(), canister.clone().into()),
-                    ("from".to_owned(), from.clone().into())
+                    ("from".to_owned(), from.clone().into()),
                 ]
             }
         }
     }
 }
 
+#[cfg(feature = "sdk-impls")]
 impl TryFromEvent for XTCTransactionKindLegacy {
     type Error = XTCTransactionDetailsERC20Error;
-    
-    fn try_from_event(event: impl Into<IndefiniteEvent>) -> Result<Self, Self::Error> {
-        let event = event.into();
+
+    fn try_from_event(event: impl MaybeIndefinite) -> Result<Self, Self::Error> {
+        let event = event.as_indefinite();
         let details = event.details;
 
         let map = details.iter().cloned().collect::<HashMap<_, _>>();
 
-
         Ok(match event.operation.as_str() {
-            "transfer" => {
-                XTCTransactionKindLegacy::Transfer {
-                    to: try_get_and_clone(&map, "to")?.try_into().map_failure("to")?,
-                    from: try_get_and_clone(&map, "from")?.try_into().map_failure("from")?
-                }
+            "transfer" => XTCTransactionKindLegacy::Transfer {
+                to: try_get_and_clone(&map, "to")?
+                    .try_into()
+                    .map_failure("to")?,
+                from: try_get_and_clone(&map, "from")?
+                    .try_into()
+                    .map_failure("from")?,
             },
-            "transfer_from" => {
-                XTCTransactionKindLegacy::TransferFrom {
-                    to: try_get_and_clone(&map, "to")?.try_into().map_failure("to")?,
-                    from: try_get_and_clone(&map, "from")?.try_into().map_failure("from")?
-                }
+            "transfer_from" => XTCTransactionKindLegacy::TransferFrom {
+                to: try_get_and_clone(&map, "to")?
+                    .try_into()
+                    .map_failure("to")?,
+                from: try_get_and_clone(&map, "from")?
+                    .try_into()
+                    .map_failure("from")?,
             },
-            "approve" => {
-                XTCTransactionKindLegacy::Approve {
-                    to: try_get_and_clone(&map, "to")?.try_into().map_failure("to")?,
-                    from: try_get_and_clone(&map, "from")?.try_into().map_failure("from")?
-                }
+            "approve" => XTCTransactionKindLegacy::Approve {
+                to: try_get_and_clone(&map, "to")?
+                    .try_into()
+                    .map_failure("to")?,
+                from: try_get_and_clone(&map, "from")?
+                    .try_into()
+                    .map_failure("from")?,
             },
-            "burn" => {
-                XTCTransactionKindLegacy::Burn {
-                    to: try_get_and_clone(&map, "to")?.try_into().map_failure("to")?,
-                    from: try_get_and_clone(&map, "from")?.try_into().map_failure("from")?
-                }
+            "burn" => XTCTransactionKindLegacy::Burn {
+                to: try_get_and_clone(&map, "to")?
+                    .try_into()
+                    .map_failure("to")?,
+                from: try_get_and_clone(&map, "from")?
+                    .try_into()
+                    .map_failure("from")?,
             },
-            "mint" => {
-                XTCTransactionKindLegacy::Mint {
-                    to: try_get_and_clone(&map, "to")?.try_into().map_failure("to")?,
-                }
+            "mint" => XTCTransactionKindLegacy::Mint {
+                to: try_get_and_clone(&map, "to")?
+                    .try_into()
+                    .map_failure("to")?,
             },
-            "canister_called" => {
-                XTCTransactionKindLegacy::CanisterCalled {
-                    method: try_get_and_clone(&map, "method")?.try_into().map_failure("method")?,
-                    to: try_get_and_clone(&map, "to")?.try_into().map_failure("to")?,
-                    from: try_get_and_clone(&map, "from")?.try_into().map_failure("from")?
-                }
+            "canister_called" => XTCTransactionKindLegacy::CanisterCalled {
+                method: try_get_and_clone(&map, "method")?
+                    .try_into()
+                    .map_failure("method")?,
+                to: try_get_and_clone(&map, "to")?
+                    .try_into()
+                    .map_failure("to")?,
+                from: try_get_and_clone(&map, "from")?
+                    .try_into()
+                    .map_failure("from")?,
             },
-            "canister_created" => {
-                XTCTransactionKindLegacy::CanisterCreated {
-                    canister: try_get_and_clone(&map, "canister")?.try_into().map_failure("canister")?,
-                    from: try_get_and_clone(&map, "from")?.try_into().map_failure("from")?
-                }
+            "canister_created" => XTCTransactionKindLegacy::CanisterCreated {
+                canister: try_get_and_clone(&map, "canister")?
+                    .try_into()
+                    .map_failure("canister")?,
+                from: try_get_and_clone(&map, "from")?
+                    .try_into()
+                    .map_failure("from")?,
+            },
+            operation => {
+                return Err(XTCTransactionDetailsERC20Error::InvalidOperation(
+                    operation.to_owned(),
+                ))
             }
-            operation => return Err(XTCTransactionDetailsERC20Error::InvalidOperation(operation.to_owned()))
         })
     }
 }

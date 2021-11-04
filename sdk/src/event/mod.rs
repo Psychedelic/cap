@@ -3,7 +3,7 @@ use std::convert::Infallible;
 
 pub use builder::*;
 mod typed;
-use cap_sdk_core::transaction::{DetailValue, IndefiniteEvent};
+use cap_sdk_core::transaction::{DetailValue, Event, IndefiniteEvent};
 pub use typed::*;
 
 /// Allows a type to be used as a source for an [`IndefiniteEvent`].
@@ -39,15 +39,40 @@ impl IntoEvent for Vec<(String, DetailValue)> {
 pub trait TryFromEvent: Sized {
     type Error;
 
-    fn try_from_event(event: impl Into<IndefiniteEvent>) -> Result<Self, Self::Error>;
+    fn try_from_event(event: impl MaybeIndefinite) -> Result<Self, Self::Error>;
 }
 
 impl TryFromEvent for Vec<(String, DetailValue)> {
     type Error = Infallible;
 
-    fn try_from_event(event: impl Into<IndefiniteEvent>) -> Result<Self, Self::Error> {
-        let event = event.into();
+    fn try_from_event(event: impl MaybeIndefinite) -> Result<Self, Self::Error> {
+        let event = event.as_indefinite();
 
         Ok(event.details)
+    }
+}
+
+pub trait MaybeIndefinite {
+    fn time(&self) -> Option<u64> {
+        None
+    }
+
+    fn as_indefinite(self) -> IndefiniteEvent;
+}
+
+impl MaybeIndefinite for IndefiniteEvent {
+    fn as_indefinite(self) -> IndefiniteEvent {
+        self
+    }
+}
+
+impl MaybeIndefinite for Event {
+    
+    fn as_indefinite(self) -> IndefiniteEvent {
+        self.into()
+    }
+
+    fn time(&self) -> Option<u64> {
+        Some(self.time)
     }
 }

@@ -11,13 +11,22 @@ readme = "https://github.com/Psychedelic/cap/README.md"
 documentation = "https://crates.io/cap_standards"
 
 [features]
-default = []
+default = ["sdk-impls"]
+sdk-impls = ["cap-sdk"]
 alpha-xtc = []
 alpha-dip721 = []
+alpha-dip20 = ["num-bigint"]
 
 [dependencies]
-cap-sdk = { path = "../" }
 candid = "*"
 serde = { version = "*", features = ["derive"] }
 bincode = "*"
 thiserror = "*"
+
+[dependencies.cap-sdk]
+path = "../"
+optional = true
+
+[dependencies.num-bigint]
+version = "0.4"
+optional = true

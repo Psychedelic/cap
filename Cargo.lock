@@ -371,6 +371,7 @@ dependencies = [
  "bincode",
  "candid",
  "cap-sdk",
+ "num-bigint",
  "serde",
  "thiserror",
 ]
