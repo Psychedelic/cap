@@ -70,7 +70,7 @@ impl Into<&'static str> for Operation {
 }
 
 #[derive(Debug, Clone)]
-pub struct TxDetails {
+pub struct TxRecord {
     pub index: Nat,
     pub from: Principal,
     pub to: Principal,
@@ -92,7 +92,7 @@ pub enum DIP20ParseError {
 }
 
 #[cfg(feature = "sdk-impls")]
-impl IntoEvent for TxDetails {
+impl IntoEvent for TxRecord {
     fn operation(&self) -> &'static str {
         self.operation.into()
     }
@@ -137,7 +137,7 @@ fn try_get_and_clone(
 }
 
 #[cfg(feature = "sdk-impls")]
-impl TryFromEvent for TxDetails {
+impl TryFromEvent for TxRecord {
     type Error = DIP20ParseError;
 
     fn try_from_event(event: impl MaybeIndefinite) -> Result<Self, DIP20ParseError> {

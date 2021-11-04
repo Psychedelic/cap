@@ -67,7 +67,6 @@ impl MaybeIndefinite for IndefiniteEvent {
 }
 
 impl MaybeIndefinite for Event {
-    
     fn as_indefinite(self) -> IndefiniteEvent {
         self.into()
     }

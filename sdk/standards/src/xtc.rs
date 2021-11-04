@@ -1,7 +1,7 @@
 use std::{collections::HashMap, convert::TryInto};
 
 use candid::{Nat, Principal};
-use cap_sdk::{DetailValue, IndefiniteEvent, IntoEvent, MaybeIndefinite, TryFromEvent};
+use cap_sdk::{DetailValue, IntoEvent, MaybeIndefinite, TryFromEvent};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
