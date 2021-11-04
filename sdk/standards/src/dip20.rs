@@ -78,6 +78,7 @@ pub struct TxDetails {
     pub fee: Nat,
     pub timestamp: Int,
     pub status: TransactionStatus,
+    pub operation: Operation,
 }
 
 #[derive(Debug, Error)]
@@ -92,6 +93,10 @@ pub enum DIP20ParseError {
 
 #[cfg(feature = "sdk-impls")]
 impl IntoEvent for TxDetails {
+    fn operation(&self) -> &'static str {
+        self.operation.into()
+    }
+
     fn details(&self) -> Vec<(String, DetailValue)> {
         let status: &'static str = self.status.into();
 
@@ -172,6 +177,11 @@ impl TryFromEvent for TxDetails {
             status: status_string.as_str().try_into().map_err(|_| {
                 DIP20ParseError::ConversionError("Invalid value for status".to_owned())
             })?,
+            operation: event
+                .operation
+                .as_str()
+                .try_into()
+                .map_err(|_| DIP20ParseError::InvalidOperation(String::from("")))?,
         })
     }
 }
