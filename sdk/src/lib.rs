@@ -1,4 +1,6 @@
 #![allow(clippy::from_over_into)]
+#![allow(clippy::result_unit_err)]
+#![allow(dead_code)]
 
 //! The SDK for integrating Certified Asset Provenance (CAP) into an Internet Computer canister.
 //!

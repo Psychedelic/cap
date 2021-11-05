@@ -149,7 +149,7 @@ impl Into<IndefiniteEvent> for Event {
         IndefiniteEvent {
             caller: self.caller,
             operation: self.operation,
-            details: self.details
+            details: self.details,
         }
     }
 }

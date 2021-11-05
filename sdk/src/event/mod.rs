@@ -46,7 +46,7 @@ impl TryFromEvent for Vec<(String, DetailValue)> {
     type Error = Infallible;
 
     fn try_from_event(event: impl MaybeIndefinite) -> Result<Self, Self::Error> {
-        let event = event.as_indefinite();
+        let event = event.into_indefinite();
 
         Ok(event.details)
     }
@@ -57,17 +57,17 @@ pub trait MaybeIndefinite {
         None
     }
 
-    fn as_indefinite(self) -> IndefiniteEvent;
+    fn into_indefinite(self) -> IndefiniteEvent;
 }
 
 impl MaybeIndefinite for IndefiniteEvent {
-    fn as_indefinite(self) -> IndefiniteEvent {
+    fn into_indefinite(self) -> IndefiniteEvent {
         self
     }
 }
 
 impl MaybeIndefinite for Event {
-    fn as_indefinite(self) -> IndefiniteEvent {
+    fn into_indefinite(self) -> IndefiniteEvent {
         self.into()
     }
 

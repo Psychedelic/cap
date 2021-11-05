@@ -1,3 +1,5 @@
+#![allow(clippy::from_over_into)]
+
 pub mod bucket;
 pub mod bucket_lookup_table;
 pub mod canister_list;

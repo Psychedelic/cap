@@ -26,9 +26,9 @@ pub async fn get_transaction(id: TransactionId) -> Result<Transaction, GetTransa
 
     if let GetTransactionResponse::Found(event, _) = transaction {
         if let Some(event) = event {
-            return Ok(event);
+            Ok(event)
         } else {
-            return Err(GetTransactionError::InvalidId);
+            Err(GetTransactionError::InvalidId)
         }
     } else {
         // TODO: Delegate
