@@ -18,11 +18,11 @@ alpha-dip721 = []
 alpha-dip20 = ["num-bigint"]
 
 [dependencies]
-candid = "*"
-serde = { version = "*", features = ["derive"] }
-bincode = "*"
-ic-cdk = "*"
-thiserror = "*"
+candid = "0.7"
+serde = { version = "1", features = ["derive"] }
+bincode = "1"
+ic-cdk = "0.3"
+thiserror = "1"
 
 [dependencies.cap-sdk]
 path = "../"

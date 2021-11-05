@@ -1,6 +1,4 @@
-use std::{
-    convert::TryFrom,
-};
+use std::convert::TryFrom;
 
 use candid::{Int, Nat, Principal};
 use serde::{Deserialize, Serialize};
