@@ -7,6 +7,9 @@ use ic_kit::{
 
 use crate::CapEnv;
 
+/// Handshakes with Cap. This either grabs important metadata or
+/// creates the root bucket for this contract and gives it `creation_cycles`
+/// cycles.
 pub fn handshake(creation_cycles: u64) {
     let arg = management::CreateCanisterArgument { settings: None };
 

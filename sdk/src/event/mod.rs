@@ -3,7 +3,7 @@ use std::convert::Infallible;
 
 pub use builder::*;
 mod typed;
-use cap_sdk_core::transaction::{DetailValue, Event, IndefiniteEvent};
+use cap_sdk_core::transaction::{DetailValue, IndefiniteEvent};
 pub use typed::*;
 
 /// Allows a type to be used as a source for an [`IndefiniteEvent`].

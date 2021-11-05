@@ -59,7 +59,7 @@ impl CapEnv {
             futures.borrow_mut().push(future);
         });
     }
-    
+
     /// Sets the [`CapEnv`] using the provided value.
     ///
     /// Used to restore the generated canister's ID after an upgrade.
