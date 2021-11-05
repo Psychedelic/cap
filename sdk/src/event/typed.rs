@@ -68,9 +68,10 @@ use super::{IntoEvent, TryFromEvent};
 /// }
 ///
 /// ```
+#[derive(Clone)]
 pub struct TypedEvent<T>
 where
-    T: TryFromEvent + IntoEvent + Sized,
+    T: TryFromEvent + IntoEvent + Sized + Clone,
 {
     /// The timestamp in ms.
     pub time: u64,
@@ -80,14 +81,14 @@ where
     pub details: T,
 }
 
-impl<T: IntoEvent + TryFromEvent> TypedEvent<T> {
+impl<T: IntoEvent + TryFromEvent + Clone> TypedEvent<T> {
     /// The operation of the event
     pub fn operation(&self) -> &'static str {
         self.details.operation()
     }
 }
 
-impl<T: TryFromEvent + IntoEvent> Into<Event> for TypedEvent<T> {
+impl<T: TryFromEvent + IntoEvent + Clone> Into<Event> for TypedEvent<T> {
     fn into(self) -> Event {
         Event {
             time: self.time,
@@ -98,7 +99,7 @@ impl<T: TryFromEvent + IntoEvent> Into<Event> for TypedEvent<T> {
     }
 }
 
-impl<T: TryFromEvent + IntoEvent> TryFrom<Event> for TypedEvent<T> {
+impl<T: TryFromEvent + IntoEvent + Clone> TryFrom<Event> for TypedEvent<T> {
     type Error = T::Error;
 
     fn try_from(value: Event) -> Result<Self, Self::Error> {
@@ -114,9 +115,10 @@ impl<T: TryFromEvent + IntoEvent> TryFrom<Event> for TypedEvent<T> {
 ///
 /// You can construct an [`IndefiniteEvent`] using a builder, then cast it to
 /// a [`TypedIndefiniteEvent`] with [`TryInto`][std::convert::TryInto].
+#[derive(Clone)]
 pub struct TypedIndefiniteEvent<T>
 where
-    T: TryFromEvent + IntoEvent + Sized,
+    T: TryFromEvent + IntoEvent + Sized + Clone,
 {
     /// The caller that initiated the call on the token contract.
     pub caller: Principal,
@@ -124,14 +126,14 @@ where
     pub details: T,
 }
 
-impl<T: IntoEvent + TryFromEvent> TypedIndefiniteEvent<T> {
+impl<T: IntoEvent + TryFromEvent + Clone> TypedIndefiniteEvent<T> {
     /// The operation of the event.
     pub fn operation(&self) -> &'static str {
         self.details.operation()
     }
 }
 
-impl<T: TryFromEvent + IntoEvent> Into<IndefiniteEvent> for TypedIndefiniteEvent<T> {
+impl<T: TryFromEvent + IntoEvent + Clone> Into<IndefiniteEvent> for TypedIndefiniteEvent<T> {
     fn into(self) -> IndefiniteEvent {
         IndefiniteEvent {
             caller: self.caller,
@@ -141,7 +143,7 @@ impl<T: TryFromEvent + IntoEvent> Into<IndefiniteEvent> for TypedIndefiniteEvent
     }
 }
 
-impl<T: TryFromEvent + IntoEvent> TryFrom<IndefiniteEvent> for TypedIndefiniteEvent<T> {
+impl<T: TryFromEvent + IntoEvent + Clone> TryFrom<IndefiniteEvent> for TypedIndefiniteEvent<T> {
     type Error = T::Error;
 
     fn try_from(value: IndefiniteEvent) -> Result<Self, Self::Error> {

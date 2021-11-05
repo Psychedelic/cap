@@ -6,6 +6,7 @@ use num_bigint::{BigInt, BigUint};
 
 use super::{DIP20ParseError, Operation, TransactionStatus, TxRecord};
 
+#[derive(Clone)]
 pub enum DIP20Details {
     Approve {
         from: Principal,

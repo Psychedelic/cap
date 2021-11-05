@@ -3,7 +3,7 @@
 //! For more information on the purpose of the main router, see the documentation on
 //! [`Router`].
 
-use ic_kit::{Principal, RejectionCode, ic::call};
+use ic_kit::{ic::call, Principal, RejectionCode};
 
 /// A router.
 ///
@@ -21,10 +21,7 @@ impl Router {
         Self(principal)
     }
 
-    pub async fn install_code(
-        &self,
-        canister: Principal,
-    ) -> Result<(), (RejectionCode, String)> {
+    pub async fn install_code(&self, canister: Principal) -> Result<(), (RejectionCode, String)> {
         call(self.0, "install_code", (canister,)).await?;
 
         Ok(())
