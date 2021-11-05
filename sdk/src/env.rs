@@ -1,25 +1,24 @@
-use cap_sdk_core::{GetContractRootError, Index, RootBucket};
+use cap_sdk_core::{Index, RootBucket, Router};
+use futures::future::LocalBoxFuture;
 use ic_kit::ic::{get_maybe, store};
 use ic_kit::Principal;
+use std::cell::RefCell;
 use std::str::FromStr;
 
 /// Contains data about the cap environment.
 #[derive(Clone)]
 pub struct CapEnv {
     pub(crate) root: RootBucket,
-    pub(crate) index: Index,
+}
+
+thread_local! {
+    pub(crate) static FUTURES: RefCell<Vec<LocalBoxFuture<'static, ()>>> = RefCell::new(vec![]);
 }
 
 impl CapEnv {
     /// Creates a new [`CapEnv`] with the index canister's [`Principal`] set to `index`.
-    pub(crate) async fn create(index: Principal) -> Result<CapEnv, GetContractRootError> {
-        let index = Index::new(index);
-
-        let root = index
-            .get_token_contract_root_bucket(ic_kit::ic::id(), false)
-            .await?;
-
-        Ok(CapEnv { root, index })
+    pub(crate) fn create(root: RootBucket) -> Self {
+        CapEnv { root }
     }
 
     /// Stores the [`CapEnv`] in the canister.
@@ -31,11 +30,34 @@ impl CapEnv {
         if let Some(data) = get_maybe::<CapEnv>() {
             data
         } else {
-            store(Self::create(Principal::from_str("TODO").unwrap()));
-
-            // Unwrap here because we just stored the freshly created env.
-            get_maybe::<CapEnv>().unwrap()
+            panic!("No context created.");
         }
+    }
+
+    pub(crate) fn index() -> Index {
+        Self::router().into()
+    }
+
+    pub(crate) fn router() -> Router {
+        Router::new(Principal::from_str("test").unwrap())
+    }
+
+    pub(crate) async fn await_futures() {
+        let futures = FUTURES.with(|futures| {
+            let mut inner = futures.take();
+
+            inner.drain(0..inner.len()).collect::<Vec<_>>()
+        });
+
+        for future in futures {
+            future.await;
+        }
+    }
+
+    pub(crate) fn insert_future(future: LocalBoxFuture<'static, ()>) {
+        FUTURES.with(|futures| {
+            futures.borrow_mut().push(future);
+        });
     }
 
     // pub(crate) async fn get_mut<'a>() -> &'a mut Self {

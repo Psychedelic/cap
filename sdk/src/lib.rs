@@ -38,6 +38,9 @@ pub use details::*;
 mod event;
 pub use event::*;
 
+mod handshake;
+pub use handshake::*;
+
 pub use cap_sdk_core::transaction::{DetailValue, Event, IndefiniteEvent};
 
 type Transaction = Event;

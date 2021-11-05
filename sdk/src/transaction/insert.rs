@@ -64,6 +64,8 @@ use crate::{env::CapEnv, InsertTransactionError, TransactionId};
 pub async fn insert(
     transaction: impl Into<IndefiniteEvent>,
 ) -> Result<TransactionId, InsertTransactionError> {
+    CapEnv::await_futures().await;
+    
     let context = CapEnv::get();
 
     let id =

@@ -351,6 +351,7 @@ dependencies = [
  "cap-sdk-core",
  "futures",
  "ic-kit",
+ "lazy_static",
  "thiserror",
 ]
 
