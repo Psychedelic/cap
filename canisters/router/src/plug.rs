@@ -9,7 +9,7 @@ use lazy_static::lazy_static;
 
 lazy_static! {
     static ref PLUG_PROXY_ID: Principal = {
-        Principal::from_text("qti3e-ren42-maxnk-dwpe5-h4hhi-zgnmd-fm4ak-o2vfg-64r7w-al6hm-zqe")
+        Principal::from_text("fleek-zz2jc-rpzkm-wjeqa-4u4kt-qgwu7-g67oh-vludd-qgugb-jxv3e-vqe")
             .unwrap()
     };
 }
