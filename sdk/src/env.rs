@@ -39,7 +39,7 @@ impl CapEnv {
     }
 
     pub(crate) fn router() -> Router {
-        Router::new(Principal::from_str("test").unwrap())
+        Router::new(Principal::from_str("lj532-6iaaa-aaaah-qcc7a-cai").unwrap())
     }
 
     pub(crate) async fn await_futures() {
