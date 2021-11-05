@@ -372,6 +372,7 @@ dependencies = [
  "bincode",
  "candid",
  "cap-sdk",
+ "ic-cdk",
  "num-bigint",
  "serde",
  "thiserror",

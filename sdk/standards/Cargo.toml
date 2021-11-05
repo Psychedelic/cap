@@ -21,6 +21,7 @@ alpha-dip20 = ["num-bigint"]
 candid = "*"
 serde = { version = "*", features = ["derive"] }
 bincode = "*"
+ic-cdk = "*"
 thiserror = "*"
 
 [dependencies.cap-sdk]

@@ -1,10 +1,10 @@
 use std::{collections::HashMap, convert::TryInto};
 
-use candid::Principal;
+use candid::{CandidType, Deserialize, Principal};
 use cap_sdk::{DetailValue, IntoEvent, MaybeIndefinite, TryFromEvent};
 use thiserror::Error;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, CandidType, Deserialize)]
 pub enum DIP721TransactionType {
     TransferFrom(TransferFrom),
     Approve(Approve),
@@ -13,7 +13,7 @@ pub enum DIP721TransactionType {
     Burn(Burn),
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, CandidType, Deserialize)]
 pub struct TransferFrom {
     pub token_id: u64,
     pub from: Principal,
@@ -21,25 +21,25 @@ pub struct TransferFrom {
     pub caller: Option<Principal>,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, CandidType, Deserialize)]
 pub struct Approve {
     pub token_id: u64,
     pub from: Principal,
     pub to: Principal,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, CandidType, Deserialize)]
 pub struct SetApprovalForAll {
     pub from: Principal,
     pub to: Principal,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, CandidType, Deserialize)]
 pub struct Mint {
     pub token_id: u64,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, CandidType, Deserialize)]
 pub struct Burn {
     pub token_id: u64,
 }
