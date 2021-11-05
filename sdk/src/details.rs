@@ -25,7 +25,7 @@ impl DetailsBuilder {
     }
 
     #[inline(always)]
-    pub fn build(self) -> Vec<(String, DetailValue)> {
-        self.inner
+    pub fn build(&mut self) -> Vec<(String, DetailValue)> {
+        self.inner.clone()
     }
 }
