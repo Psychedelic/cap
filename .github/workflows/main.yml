@@ -5,9 +5,9 @@ name: Continuous integration
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
   push:
-    branches: [ main, cap-sdk ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, cap-sdk ]
+    branches: [ mainc ]
 
 jobs:
   build:
