@@ -66,7 +66,7 @@ impl TryFromEvent for XTCTransactionDetailsERC20 {
     fn try_from_event(
         event: impl MaybeIndefinite,
     ) -> Result<Self, XTCTransactionDetailsERC20Error> {
-        let details = event.as_indefinite().details;
+        let details = event.into_indefinite().details;
 
         let map = details.iter().cloned().collect::<HashMap<_, _>>();
 
@@ -158,7 +158,7 @@ impl TryFromEvent for XTCTransactionKindLegacy {
     type Error = XTCTransactionDetailsERC20Error;
 
     fn try_from_event(event: impl MaybeIndefinite) -> Result<Self, Self::Error> {
-        let event = event.as_indefinite();
+        let event = event.into_indefinite();
         let details = event.details;
 
         let map = details.iter().cloned().collect::<HashMap<_, _>>();

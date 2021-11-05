@@ -98,7 +98,7 @@ impl TryFromEvent for DIP721TransactionType {
     type Error = DIP721TransactionDecodeError;
 
     fn try_from_event(event: impl MaybeIndefinite) -> Result<Self, DIP721TransactionDecodeError> {
-        let event = event.as_indefinite();
+        let event = event.into_indefinite();
         let details = event.details;
 
         let map = details.iter().cloned().collect::<HashMap<_, _>>();
