@@ -1,7 +1,7 @@
 use std::{collections::HashMap, convert::TryInto};
 
 use candid::{Nat, Principal};
-use cap_sdk::{DetailValue, IntoEvent, MaybeIndefinite, TryFromEvent};
+use cap_sdk::{DetailValue, IndefiniteEvent, IntoEvent, TryFromEvent};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -64,9 +64,9 @@ impl TryFromEvent for XTCTransactionDetailsERC20 {
     type Error = XTCTransactionDetailsERC20Error;
 
     fn try_from_event(
-        event: impl MaybeIndefinite,
+        event: impl Into<IndefiniteEvent>,
     ) -> Result<Self, XTCTransactionDetailsERC20Error> {
-        let details = event.into_indefinite().details;
+        let details = event.into().details;
 
         let map = details.iter().cloned().collect::<HashMap<_, _>>();
 
@@ -157,11 +157,10 @@ impl IntoEvent for XTCTransactionKindLegacy {
 impl TryFromEvent for XTCTransactionKindLegacy {
     type Error = XTCTransactionDetailsERC20Error;
 
-    fn try_from_event(event: impl MaybeIndefinite) -> Result<Self, Self::Error> {
-        let event = event.into_indefinite();
-        let details = event.details;
+    fn try_from_event(event: impl Into<IndefiniteEvent>) -> Result<Self, Self::Error> {
+        let event = event.into();
 
-        let map = details.iter().cloned().collect::<HashMap<_, _>>();
+        let map = event.details.iter().cloned().collect::<HashMap<_, _>>();
 
         Ok(match event.operation.as_str() {
             "transfer" => XTCTransactionKindLegacy::Transfer {

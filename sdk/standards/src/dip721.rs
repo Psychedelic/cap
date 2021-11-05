@@ -1,7 +1,7 @@
 use std::{collections::HashMap, convert::TryInto};
 
 use candid::{CandidType, Deserialize, Principal};
-use cap_sdk::{DetailValue, IntoEvent, MaybeIndefinite, TryFromEvent};
+use cap_sdk::{DetailValue, IndefiniteEvent, IntoEvent, TryFromEvent};
 use thiserror::Error;
 
 #[derive(Debug, Clone, Copy, CandidType, Deserialize)]
@@ -97,11 +97,9 @@ impl IntoEvent for DIP721TransactionType {
 impl TryFromEvent for DIP721TransactionType {
     type Error = DIP721TransactionDecodeError;
 
-    fn try_from_event(event: impl MaybeIndefinite) -> Result<Self, DIP721TransactionDecodeError> {
-        let event = event.into_indefinite();
-        let details = event.details;
-
-        let map = details.iter().cloned().collect::<HashMap<_, _>>();
+    fn try_from_event(event: impl Into<IndefiniteEvent>) -> Result<Self, DIP721TransactionDecodeError> {
+        let event = event.into();
+        let map = event.details.iter().cloned().collect::<HashMap<_, _>>();
 
         Ok(match event.operation.as_str() {
             "transfer_from" => {

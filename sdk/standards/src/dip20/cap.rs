@@ -1,7 +1,7 @@
 use std::{collections::HashMap, convert::TryInto};
 
 use candid::{Int, Nat, Principal};
-use cap_sdk::{DetailValue, DetailsBuilder, IntoEvent, TryFromEvent, TypedEvent};
+use cap_sdk::{DetailValue, DetailsBuilder, IndefiniteEvent, IntoEvent, TryFromEvent, TypedEvent};
 use num_bigint::{BigInt, BigUint};
 
 use super::{DIP20ParseError, Operation, TransactionStatus, TxRecord};
@@ -214,8 +214,8 @@ impl IntoEvent for DIP20Details {
 impl TryFromEvent for DIP20Details {
     type Error = DIP20ParseError;
 
-    fn try_from_event(event: impl cap_sdk::MaybeIndefinite) -> Result<Self, Self::Error> {
-        let event = event.into_indefinite();
+    fn try_from_event(event: impl Into<IndefiniteEvent>) -> Result<Self, Self::Error> {
+        let event = event.into();
 
         let details = event.details.iter().cloned().collect::<HashMap<_, _>>();
 

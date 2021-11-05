@@ -39,39 +39,15 @@ impl IntoEvent for Vec<(String, DetailValue)> {
 pub trait TryFromEvent: Sized {
     type Error;
 
-    fn try_from_event(event: impl MaybeIndefinite) -> Result<Self, Self::Error>;
+    fn try_from_event(event: impl Into<IndefiniteEvent>) -> Result<Self, Self::Error>;
 }
 
 impl TryFromEvent for Vec<(String, DetailValue)> {
     type Error = Infallible;
 
-    fn try_from_event(event: impl MaybeIndefinite) -> Result<Self, Self::Error> {
-        let event = event.into_indefinite();
+    fn try_from_event(event: impl Into<IndefiniteEvent>) -> Result<Self, Self::Error> {
+        let event = event.into();
 
         Ok(event.details)
-    }
-}
-
-pub trait MaybeIndefinite {
-    fn time(&self) -> Option<u64> {
-        None
-    }
-
-    fn into_indefinite(self) -> IndefiniteEvent;
-}
-
-impl MaybeIndefinite for IndefiniteEvent {
-    fn into_indefinite(self) -> IndefiniteEvent {
-        self
-    }
-}
-
-impl MaybeIndefinite for Event {
-    fn into_indefinite(self) -> IndefiniteEvent {
-        self.into()
-    }
-
-    fn time(&self) -> Option<u64> {
-        Some(self.time)
     }
 }
