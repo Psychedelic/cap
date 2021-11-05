@@ -59,20 +59,7 @@ impl CapEnv {
             futures.borrow_mut().push(future);
         });
     }
-
-    // pub(crate) async fn get_mut<'a>() -> &'a mut Self {
-    //     if let Some(data) = get_maybe::<CapEnv>() {
-    //         data
-    //     } else {
-    //         store(Self::create(Principal::from_str("TODO").unwrap()));
-    //
-    //         // Unwrap here because we just stored the freshly created env
-    //         // and if somehow `get_maybe` failed, there's a bigger issue
-    //         // occurring.
-    //         get_maybe::<CapEnv>().unwrap()
-    //     }
-    // }
-
+    
     /// Sets the [`CapEnv`] using the provided value.
     ///
     /// Used to restore the generated canister's ID after an upgrade.
