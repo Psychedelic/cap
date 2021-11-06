@@ -95,14 +95,14 @@ impl Bucket {
     }
 
     /// Try to insert an event into the bucket.
-    pub fn insert(&mut self, contract: &Principal, event: Event) -> u64 {
+    pub fn insert(&mut self, contract_id: &Principal, event: Event) -> u64 {
         let local_index = self.events.len() as u32;
         let hash = event.hash();
         let event: NonNull<Event> = Box::leak(Box::new(event)).into();
         let eve = unsafe { event.as_ref() };
 
         // Update the indexers for the transaction.
-        self.contract_indexer.insert(contract, event, &hash);
+        self.contract_indexer.insert(contract_id, event, &hash);
         for user in eve.extract_principal_ids() {
             self.user_indexer.insert(user, event, &hash);
         }
