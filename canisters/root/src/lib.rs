@@ -1,3 +1,5 @@
+use crate::context::CapContext;
+use crate::users::Users;
 use ic_certified_map::{fork, fork_hash, AsHashTree, HashTree};
 use ic_history_common::bucket_lookup_table::BucketLookupTable;
 use ic_history_common::canister_list::CanisterList;
@@ -6,12 +8,14 @@ use ic_history_common::Bucket;
 use ic_kit::candid::{candid_method, export_service};
 use ic_kit::{ic, Principal};
 use serde::Serialize;
-use std::collections::BTreeSet;
+use std::collections::HashSet;
 
 use ic_history_common::did::*;
 use ic_kit::macros::*;
 
+mod context;
 mod upgrade;
+mod users;
 
 /// Merkle tree of the canister.
 ///
@@ -28,12 +32,8 @@ struct Data {
     bucket: Bucket,
     buckets: BucketLookupTable,
     next_canisters: CanisterList,
-    /// List of all the users in this token contract.
-    users: BTreeSet<Principal>,
-    cap_id: Principal,
-    contract: TokenContractId,
-    writers: BTreeSet<TokenContractId>,
     allow_migration: bool,
+    users: Users,
 }
 
 impl Default for Data {
@@ -46,21 +46,22 @@ impl Default for Data {
                 table
             },
             next_canisters: CanisterList::new(),
-            users: BTreeSet::new(),
-            cap_id: Principal::management_canister(),
-            contract: Principal::management_canister(),
-            writers: BTreeSet::new(),
             allow_migration: true,
+            users: Users::default(),
         }
     }
 }
 
 #[init]
-fn init(contract: Principal, writers: BTreeSet<Principal>) {
-    let data = ic::get_mut::<Data>();
-    data.cap_id = ic::caller();
-    data.contract = contract;
-    data.writers = writers;
+fn init(contract_id: Principal, writers: HashSet<Principal>) {
+    let ctx = CapContext {
+        cap_canister_id: ic::caller(),
+        contract_id,
+        writers,
+        ignore_rate_limit: false,
+    };
+
+    ic::store(ctx);
 }
 
 #[query]
@@ -116,10 +117,11 @@ fn get_transaction(arg: WithIdArg) -> GetTransactionResponse {
 #[candid_method(query)]
 fn get_transactions(arg: GetTransactionsArg) -> GetTransactionsResponseBorrowed<'static> {
     let data = ic::get::<Data>();
+    let ctx = CapContext::get();
 
     let page = arg
         .page
-        .unwrap_or_else(|| data.bucket.last_page_for_contract(&data.contract));
+        .unwrap_or_else(|| data.bucket.last_page_for_contract(&ctx.contract_id));
 
     let witness = match arg.witness {
         false => None,
@@ -127,7 +129,7 @@ fn get_transactions(arg: GetTransactionsArg) -> GetTransactionsResponseBorrowed<
             fork(
                 fork(
                     data.bucket
-                        .witness_transactions_for_contract(&data.contract, page),
+                        .witness_transactions_for_contract(&ctx.contract_id, page),
                     HashTree::Pruned(data.buckets.root_hash()),
                 ),
                 HashTree::Pruned(data.next_canisters.root_hash()),
@@ -138,7 +140,7 @@ fn get_transactions(arg: GetTransactionsArg) -> GetTransactionsResponseBorrowed<
 
     let events = data
         .bucket
-        .get_transactions_for_contract(&data.contract, page);
+        .get_transactions_for_contract(&ctx.contract_id, page);
 
     GetTransactionsResponseBorrowed {
         data: events,
@@ -218,30 +220,23 @@ fn size() -> u64 {
 #[update]
 #[candid_method(update)]
 fn insert(event: IndefiniteEvent) -> TransactionId {
-    let data = ic::get_mut::<Data>();
+    let ctx = CapContext::get();
     let caller = ic::caller();
 
-    if !(caller == data.contract || data.writers.contains(&caller)) {
+    if !ctx.is_writer(&caller) {
         panic!("The method can only be invoked by one of the writers.");
     }
 
+    let data = ic::get_mut::<Data>();
     let event = event.to_event(ic::time() / 1_000_000);
 
-    let mut new_users = Vec::new();
-    for principal in event.extract_principal_ids() {
-        if data.users.insert(*principal) {
-            new_users.push(*principal);
-        }
-    }
+    let principals = event.extract_principal_ids();
+    data.users.insert(ctx, principals);
+    data.users.trigger_flush(ctx);
 
-    ic_cdk::block_on(write_new_users_to_cap(
-        data.cap_id,
-        data.contract,
-        new_users,
-    ));
+    let id = data.bucket.insert(&ctx.contract_id, event);
 
-    let id = data.bucket.insert(&data.contract, event);
-
+    // After the first insertion, prevent the token contract to perform any migration calls.
     data.allow_migration = false;
 
     ic::set_certified_data(&fork_hash(
@@ -255,34 +250,25 @@ fn insert(event: IndefiniteEvent) -> TransactionId {
 #[update]
 #[candid_method(update)]
 fn migrate(events: Vec<Event>) {
-    let data = ic::get_mut::<Data>();
+    let ctx = CapContext::get();
     let caller = ic::caller();
 
-    if !(caller == data.contract || data.writers.contains(&caller)) {
+    if !ctx.is_writer(&caller) {
         panic!("The method can only be invoked by one of the writers.");
     }
 
+    let data = ic::get_mut::<Data>();
     if !data.allow_migration {
         panic!("Migration is not allowed after an insert.")
     }
 
-    let mut new_users = Vec::new();
-
     for event in events {
-        for principal in event.extract_principal_ids() {
-            if data.users.insert(*principal) {
-                new_users.push(*principal);
-            }
-        }
-
-        data.bucket.insert(&data.contract, event);
+        let principals = event.extract_principal_ids();
+        data.users.insert(ctx, principals);
+        data.bucket.insert(&ctx.contract_id, event);
     }
 
-    ic_cdk::block_on(write_new_users_to_cap(
-        data.cap_id,
-        data.contract,
-        new_users,
-    ));
+    data.users.trigger_flush(ctx);
 
     ic::set_certified_data(&fork_hash(
         &fork_hash(&data.bucket.root_hash(), &data.buckets.root_hash()),
@@ -290,16 +276,17 @@ fn migrate(events: Vec<Event>) {
     ));
 }
 
-async fn write_new_users_to_cap(cap_id: Principal, contract_id: Principal, users: Vec<Principal>) {
-    for _ in 0..10 {
-        let args = (contract_id, &users);
-        if ic::call::<(Principal, &Vec<Principal>), (), &str>(cap_id, "insert_new_users", args)
-            .await
-            .is_ok()
-        {
-            break;
-        }
+#[update]
+#[candid_method(update)]
+fn cap_bypass_rate_limit() {
+    let ctx = CapContext::get();
+    let caller = ic::caller();
+
+    if ctx.cap_canister_id != caller {
+        panic!("This method can only be invoked from cap router.");
     }
+
+    CapContext::bypass_rate_limit();
 }
 
 #[query(name = "__get_candid_interface_tmp_hack")]
