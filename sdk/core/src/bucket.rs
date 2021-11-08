@@ -74,7 +74,7 @@ impl Bucket {
     ) -> Result<GetTransactionResponse, (RejectionCode, String)> {
         let result: (GetTransactionResponse,) = call(
             self.0,
-            "get_transactions",
+            "get_user_transactions",
             (GetUserTransactionsArg {
                 user,
                 page,
