@@ -61,27 +61,46 @@ use super::{DIP20ParseError, Operation, TransactionStatus, TxRecord};
 ///
 #[derive(Clone)]
 pub enum DIP20Details {
+    /// Indicates that `owner` has approved `spender` to withdraw
+    /// tokens from the account up to `amount` amount.
     Approve {
-        from: Principal,
-        to: Principal,
-        amount: Nat,
+        /// The authorizer.
+        ///
+        /// Should be the same as its cap event's `caller`.
+        owner: Principal,
+        spender: Principal,
+        limit: Nat,
         fee: Nat,
         status: TransactionStatus,
     },
+    /// Indicates that `amount` number of new tokens have been minted
+    /// to user `to`.
     Mint {
+        /// The executor. The spec defines this as only the owner of the canister.
+        ///
+        /// Should be the same as its cap event's `caller`.
         from: Principal,
         to: Principal,
         amount: Nat,
         fee: Nat,
         status: TransactionStatus,
     },
+    /// Indicates that `value` tokens have been transfered to user `to` from account `from`.
+    /// On a Cap Event, `caller` is `from`.
     Transfer {
+        /// Should be the same as its cap event's `caller` as this can only be executed
+        /// on the account of the caller.
         from: Principal,
         to: Principal,
         amount: Nat,
         fee: Nat,
         status: TransactionStatus,
     },
+    /// Indicates that a third-party has transferred tokens from user `from` to user `to`.
+    ///
+    /// On a Cap Event, `caller` isn't always `from`.
+    ///
+    /// Approval to execute this action should come from an `Approval` event.
     TransferFrom {
         from: Principal,
         to: Principal,
@@ -110,18 +129,18 @@ impl DIP20EventExt for TypedEvent<DIP20Details> {
     fn into_txrecord(self) -> TxRecord {
         match self.details {
             DIP20Details::Approve {
-                from,
-                to,
-                amount,
+                owner,
+                spender,
+                limit,
                 fee,
                 status,
             } => TxRecord {
                 caller: self.caller,
                 timestamp: Int(BigInt::default() + self.time),
                 index: Nat(BigUint::default()),
-                from,
-                to,
-                amount,
+                from: owner,
+                to: spender,
+                amount: limit,
                 fee,
                 status,
                 operation: Operation::Approve,
@@ -194,18 +213,18 @@ impl IntoEvent for DIP20Details {
     fn details(&self) -> Vec<(String, cap_sdk::DetailValue)> {
         match self {
             Self::Approve {
-                from,
-                to,
-                amount,
+                owner,
+                spender,
+                limit,
                 fee,
                 status,
             } => {
                 let status_string = status.into_str().to_owned();
 
                 DetailsBuilder::default()
-                    .insert("from", from.clone())
-                    .insert("to", to.clone())
-                    .insert("amount", amount.clone())
+                    .insert("from", owner.clone())
+                    .insert("to", spender.clone())
+                    .insert("amount", limit.clone())
                     .insert("fee", fee.clone())
                     .insert("status", status_string.clone())
                     .build()
@@ -281,9 +300,9 @@ impl TryFromEvent for DIP20Details {
                     .map_failure("status")?;
 
                 Self::Approve {
-                    from: details.get_detail("from")?.try_into().map_failure("from")?,
-                    to: details.get_detail("to")?.try_into().map_failure("to")?,
-                    amount: details
+                    owner: details.get_detail("from")?.try_into().map_failure("from")?,
+                    spender: details.get_detail("to")?.try_into().map_failure("to")?,
+                    limit: details
                         .get_detail("amount")?
                         .try_into()
                         .map_failure("amount")?,
@@ -359,9 +378,9 @@ impl Into<TypedEvent<DIP20Details>> for TxRecord {
                     caller: self.from,
                     time,
                     details: DIP20Details::Approve {
-                        from: self.from,
-                        to: self.to,
-                        amount: self.amount,
+                        owner: self.from,
+                        spender: self.to,
+                        limit: self.amount,
                         fee: self.fee,
                         status: self.status,
                     },
