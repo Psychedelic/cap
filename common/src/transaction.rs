@@ -231,8 +231,8 @@ impl TryInto<String> for DetailValue {
     type Error = ();
 
     fn try_into(self) -> Result<String, Self::Error> {
-        if let Self::Text(num) = self {
-            Ok(num)
+        if let Self::Text(val) = self {
+            Ok(val)
         } else {
             Err(())
         }
