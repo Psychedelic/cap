@@ -17,11 +17,13 @@ pub struct Bucket(pub(crate) Principal);
 
 impl Bucket {
     /// Returns the list of canisters which have different pages of data.
-    pub async fn get_next_canisters(
-        &self,
-    ) -> Result<Vec<Bucket>, (RejectionCode, String)> {
-        let result: (GetIndexCanistersResponse,) =
-            call(self.0, "get_next_canisters", (WithWitnessArg { witness: false },)).await?;
+    pub async fn get_next_canisters(&self) -> Result<Vec<Bucket>, (RejectionCode, String)> {
+        let result: (GetIndexCanistersResponse,) = call(
+            self.0,
+            "get_next_canisters",
+            (WithWitnessArg { witness: false },),
+        )
+        .await?;
 
         Ok(result
             .0
@@ -36,8 +38,12 @@ impl Bucket {
         &self,
         id: u64,
     ) -> Result<GetTransactionResponse, (RejectionCode, String)> {
-        let result: (GetTransactionResponse,) =
-            call(self.0, "get_transaction", (WithIdArg { id, witness: false },)).await?;
+        let result: (GetTransactionResponse,) = call(
+            self.0,
+            "get_transaction",
+            (WithIdArg { id, witness: false },),
+        )
+        .await?;
 
         Ok(result.0)
     }
@@ -50,7 +56,10 @@ impl Bucket {
         let result: (GetTransactionsResponse,) = call(
             self.0,
             "get_transactions",
-            (GetTransactionsArg { page, witness: false },),
+            (GetTransactionsArg {
+                page,
+                witness: false,
+            },),
         )
         .await?;
 
@@ -61,7 +70,7 @@ impl Bucket {
     pub async fn get_user_transactions(
         &self,
         user: Principal,
-        page: Option<u32>
+        page: Option<u32>,
     ) -> Result<GetTransactionResponse, (RejectionCode, String)> {
         let result: (GetTransactionResponse,) = call(
             self.0,

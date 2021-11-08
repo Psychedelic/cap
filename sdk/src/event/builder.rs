@@ -31,7 +31,7 @@ use super::IntoEvent;
 //# Ok(())
 //# }
 ///```
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct IndefiniteEventBuilder {
     caller: Option<Principal>,
     operation: Option<String>,
@@ -45,7 +45,8 @@ impl IndefiniteEventBuilder {
     }
 
     /// Sets the caller of the event.
-    pub fn caller(&mut self, caller: Principal) -> &mut Self {
+    #[inline(always)]
+    pub fn caller(mut self, caller: Principal) -> Self {
         self.caller = Some(caller);
 
         self
@@ -56,7 +57,8 @@ impl IndefiniteEventBuilder {
     /// # Panics
     /// Panics if the operation is already set from an [`IntoEvent`] type which
     /// sets the operation.
-    pub fn operation(&mut self, operation: impl Into<String>) -> &mut Self {
+    #[inline(always)]
+    pub fn operation(mut self, operation: impl Into<String>) -> Self {
         if self.operation_from_event {
             panic!("Tried to set operation after it was set from an `IntoEvent` type")
         }
@@ -74,7 +76,8 @@ impl IndefiniteEventBuilder {
     ///
     /// # Panics
     /// Panics if `operation` has already been set by an [`IntoEvent::operation`] call.
-    pub fn details(&mut self, details: impl IntoEvent) -> &mut Self {
+    #[inline(always)]
+    pub fn details(mut self, details: impl IntoEvent) -> Self {
         self.details.append(&mut details.details());
 
         if self.operation_from_event {
@@ -94,11 +97,12 @@ impl IndefiniteEventBuilder {
     /// # Panics
     /// Panics if caller, operation, or details has not
     /// already been set.
-    pub fn build(&mut self) -> Result<IndefiniteEvent, ()> {
+    #[inline(always)]
+    pub fn build(self) -> Result<IndefiniteEvent, ()> {
         Ok(IndefiniteEvent {
-            caller: self.caller.take().unwrap(),
-            operation: self.operation.take().unwrap(),
-            details: self.details.clone(),
+            caller: self.caller.unwrap(),
+            operation: self.operation.unwrap(),
+            details: self.details,
         })
     }
 }
