@@ -39,13 +39,13 @@ use super::{IntoEvent, TryFromEvent};
 //#        ),
 //#        bar: 42,
 //#    })
-//#}
-//#}
-//#impl IntoDetails for TransactionDetails {
-//#fn into_details(self) -> Vec<(String, cap_sdk_core::transaction::DetailValue)> {
-//#    vec![]
-//#}
-//#}
+//# }
+//# }
+//# impl IntoDetails for TransactionDetails {
+//#     fn into_details(self) -> Vec<(String, cap_sdk_core::transaction::DetailValue)> {
+//#         vec![]
+//#     }
+//# }
 ///
 /// // This is an example of the type of event that would be retrieved from
 /// // a call to Cap. It has the required details to be cast into a typed
