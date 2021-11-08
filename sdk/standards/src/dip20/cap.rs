@@ -310,6 +310,12 @@ impl GetDetailExt for HashMap<String, DetailValue> {
     }
 }
 
+impl Into<TxRecord> for TypedEvent<DIP20Details> {
+    fn into(self) -> TxRecord {
+        self.into_txrecord()
+    }
+}
+
 trait MapFailed<T, E> {
     fn map_failure(self, key: &'static str) -> Result<T, E>;
 }
