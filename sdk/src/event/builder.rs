@@ -81,9 +81,9 @@ impl IndefiniteEventBuilder {
             panic!("Cannot combine two `IntoEvent` types with unique operations.")
         }
 
-        if details.operation() != "" {
+        if let Some(operation) = details.operation() {
             self.operation_from_event = true;
-            self.operation = Some(details.operation().to_owned());
+            self.operation = Some(operation.to_owned());
         }
 
         self

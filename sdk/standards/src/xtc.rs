@@ -95,8 +95,8 @@ pub struct XTCTransactionDetailsLegacy {
 
 #[cfg(feature = "sdk-impls")]
 impl IntoEvent for XTCTransactionKindLegacy {
-    fn operation(&self) -> &'static str {
-        match *self {
+    fn operation(&self) -> Option<&'static str> {
+        Some(match *self {
             Self::Transfer { .. } => "transfer",
             Self::TransferFrom { .. } => "transfer_from",
             Self::Approve { .. } => "approve",
@@ -104,7 +104,7 @@ impl IntoEvent for XTCTransactionKindLegacy {
             Self::Mint { .. } => "mint",
             Self::CanisterCalled { .. } => "canister_called",
             Self::CanisterCreated { .. } => "canister_created",
-        }
+        })
     }
 
     fn details(&self) -> Vec<(String, DetailValue)> {

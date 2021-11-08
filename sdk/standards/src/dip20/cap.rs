@@ -129,13 +129,13 @@ impl DIP20EventExt for TypedEvent<DIP20Details> {
 }
 
 impl IntoEvent for DIP20Details {
-    fn operation(&self) -> &'static str {
-        match self {
+    fn operation(&self) -> Option<&'static str> {
+        Some(match self {
             Self::Approve { .. } => "approve",
             Self::Mint { .. } => "mint",
             Self::Transfer { .. } => "transfer",
             Self::TransferFrom { .. } => "transfer_from",
-        }
+        })
     }
 
     fn details(&self) -> Vec<(String, cap_sdk::DetailValue)> {

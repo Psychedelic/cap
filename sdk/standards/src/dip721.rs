@@ -45,14 +45,14 @@ pub struct Burn {
 }
 #[cfg(feature = "sdk-impls")]
 impl IntoEvent for DIP721TransactionType {
-    fn operation(&self) -> &'static str {
-        match *self {
+    fn operation(&self) -> Option<&'static str> {
+        Some(match *self {
             Self::TransferFrom(_) => "transfer_from",
             Self::Approve(_) => "approve",
             Self::SetApprovalForAll(_) => "set_approval_for_all",
             Self::Mint(_) => "mint",
             Self::Burn(_) => "burn",
-        }
+        })
     }
 
     fn details(&self) -> Vec<(String, cap_sdk::DetailValue)> {

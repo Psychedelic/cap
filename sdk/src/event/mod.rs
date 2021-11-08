@@ -22,8 +22,8 @@ pub use typed::*;
 /// of how to handle enums, see the `cap-standards` crate source.
 pub trait IntoEvent {
     /// The type of operation being executed
-    fn operation(&self) -> &'static str {
-        ""
+    fn operation(&self) -> Option<&'static str> {
+        None
     }
 
     fn details(&self) -> Vec<(String, DetailValue)>;

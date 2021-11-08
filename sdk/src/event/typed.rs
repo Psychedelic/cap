@@ -84,7 +84,7 @@ where
 impl<T: IntoEvent + TryFromEvent + Clone> TypedEvent<T> {
     /// The operation of the event
     pub fn operation(&self) -> &'static str {
-        self.details.operation()
+        self.details.operation().unwrap_or("")
     }
 }
 
@@ -93,7 +93,7 @@ impl<T: TryFromEvent + IntoEvent + Clone> Into<Event> for TypedEvent<T> {
         Event {
             time: self.time,
             caller: self.caller,
-            operation: self.details.operation().to_owned(),
+            operation: self.details.operation().unwrap_or("").to_owned(),
             details: self.details.details(),
         }
     }
@@ -129,7 +129,7 @@ where
 impl<T: IntoEvent + TryFromEvent + Clone> TypedIndefiniteEvent<T> {
     /// The operation of the event.
     pub fn operation(&self) -> &'static str {
-        self.details.operation()
+        self.details.operation().unwrap_or("")
     }
 }
 
@@ -137,7 +137,7 @@ impl<T: TryFromEvent + IntoEvent + Clone> Into<IndefiniteEvent> for TypedIndefin
     fn into(self) -> IndefiniteEvent {
         IndefiniteEvent {
             caller: self.caller,
-            operation: self.details.operation().to_owned(),
+            operation: self.details.operation().unwrap_or("").to_owned(),
             details: self.details.details(),
         }
     }
