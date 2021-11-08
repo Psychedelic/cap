@@ -6,6 +6,59 @@ use num_bigint::{BigInt, BigUint};
 
 use super::{DIP20ParseError, Operation, TransactionStatus, TxRecord};
 
+/// DIP20 Details for a [`TypedEvent`] or [`TypedIndefiniteEvent`][cap_sdk::TypedIndefiniteEvent].
+///
+/// # A note on `caller`.
+/// Cap's `caller` is **not** optional. Unlike DIP20. Caller can be determined
+/// from the transaction type, so it is automatically populated based on the type
+/// of operation.
+///
+/// # Examples
+///
+/// ### Attempting to convert a Cap record into a `TypedEvent<DIP20Details>`.
+///
+/// Also demonstrates acquiring additional information from the event,
+/// such as the caller and the timestamp with an API similar to how [`TxRecord`]
+/// stores these parameters.
+///
+/// ```rust
+/// // Retrieve a transaction from cap. Since this contract uses the
+/// // DIP20 standard we know its DIP20 compliant and will unwrap the
+/// // conversion.
+/// let transaction = get_transaction(230948).unwrap();
+///
+/// let typed_transaction: TypedEvent<DIP20Details> = transaction.try_into().unwrap();
+///
+/// // Some utility methods are included in an "Extension Trait". Which
+/// // is a pattern which allows extending a type while following Rust's
+/// // orphaning rules.
+/// use cap_standards::dip20::DIP20EventExt;
+///
+/// // Accessing data within the event is easy since it's just a structural
+/// // enum. This isn't demonstrated here because it's slightly bulky for an
+/// // example. However, you can access the caller and timestamp with the extension
+/// // trait.
+/// let caller = typed_transaction.caller();
+/// let timestamp = typed_transaction.timestamp();
+/// ```
+///
+/// ### Converting a `TypedEvent<DIP20Details>` to a TxRecord.
+/// ```rust
+/// let event = TypedEvent {
+///     caller: Principal::management_canister(),
+///     time: 7270727,
+///     details: DIP20Details::Mint {
+///         from: Principal::from_text("aaaaa-aa").unwrap(),
+///         to: Principal::management_canister(),
+///         amount: BigUint(23089).into(),
+///         fee: BigUint(0).into(),
+///         status: TransactionStatus::Succeeded
+///     }
+/// };
+///
+/// let tx_record: TxRecord = event.into();
+/// ```
+///
 #[derive(Clone)]
 pub enum DIP20Details {
     Approve {
@@ -296,6 +349,72 @@ impl TryFromEvent for DIP20Details {
     }
 }
 
+impl Into<TypedEvent<DIP20Details>> for TxRecord {
+    fn into(self) -> TypedEvent<DIP20Details> {
+        match self.operation {
+            Operation::Approve => {
+                let time = self.timestamp.0.try_into().unwrap();
+
+                TypedEvent {
+                    caller: self.from,
+                    time,
+                    details: DIP20Details::Approve {
+                        from: self.from,
+                        to: self.to,
+                        amount: self.amount,
+                        fee: self.fee,
+                        status: self.status,
+                    },
+                }
+            }
+            Operation::Mint => {
+                let time: u64 = self.timestamp.0.try_into().unwrap();
+
+                TypedEvent {
+                    caller: self.caller,
+                    time,
+                    details: DIP20Details::Mint {
+                        from: self.from,
+                        to: self.to,
+                        amount: self.amount,
+                        fee: self.fee,
+                        status: self.status,
+                    },
+                }
+            }
+            Operation::Transfer => {
+                let time: u64 = self.timestamp.0.try_into().unwrap();
+
+                TypedEvent {
+                    caller: self.from,
+                    time,
+                    details: DIP20Details::Transfer {
+                        from: self.from,
+                        to: self.to,
+                        amount: self.amount,
+                        fee: self.fee,
+                        status: self.status,
+                    },
+                }
+            }
+            Operation::TransferFrom => {
+                let time: u64 = self.timestamp.0.try_into().unwrap();
+
+                TypedEvent {
+                    caller: self.caller,
+                    time,
+                    details: DIP20Details::TransferFrom {
+                        from: self.from,
+                        to: self.to,
+                        amount: self.amount,
+                        fee: self.fee,
+                        status: self.status,
+                    },
+                }
+            }
+        }
+    }
+}
 trait GetDetailExt {
     fn get_detail(&self, detail: &'static str) -> Result<DetailValue, DIP20ParseError>;
 }
