@@ -46,6 +46,12 @@ pub enum Operation {
     Mint,
     Transfer,
     TransferFrom,
+    #[cfg(feature = "alpha-dip20-dank")]
+    Burn,
+    #[cfg(feature = "alpha-dip20-dank")]
+    CanisterCalled,
+    #[cfg(feature = "alpha-dip20-dank")]
+    CanisterCreated,
 }
 
 impl<'a> TryFrom<&'a str> for Operation {
@@ -57,6 +63,12 @@ impl<'a> TryFrom<&'a str> for Operation {
             "mint" => Self::Mint,
             "transfer" => Self::Transfer,
             "transfer_from" => Self::TransferFrom,
+            #[cfg(feature = "alpha-dip20-dank")]
+            "burn" => Self::Burn,
+            #[cfg(feature = "alpha-dip20-dank")]
+            "canister_called" => Self::CanisterCalled,
+            #[cfg(feature = "alpha-dip20-dank")]
+            "canister_created" => Self::CanisterCreated,
             _ => return Err(()),
         })
     }
@@ -69,13 +81,19 @@ impl Into<&'static str> for Operation {
             Self::Mint => "mint",
             Self::Transfer => "transfer",
             Self::TransferFrom => "transfer_from",
+            #[cfg(feature = "alpha-dip20-dank")]
+            Self::Burn => "burn",
+            #[cfg(feature = "alpha-dip20-dank")]
+            Self::CanisterCalled => "canister_called",
+            #[cfg(feature = "alpha-dip20-dank")]
+            Self::CanisterCreated => "canister_created",
         }
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct TxRecord {
-    pub caller: Principal,
+    pub caller: Option<Principal>,
     pub index: Nat,
     pub from: Principal,
     pub to: Principal,

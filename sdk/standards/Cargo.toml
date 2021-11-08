@@ -16,6 +16,7 @@ sdk-impls = ["cap-sdk"]
 alpha-xtc = []
 alpha-dip721 = []
 alpha-dip20 = ["num-bigint"]
+alpha-dip20-dank = ["alpha-dip20"]
 
 [dependencies]
 candid = "0.7"

@@ -108,6 +108,31 @@ pub enum DIP20Details {
         fee: Nat,
         status: TransactionStatus,
     },
+    #[cfg(feature = "alpha-dip20-dank")]
+    Burn {
+        from: Principal,
+        to: Principal,
+        amount: Nat,
+        fee: Nat,
+        status: TransactionStatus,
+    },
+    #[cfg(feature = "alpha-dip20-dank")]
+    CanisterCalled {
+        from: Principal,
+        to: Principal,
+        method_name: String,
+        amount: Nat,
+        fee: Nat,
+        status: TransactionStatus,
+    },
+    #[cfg(feature = "alpha-dip20-dank")]
+    CanisterCreated {
+        from: Principal,
+        canister: Principal,
+        amount: Nat,
+        fee: Nat,
+        status: TransactionStatus,
+    },
 }
 
 pub trait DIP20EventExt {
@@ -135,7 +160,7 @@ impl DIP20EventExt for TypedEvent<DIP20Details> {
                 fee,
                 status,
             } => TxRecord {
-                caller: self.caller,
+                caller: Some(self.caller),
                 timestamp: Int(BigInt::default() + self.time),
                 index: Nat(BigUint::default()),
                 from: owner,
@@ -152,7 +177,7 @@ impl DIP20EventExt for TypedEvent<DIP20Details> {
                 fee,
                 status,
             } => TxRecord {
-                caller: self.caller,
+                caller: Some(self.caller),
                 timestamp: Int(BigInt::default() + self.time),
                 index: Nat(BigUint::default()),
                 from,
@@ -169,7 +194,7 @@ impl DIP20EventExt for TypedEvent<DIP20Details> {
                 fee,
                 status,
             } => TxRecord {
-                caller: self.caller,
+                caller: Some(self.caller),
                 timestamp: Int(BigInt::default() + self.time),
                 index: Nat(BigUint::default()),
                 from,
@@ -186,7 +211,7 @@ impl DIP20EventExt for TypedEvent<DIP20Details> {
                 fee,
                 status,
             } => TxRecord {
-                caller: self.caller,
+                caller: Some(self.caller),
                 timestamp: Int(BigInt::default() + self.time),
                 index: Nat(BigUint::default()),
                 from,
@@ -195,6 +220,61 @@ impl DIP20EventExt for TypedEvent<DIP20Details> {
                 fee,
                 status,
                 operation: Operation::TransferFrom,
+            },
+            #[cfg(feature = "alpha-dip20-dank")]
+            DIP20Details::Burn {
+                from,
+                to,
+                amount,
+                fee,
+                status,
+            } => TxRecord {
+                caller: None,
+                timestamp: Int(BigInt::default() + self.time),
+                from,
+                to,
+                amount,
+                fee,
+                operation: Operation::Burn,
+                status,
+                index: Nat(BigUint::default()),
+            },
+            #[cfg(feature = "alpha-dip20-dank")]
+            DIP20Details::CanisterCalled {
+                from,
+                to,
+                amount,
+                fee,
+                status,
+                ..
+            } => TxRecord {
+                caller: None,
+                timestamp: Int(BigInt::default() + self.time),
+                from,
+                to,
+                amount,
+                fee,
+                operation: Operation::Burn,
+                status,
+                index: Nat(BigUint::default()),
+            },
+            #[cfg(feature = "alpha-dip20-dank")]
+            DIP20Details::CanisterCreated {
+                from,
+                canister,
+                amount,
+                fee,
+                status,
+            } => TxRecord {
+                caller: None,
+                timestamp: Int(BigInt::default() + self.time),
+                from,
+                to: canister,
+                amount,
+                fee,
+                operation: Operation::Burn,
+                status,
+                index: Nat(BigUint::default()),
             },
         }
     }
@@ -207,6 +287,12 @@ impl IntoEvent for DIP20Details {
             Self::Mint { .. } => "mint",
             Self::Transfer { .. } => "transfer",
             Self::TransferFrom { .. } => "transfer_from",
+            #[cfg(feature = "alpha-dip20-dank")]
+            Self::Burn { .. } => "burn",
+            #[cfg(feature = "alpha-dip20-dank")]
+            Self::CanisterCalled { .. } => "canister_called",
+            #[cfg(feature = "alpha-dip20-dank")]
+            Self::CanisterCreated { .. } => "canister_created",
         })
     }
 
@@ -280,6 +366,62 @@ impl IntoEvent for DIP20Details {
                     .insert("status", status_string.clone())
                     .build()
             }
+            #[cfg(feature = "alpha-dip20-dank")]
+            Self::Burn {
+                from,
+                to,
+                amount,
+                fee,
+                status,
+            } => {
+                let status_string = status.into_str().to_owned();
+
+                DetailsBuilder::default()
+                    .insert("from", from.clone())
+                    .insert("to", to.clone())
+                    .insert("amount", amount.clone())
+                    .insert("fee", fee.clone())
+                    .insert("status", status_string.clone())
+                    .build()
+            }
+            #[cfg(feature = "alpha-dip20-dank")]
+            Self::CanisterCalled {
+                from,
+                to,
+                amount,
+                fee,
+                status,
+                method_name,
+            } => {
+                let status_string = status.into_str().to_owned();
+
+                DetailsBuilder::default()
+                    .insert("from", from.clone())
+                    .insert("to", to.clone())
+                    .insert("amount", amount.clone())
+                    .insert("fee", fee.clone())
+                    .insert("status", status_string.clone())
+                    .insert("method_name", method_name.clone())
+                    .build()
+            }
+            #[cfg(feature = "alpha-dip20-dank")]
+            Self::CanisterCreated {
+                from,
+                canister,
+                amount,
+                fee,
+                status,
+            } => {
+                let status_string = status.into_str().to_owned();
+
+                DetailsBuilder::default()
+                    .insert("from", from.clone())
+                    .insert("to", canister.clone())
+                    .insert("amount", amount.clone())
+                    .insert("fee", fee.clone())
+                    .insert("status", status_string.clone())
+                    .build()
+            }
         }
     }
 }
@@ -292,7 +434,7 @@ impl TryFromEvent for DIP20Details {
 
         let details = event.details.iter().cloned().collect::<HashMap<_, _>>();
 
-        match event.operation.as_str() {
+        Ok(match event.operation.as_str() {
             "approve" => {
                 let status_string: String = details
                     .get_detail("status")?
@@ -308,7 +450,7 @@ impl TryFromEvent for DIP20Details {
                         .map_failure("amount")?,
                     fee: details.get_detail("fee")?.try_into().map_failure("fee")?,
                     status: status_string.as_str().try_into().map_failure("status")?,
-                };
+                }
             }
             "mint" => {
                 let status_string: String = details
@@ -325,7 +467,7 @@ impl TryFromEvent for DIP20Details {
                         .map_failure("amount")?,
                     fee: details.get_detail("fee")?.try_into().map_failure("fee")?,
                     status: status_string.as_str().try_into().map_failure("status")?,
-                };
+                }
             }
             "transfer" => {
                 let status_string: String = details
@@ -342,7 +484,7 @@ impl TryFromEvent for DIP20Details {
                         .map_failure("amount")?,
                     fee: details.get_detail("fee")?.try_into().map_failure("fee")?,
                     status: status_string.as_str().try_into().map_failure("status")?,
-                };
+                }
             }
             "transfer_from" => {
                 let status_string: String = details
@@ -359,12 +501,68 @@ impl TryFromEvent for DIP20Details {
                         .map_failure("amount")?,
                     fee: details.get_detail("fee")?.try_into().map_failure("fee")?,
                     status: status_string.as_str().try_into().map_failure("status")?,
-                };
+                }
             }
-            _ => {}
-        }
+            #[cfg(feature = "alpha-dip20-dank")]
+            "burn" => {
+                let status_string: String = details
+                    .get_detail("status")?
+                    .try_into()
+                    .map_failure("status")?;
 
-        todo!()
+                Self::Burn {
+                    from: details.get_detail("from")?.try_into().map_failure("from")?,
+                    to: details.get_detail("to")?.try_into().map_failure("to")?,
+                    amount: details
+                        .get_detail("amount")?
+                        .try_into()
+                        .map_failure("amount")?,
+                    fee: details.get_detail("fee")?.try_into().map_failure("fee")?,
+                    status: status_string.as_str().try_into().map_failure("status")?,
+                }
+            }
+            #[cfg(feature = "alpha-dip20-dank")]
+            "canister_called" => {
+                let status_string: String = details
+                    .get_detail("status")?
+                    .try_into()
+                    .map_failure("status")?;
+
+                Self::CanisterCalled {
+                    from: details.get_detail("from")?.try_into().map_failure("from")?,
+                    to: details.get_detail("to")?.try_into().map_failure("to")?,
+                    amount: details
+                        .get_detail("amount")?
+                        .try_into()
+                        .map_failure("amount")?,
+                    fee: details.get_detail("fee")?.try_into().map_failure("fee")?,
+                    status: status_string.as_str().try_into().map_failure("status")?,
+                    method_name: details
+                        .get_detail("method_name")?
+                        .try_into()
+                        .map_failure("method_name")?,
+                }
+            }
+            #[cfg(feature = "alpha-dip20-dank")]
+            "canister_created" => {
+                let status_string: String = details
+                    .get_detail("status")?
+                    .try_into()
+                    .map_failure("status")?;
+
+                Self::CanisterCreated {
+                    from: details.get_detail("from")?.try_into().map_failure("from")?,
+                    canister: details.get_detail("to")?.try_into().map_failure("to")?,
+                    amount: details
+                        .get_detail("amount")?
+                        .try_into()
+                        .map_failure("amount")?,
+                    fee: details.get_detail("fee")?.try_into().map_failure("fee")?,
+                    status: status_string.as_str().try_into().map_failure("status")?,
+                }
+            }
+            operation => return Err(DIP20ParseError::InvalidOperation(operation.to_owned())),
+        })
     }
 }
 
@@ -390,7 +588,7 @@ impl Into<TypedEvent<DIP20Details>> for TxRecord {
                 let time: u64 = self.timestamp.0.try_into().unwrap();
 
                 TypedEvent {
-                    caller: self.caller,
+                    caller: self.caller.unwrap(),
                     time,
                     details: DIP20Details::Mint {
                         from: self.from,
@@ -420,11 +618,47 @@ impl Into<TypedEvent<DIP20Details>> for TxRecord {
                 let time: u64 = self.timestamp.0.try_into().unwrap();
 
                 TypedEvent {
-                    caller: self.caller,
+                    caller: self.caller.unwrap(),
                     time,
                     details: DIP20Details::TransferFrom {
                         from: self.from,
                         to: self.to,
+                        amount: self.amount,
+                        fee: self.fee,
+                        status: self.status,
+                    },
+                }
+            }
+            #[cfg(feature = "alpha-dip20-dank")]
+            Operation::Burn => {
+                let time: u64 = self.timestamp.0.try_into().unwrap();
+
+                TypedEvent {
+                    caller: self.caller.unwrap(),
+                    time,
+                    details: DIP20Details::Burn {
+                        from: self.from,
+                        to: self.to,
+                        amount: self.amount,
+                        fee: self.fee,
+                        status: self.status,
+                    },
+                }
+            }
+            #[cfg(feature = "alpha-dip20-dank")]
+            Operation::CanisterCalled => {
+                panic!("Invalid conversion.");
+            }
+            #[cfg(feature = "alpha-dip20-dank")]
+            Operation::CanisterCreated => {
+                let time: u64 = self.timestamp.0.try_into().unwrap();
+
+                TypedEvent {
+                    caller: self.caller.unwrap(),
+                    time,
+                    details: DIP20Details::CanisterCreated {
+                        from: self.from,
+                        canister: self.to,
                         amount: self.amount,
                         fee: self.fee,
                         status: self.status,
