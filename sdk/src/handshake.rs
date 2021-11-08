@@ -1,4 +1,4 @@
-use std::{cell::Cell, str::FromStr};
+use std::str::FromStr;
 
 use cap_sdk_core::{Index, Router};
 use ic_kit::{
@@ -23,29 +23,16 @@ pub fn handshake(creation_cycles: u64, router_override: Option<Principal>) {
         }
     };
 
-    // Used to bypass the fact that `creation_cycles` has to be `'static` which it isn't.
-    thread_local! {
-        static CYCLES: Cell<u64> = Cell::new(0);
-        static ROUTER: Cell<Option<Router>> = Cell::new(None);
-    }
-
-    CYCLES.with(|cycles| cycles.set(creation_cycles));
-    ROUTER.with(|router_cell| router_cell.set(Some(router)));
-
-    let closure = async {
-        let router = ROUTER.with(|router_cell| router_cell.get().take().unwrap());
-
+    let closure = async move {
         let index: Index = router.into();
 
         if let Ok(bucket) = index.get_token_contract_root_bucket(ic::id()).await {
             CapEnv::store(&CapEnv::create(bucket, router));
         } else {
-            let cycles = CYCLES.with(|cycles| cycles.get());
-
             let (res,) = management::CreateCanister::perform_with_payment(
                 Principal::management_canister(),
                 (arg,),
-                cycles,
+                creation_cycles,
             )
             .await
             .expect("Failed to create canister");
