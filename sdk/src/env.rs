@@ -1,14 +1,13 @@
 use cap_sdk_core::{Index, RootBucket, Router};
 use futures::future::LocalBoxFuture;
 use ic_kit::ic::{get_maybe, store};
-use ic_kit::Principal;
 use std::cell::RefCell;
-use std::str::FromStr;
 
 /// Contains data about the cap environment.
 #[derive(Clone)]
 pub struct CapEnv {
     pub(crate) root: RootBucket,
+    pub(crate) router: Router
 }
 
 thread_local! {
@@ -17,8 +16,8 @@ thread_local! {
 
 impl CapEnv {
     /// Creates a new [`CapEnv`] with the index canister's [`Principal`] set to `index`.
-    pub(crate) fn create(root: RootBucket) -> Self {
-        CapEnv { root }
+    pub(crate) fn create(root: RootBucket, router: Router) -> Self {
+        CapEnv { root, router }
     }
 
     /// Stores the [`CapEnv`] in the canister.
@@ -34,12 +33,8 @@ impl CapEnv {
         }
     }
 
-    pub(crate) fn index() -> Index {
-        Self::router().into()
-    }
-
-    pub(crate) fn router() -> Router {
-        Router::new(Principal::from_str("lj532-6iaaa-aaaah-qcc7a-cai").unwrap())
+    pub(crate) fn index(&self) -> Index {
+        self.router.into()
     }
 
     pub(crate) async fn await_futures() {

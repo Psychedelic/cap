@@ -14,6 +14,7 @@ use ic_kit::{ic::call, Principal, RejectionCode};
 /// A router bucket implements the same interface as [`Index`], but with 1 additional method.
 ///
 /// Use [`Router`]'s [`Into<Index>`] implementation to use a [`Router`] as an [`Index`].
+#[derive(Debug, Clone, Copy)]
 pub struct Router(pub(crate) Principal);
 
 impl Router {

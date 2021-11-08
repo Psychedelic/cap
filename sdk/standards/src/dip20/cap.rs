@@ -45,11 +45,11 @@ use super::{DIP20ParseError, Operation, TransactionStatus, TxRecord};
 /// ### Converting a `TypedEvent<DIP20Details>` to a TxRecord.
 /// ```rust
 /// let event = TypedEvent {
-///     caller: Principal::management_canister(),
+///     caller: ic::id(),
 ///     time: 7270727,
 ///     details: DIP20Details::Mint {
 ///         from: Principal::from_text("aaaaa-aa").unwrap(),
-///         to: Principal::management_canister(),
+///         to: ic::id(),
 ///         amount: BigUint(23089).into(),
 ///         fee: BigUint(0).into(),
 ///         status: TransactionStatus::Succeeded
