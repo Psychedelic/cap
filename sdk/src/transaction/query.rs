@@ -20,7 +20,7 @@ pub async fn get_transaction(id: TransactionId) -> Result<Transaction, GetTransa
         .map_err(|(code, details)| GetTransactionError::Unexpected(code, details))?;
 
     let transaction = bucket
-        .get_transaction(id, false)
+        .get_transaction(id)
         .await
         .map_err(|(code, details)| GetTransactionError::Unexpected(code, details))?;
 

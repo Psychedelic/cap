@@ -21,7 +21,7 @@ pub fn handshake(creation_cycles: u64) {
 
     let closure = async {
         if let Ok(bucket) = CapEnv::index()
-            .get_token_contract_root_bucket(Principal::management_canister(), false)
+            .get_token_contract_root_bucket(Principal::management_canister())
             .await
         {
             CapEnv::store(&CapEnv::create(bucket));
@@ -41,7 +41,7 @@ pub fn handshake(creation_cycles: u64) {
             CapEnv::router().install_code(canister_id).await.unwrap();
 
             let root_bucket = CapEnv::index()
-                .get_token_contract_root_bucket(Principal::management_canister(), false)
+                .get_token_contract_root_bucket(Principal::management_canister())
                 .await
                 .unwrap();
 

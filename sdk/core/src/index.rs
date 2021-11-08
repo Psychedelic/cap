@@ -13,9 +13,7 @@ use ic_kit::ic::call;
 use ic_kit::{Principal, RejectionCode};
 use thiserror::Error;
 
-/// An ICHS index canister.
-///
-///
+/// A Cap index canister.
 #[derive(Clone)]
 pub struct Index(Principal);
 
@@ -29,14 +27,13 @@ impl Index {
     pub async fn get_token_contract_root_bucket(
         &self,
         contract: Principal,
-        witness: bool,
     ) -> Result<RootBucket, GetContractRootError> {
         let result: (GetTokenContractRootBucketResponse,) = call(
             self.0,
             "get_token_contract_root_bucket",
             (GetTokenContractRootBucketArg {
                 canister: contract,
-                witness,
+                witness: false,
             },),
         )
         .await
@@ -53,12 +50,14 @@ impl Index {
     pub async fn get_user_root_buckets(
         &self,
         user: Principal,
-        witness: bool,
     ) -> Result<Vec<RootBucket>, (RejectionCode, String)> {
         let result: (GetUserRootBucketsResponse,) = call(
             self.0,
             "get_user_root_buckets",
-            (GetUserRootBucketsArg { user, witness },),
+            (GetUserRootBucketsArg {
+                user,
+                witness: false,
+            },),
         )
         .await?;
 
@@ -71,14 +70,11 @@ impl Index {
     }
 
     /// Returns the list of router canisters that can be used for querying the indexes.
-    pub async fn get_router_canisters(
-        &self,
-        witness: bool,
-    ) -> Result<Vec<Router>, (RejectionCode, String)> {
+    pub async fn get_router_canisters(&self) -> Result<Vec<Router>, (RejectionCode, String)> {
         let result: (GetIndexCanistersResponse,) = call(
             self.0,
             "get_router_canisters",
-            (WithWitnessArg { witness },),
+            (WithWitnessArg { witness: false },),
         )
         .await?;
 

@@ -25,7 +25,7 @@ pub async fn get_transaction_page(
     let bucket: Bucket = context.root.into();
 
     let transactions = bucket
-        .get_transactions(page.page(), false)
+        .get_transactions(page.page())
         .await
         .map_err(|(code, details)| GetTransactionsError::Unexpected(code, details))?;
 

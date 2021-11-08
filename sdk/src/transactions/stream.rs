@@ -15,7 +15,7 @@ pub async fn get_transactions(
 
         for page in (start_page..end_page) {
             let transactions = bucket
-                .get_transactions(Some(page), false)
+                .get_transactions(Some(page))
                 .await
                 .map_err(|(code, details)| GetTransactionsError::Unexpected(code, details))?;
 
