@@ -1,7 +1,11 @@
 use std::{cell::Cell, str::FromStr};
 
 use cap_sdk_core::{Index, Router};
-use ic_kit::{Principal, ic, interfaces::{management, Method}};
+use ic_kit::{
+    ic,
+    interfaces::{management, Method},
+    Principal,
+};
 
 use crate::CapEnv;
 
@@ -33,16 +37,13 @@ pub fn handshake(creation_cycles: u64, router_override: Option<Principal>) {
 
         let index: Index = router.into();
 
-        if let Ok(bucket) = index
-            .get_token_contract_root_bucket(ic::id())
-            .await
-        {
+        if let Ok(bucket) = index.get_token_contract_root_bucket(ic::id()).await {
             CapEnv::store(&CapEnv::create(bucket, router));
         } else {
             let cycles = CYCLES.with(|cycles| cycles.get());
 
             let (res,) = management::CreateCanister::perform_with_payment(
-                ic::id(),
+                Principal::management_canister(),
                 (arg,),
                 cycles,
             )

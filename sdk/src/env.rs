@@ -7,7 +7,7 @@ use std::cell::RefCell;
 #[derive(Clone)]
 pub struct CapEnv {
     pub(crate) root: RootBucket,
-    pub(crate) router: Router
+    pub(crate) router: Router,
 }
 
 thread_local! {
