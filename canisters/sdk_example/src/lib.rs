@@ -93,6 +93,9 @@ pub async fn mint(owner: Principal) {
     let available = ctx.msg_cycles_available();
     let fee = 2000000000000;
 
+    ic::print("avail:");
+    ic::print(available.to_string());
+
     if available <= fee {
         panic!("Cannot mint less than {}", fee);
     }
@@ -110,7 +113,7 @@ pub async fn mint(owner: Principal) {
     data.next_id += data.next_id;
 
     let event = IndefiniteEventBuilder::new()
-        .caller(Principal::anonymous())
+        .caller(ic::caller())
         .operation(String::from("mint"))
         .details(transaction_details)
         .build()
@@ -143,7 +146,7 @@ pub async fn transfer(new_owner: Principal) {
     data.next_id += data.next_id;
 
     let event = IndefiniteEventBuilder::new()
-        .caller(Principal::anonymous())
+        .caller(ic::caller())
         .operation(String::from("transfer"))
         .details(transaction_details)
         .build()
