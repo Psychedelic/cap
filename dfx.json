@@ -7,6 +7,12 @@
       "candid": "candid/router.did",
       "wasm": "target/wasm32-unknown-unknown/release/ic_history_router-rel-opt.wasm",
       "type": "custom"
+    },
+   "sdk-example": {
+      "build": "node build.js",
+      "candid": "candid/sdk_example.did",
+      "wasm": "target/wasm32-unknown-unknown/release/sdk_example-rel-opt.wasm",
+      "type": "custom"
     }
   },
   "networks": {

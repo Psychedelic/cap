@@ -13,6 +13,7 @@ use crate::CapEnv;
 /// creates the root bucket for this contract and gives it `creation_cycles`
 /// cycles.
 pub fn handshake(creation_cycles: u64, router_override: Option<Principal>) {
+    ic::print("starting handshake");
     let arg = management::CreateCanisterArgument { settings: None };
 
     let router = {
@@ -24,6 +25,7 @@ pub fn handshake(creation_cycles: u64, router_override: Option<Principal>) {
     };
 
     let closure = async move {
+        ic::print("inside closure");
         let index: Index = router.into();
 
         if let Ok(bucket) = index.get_token_contract_root_bucket(ic::id()).await {
@@ -37,9 +39,13 @@ pub fn handshake(creation_cycles: u64, router_override: Option<Principal>) {
             .await
             .expect("Failed to create canister");
 
+            ic::print("created root canister");
+
             let canister_id = res.canister_id;
 
             router.install_code(canister_id).await.unwrap();
+
+            ic::print("installed root canister");
 
             let root_bucket = index
                 .get_token_contract_root_bucket(ic::id())
