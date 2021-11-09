@@ -1,7 +1,15 @@
 use cap_sdk_core::{Index, RootBucket, Router};
-use futures::future::LocalBoxFuture;
+use futures::{future::LocalBoxFuture, task::AtomicWaker, Future};
 use ic_kit::ic::{get_maybe, store};
-use std::cell::RefCell;
+use std::{
+    cell::RefCell,
+    pin::Pin,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+    task::{Context, Poll},
+};
 
 /// Contains data about the cap environment.
 #[derive(Clone)]
@@ -40,13 +48,26 @@ impl CapEnv {
     pub(crate) async fn await_futures() {
         let futures = FUTURES.with(|futures| {
             let mut inner = futures.take();
-
             inner.drain(0..inner.len()).collect::<Vec<_>>()
         });
+
+        if futures.is_empty() {
+            return;
+        }
+        let flag = Flag::new();
+        let f2 = flag.clone();
+
+        let closure = async {
+            flag.await;
+        };
+
+        CapEnv::insert_future(Box::pin(closure));
 
         for future in futures {
             future.await;
         }
+
+        f2.signal();
     }
 
     pub(crate) fn insert_future(future: LocalBoxFuture<'static, ()>) {
@@ -70,5 +91,48 @@ impl CapEnv {
     /// Afterwards, write it back with [`CapEnv::load_from_archive`]
     pub fn to_archive() -> Self {
         CapEnv::get().clone()
+    }
+}
+
+struct Inner {
+    waker: AtomicWaker,
+    set: AtomicBool,
+}
+
+#[derive(Clone)]
+struct Flag(Arc<Inner>);
+
+impl Flag {
+    pub fn new() -> Self {
+        Self(Arc::new(Inner {
+            waker: AtomicWaker::new(),
+            set: AtomicBool::new(false),
+        }))
+    }
+
+    pub fn signal(&self) {
+        self.0.set.store(true, Ordering::Relaxed);
+        self.0.waker.wake();
+    }
+}
+
+impl Future for Flag {
+    type Output = ();
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<()> {
+        // quick check to avoid registration if already done.
+        if self.0.set.load(Ordering::Relaxed) {
+            return Poll::Ready(());
+        }
+
+        self.0.waker.register(cx.waker());
+
+        // Need to check condition **after** `register` to avoid a race
+        // condition that would result in lost notifications.
+        if self.0.set.load(Ordering::Relaxed) {
+            Poll::Ready(())
+        } else {
+            Poll::Pending
+        }
     }
 }
