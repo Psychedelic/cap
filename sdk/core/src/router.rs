@@ -23,7 +23,7 @@ impl Router {
     }
 
     pub async fn install_code(&self, canister: Principal) -> Result<(), (RejectionCode, String)> {
-        call(self.0, "install_code", (canister,)).await?;
+        call(self.0, "install_bucket_code", (canister,)).await?;
 
         Ok(())
     }
