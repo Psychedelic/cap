@@ -42,10 +42,25 @@ fn init() {
     data.owner = ic::caller();
 }
 
-#[query]
+#[query(name = "get_owner")]
+#[candid_method(query)]
 pub async fn get_owner() -> Principal {
     let data = ic::get::<Data>();
     data.owner
+}
+
+#[query(name = "get_nft_owner")]
+#[candid_method(query)]
+pub async fn get_nft_owner(token_id: u64) -> Principal {
+    let data = ic::get::<Data>();
+    let existing_owner = match data.nft_owners.get(&token_id) {
+        Some(o) => o,
+        None => {
+            panic!("Error finding owner.");
+        }
+    };
+
+    *existing_owner
 }
 
 #[update(name = "setup_cap")]
@@ -68,9 +83,11 @@ pub struct MintDetails {
 
 impl IntoEvent for MintDetails {
     fn details(&self) -> Vec<(String, DetailValue)> {
-        let mut vec = Vec::new();
-        // TODO add data to the vec
-        vec
+        vec![
+            ("owner".into(), self.owner.into()),
+            ("token_id".into(), self.token_id.into()),
+            ("cycles".into(), self.cycles.into()),
+        ]
     }
 }
 
@@ -81,15 +98,16 @@ pub struct TransferDetails {
 
 impl IntoEvent for TransferDetails {
     fn details(&self) -> Vec<(String, DetailValue)> {
-        let mut vec = Vec::new();
-        // TODO add data to the vec
-        vec
+        vec![
+            ("to".into(), self.to.into()),
+            ("token_id".into(), self.token_id.into()),
+        ]
     }
 }
 
 #[update(name = "mint")]
 #[candid_method(update)]
-pub async fn mint(owner: Principal) {
+pub async fn mint(owner: Principal) -> u64 {
     let ctx = get_context();
     let available = ctx.msg_cycles_available();
     let fee = 2000000000000;
@@ -101,19 +119,20 @@ pub async fn mint(owner: Principal) {
         panic!("Cannot mint less than {}", fee);
     }
 
+    let data = ic::get_mut::<Data>();
+    let token_id = data.next_id;
     let accepted = ctx.msg_cycles_accept(available);
 
-    let data = ic::get_mut::<Data>();
 
     let transaction_details = MintDetails {
         owner: owner,
-        token_id: data.next_id,
+        token_id,
         cycles: available,
     };
 
     data.nft_owners.insert(transaction_details.token_id, owner);
 
-    data.next_id += data.next_id;
+    data.next_id += 1;
 
     let event = IndefiniteEventBuilder::new()
         .caller(ic::caller())
@@ -123,6 +142,8 @@ pub async fn mint(owner: Principal) {
         .unwrap();
 
     insert(event).await.unwrap();
+
+    token_id
 }
 
 #[update(name = "transfer")]
@@ -138,14 +159,8 @@ pub async fn transfer(new_owner: Principal, token_id: u64) {
 
     let accepted = ctx.msg_cycles_accept(available);
     let data = ic::get_mut::<Data>();
-    let existing_owner = data.nft_owners.get(&token_id);
 
-    let existing_owner = match data.nft_owners.get(&token_id) {
-        Some(o) => o,
-        None => {
-            panic!("Error finding owner.");
-        }
-    };
+    let existing_owner = data.nft_owners.get(&token_id).expect("Error finding owner.");
 
     let caller = ic::caller();
 
