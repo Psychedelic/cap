@@ -71,8 +71,8 @@ impl Bucket {
         &self,
         user: Principal,
         page: Option<u32>,
-    ) -> Result<GetTransactionResponse, (RejectionCode, String)> {
-        let result: (GetTransactionResponse,) = call(
+    ) -> Result<GetTransactionsResponse, (RejectionCode, String)> {
+        let result: (GetTransactionsResponse,) = call(
             self.0,
             "get_user_transactions",
             (GetUserTransactionsArg {

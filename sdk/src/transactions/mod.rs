@@ -7,7 +7,10 @@ mod query;
 pub use query::get_transaction_page;
 
 mod stream;
-pub use stream::get_transactions;
+pub use stream::{get_transactions, get_user_transactions};
+
+mod user_query;
+pub use user_query::get_user_transactions_page;
 
 /// The response given from a [`get_transactions`] call.
 #[derive(Debug, Clone)]
