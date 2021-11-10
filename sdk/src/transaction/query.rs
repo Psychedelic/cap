@@ -9,7 +9,16 @@ use crate::{CapEnv, GetTransactionError, Transaction, TransactionId};
 /// is currently unsupported. In this **alpha** release.
 ///
 /// # Examples
-/// TODO
+/// ### Query an event and use [`TypedEvent`] to make it easy to work with.
+///
+/// ```rust
+/// // Retrieve a transaction from cap. Since this contract uses the
+/// // DIP20 standard we know its DIP20 compliant and will unwrap the
+/// // conversion.
+/// let transaction = get_transaction(230948).unwrap();
+///
+/// let typed_transaction: TypedEvent<DIP20Details> = transaction.try_into().unwrap();
+/// ```
 pub async fn get_transaction(id: TransactionId) -> Result<Transaction, GetTransactionError> {
     let context = CapEnv::get();
 

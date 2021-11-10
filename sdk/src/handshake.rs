@@ -13,7 +13,8 @@ use crate::CapEnv;
 /// creates the root bucket for this contract and gives it `creation_cycles`
 /// cycles.
 pub fn handshake(creation_cycles: u64, router_override: Option<Principal>) {
-    let router_pid = router_override.unwrap_or_else(|| Principal::from_str("lj532-6iaaa-aaaah-qcc7a-cai").unwrap());
+    let router_pid = router_override
+        .unwrap_or_else(|| Principal::from_str("lj532-6iaaa-aaaah-qcc7a-cai").unwrap());
     let router = Router::new(router_pid);
 
     let create_settings = management::CanisterSettings {

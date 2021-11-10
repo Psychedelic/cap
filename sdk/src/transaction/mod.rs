@@ -7,6 +7,9 @@ pub use insert::insert;
 mod query;
 pub use query::get_transaction;
 
+mod user_query;
+pub use user_query::get_user_transaction;
+
 /// An error returned during a transaction query failure.
 #[derive(Error, Debug)]
 pub enum GetTransactionError {
