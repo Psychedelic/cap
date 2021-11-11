@@ -1,0 +1,24 @@
+[package]
+name = "sdk-example"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+cap-sdk = { path= "../../sdk" }
+cap-sdk-core = { path= "../../sdk/core" }
+derive-new = "0.5"
+ic-history-common = { path= "../../common" }
+ic-certified-map = "0.1.0"
+ic-kit = "0.4.3"
+ic-cdk = "0.3.1"
+serde = "1.0.116"
+serde_cbor = "0.11.2"
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+async-std = { version="1.10.0", features = ["attributes"] }
+
+[lib]
+crate-type = ["cdylib"]
+path = "src/lib.rs"
