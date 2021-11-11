@@ -215,6 +215,12 @@ fn size() -> u64 {
     ic::get::<Data>().bucket.size()
 }
 
+#[query]
+#[candid_method(query)]
+fn contract_id() -> Principal {
+    ic::get::<Data>().contract
+}
+
 #[update]
 #[candid_method(update)]
 fn insert(event: IndefiniteEvent) -> TransactionId {

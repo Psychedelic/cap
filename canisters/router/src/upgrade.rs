@@ -1,7 +1,7 @@
 use crate::Data;
 use ic_cdk::api::stable::{StableReader, StableWriter};
 use ic_kit::ic;
-use ic_kit::macros::{pre_upgrade, post_upgrade};
+use ic_kit::macros::{post_upgrade, pre_upgrade};
 
 #[pre_upgrade]
 fn pre_upgrade() {
