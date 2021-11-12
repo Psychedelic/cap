@@ -86,6 +86,8 @@ mod tests {
         }
 
         let serialized = serde_cbor::to_vec(data).expect("Failed to serialize.");
-        let _: DataDe = serde_cbor::from_slice(&serialized).expect("Failed to deserialize.");
+        let actual: DataDe = serde_cbor::from_slice(&serialized).expect("Failed to deserialize.");
+
+        assert_eq!(actual.bucket.len(), 100);
     }
 }
