@@ -102,7 +102,6 @@ mod tests {
 
         MockContext::new().with_id(p(17)).inject();
 
-
         let mut data = Data::default();
         data.root_buckets.insert(contract_1, rb_1);
         data.root_buckets.insert(contract_2, rb_2);
