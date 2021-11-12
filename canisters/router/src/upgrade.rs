@@ -61,7 +61,10 @@ async fn upgrade_root_bucket(canister_id: Principal) {
         arg,
     };
 
+    // Mr. Fox
+    //            /\    /\
     if ic::call::<_, (), _>(
+        //        \_______/
         Principal::management_canister(),
         "install_code",
         (install_config,),
@@ -75,4 +78,45 @@ async fn upgrade_root_bucket(canister_id: Principal) {
     }
 
     trigger_upgrade();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ic_kit::MockContext;
+
+    const fn p(id: u8) -> Principal {
+        Principal::from_slice(&[id, 0x00])
+    }
+
+    #[test]
+    fn test_p() {
+        let principal = p(67);
+        let serialized = serde_cbor::to_vec(&principal).expect("Failed to serialize.");
+        let actual: Principal =
+            serde_cbor::from_slice(&serialized).expect("Failed to deserialize.");
+        assert_eq!(principal, actual);
+    }
+
+    #[test]
+    fn test() {
+        let contract_1 = p(0);
+        let rb_1 = p(1);
+        let contract_2 = p(2);
+        let rb_2 = p(3);
+        let alice = p(4);
+        let bob = p(5);
+
+        MockContext::new().with_id(p(17)).inject();
+
+        let mut data = Data::default();
+        data.root_buckets.insert(contract_1, rb_1);
+        data.root_buckets.insert(contract_2, rb_2);
+        data.user_canisters.insert(alice, rb_1);
+        data.user_canisters.insert(alice, rb_2);
+        data.user_canisters.insert(bob, rb_2);
+
+        let serialized = serde_cbor::to_vec(&data).expect("Failed to serialize.");
+        let actual: Data = serde_cbor::from_slice(&serialized).expect("Failed to deserialize.");
+    }
 }

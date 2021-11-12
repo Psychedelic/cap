@@ -87,7 +87,10 @@ impl<'de> Deserialize<'de> for CanisterMap {
     where
         D: Deserializer<'de>,
     {
-        deserializer.deserialize_map(CanisterMapVisitor)
+        println!("Deserializing canister map.");
+        let ret = deserializer.deserialize_map(CanisterMapVisitor).expect("Failed x-0");
+        println!("Deserialized canister map.");
+        Ok(ret)
     }
 }
 
