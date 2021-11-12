@@ -2,6 +2,7 @@ use crate::Data;
 use ic_kit::candid::candid_method;
 use ic_kit::candid::encode_args;
 use ic_kit::candid::CandidType;
+use ic_kit::interfaces::management::InstallMode;
 use ic_kit::interfaces::{management, Method};
 use ic_kit::{ic, Principal};
 use serde::Deserialize;
@@ -11,12 +12,21 @@ use ic_history_common::*;
 use ic_kit::macros::*;
 
 #[cfg(debug_cfg)]
-const WASM: &[u8] =
+pub const WASM: &[u8] =
     include_bytes!("../../../target/wasm32-unknown-unknown/debug/ic_history_root-deb-opt.wasm");
 
 #[cfg(not(debug_cfg))]
-const WASM: &[u8] =
+pub const WASM: &[u8] =
     include_bytes!("../../../target/wasm32-unknown-unknown/release/ic_history_root-rel-opt.wasm");
+
+#[derive(CandidType, Deserialize)]
+pub struct InstallCodeArgumentBorrowed<'a> {
+    pub mode: InstallMode,
+    pub canister_id: Principal,
+    #[serde(with = "serde_bytes")]
+    pub wasm_module: &'a [u8],
+    pub arg: Vec<u8>,
+}
 
 #[update]
 #[candid_method(update)]
@@ -26,7 +36,7 @@ async fn install_bucket_code(canister_id: RootBucketId) {
 }
 
 pub async fn install_code(canister_id: Principal, contract_id: Principal, writers: &[Principal]) {
-    use management::{CanisterStatus, InstallMode, WithCanisterId};
+    use management::{CanisterStatus, WithCanisterId};
 
     let data = ic::get_mut::<Data>();
 
@@ -53,15 +63,6 @@ pub async fn install_code(canister_id: Principal, contract_id: Principal, writer
             "Expected an empty canister. Canister {} already has an installed wasm on it.",
             canister_id
         );
-    }
-
-    #[derive(CandidType, Deserialize)]
-    struct InstallCodeArgumentBorrowed<'a> {
-        mode: InstallMode,
-        canister_id: Principal,
-        #[serde(with = "serde_bytes")]
-        wasm_module: &'a [u8],
-        arg: Vec<u8>,
     }
 
     let arg =

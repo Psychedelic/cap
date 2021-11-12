@@ -28,4 +28,5 @@ service : {
     ) query;
   insert_new_users : (principal, vec principal) -> ();
   install_bucket_code : (principal) -> ();
+  trigger_upgrade : () -> ();
 }

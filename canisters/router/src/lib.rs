@@ -5,7 +5,7 @@ use ic_history_common::canister_map::CanisterMap;
 use ic_history_common::user_canisters::UserCanisters;
 use ic_kit::candid::{candid_method, export_service};
 use ic_kit::ic;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 // It's ok.
 use ic_cdk::export::Principal;
@@ -26,14 +26,14 @@ mod upgrade;
 ///     /   \
 ///   / \    2
 ///  0   1
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct Data {
     /// Map: TokenContractId -> RootBucketId
-    root_buckets: CanisterMap,
+    pub root_buckets: CanisterMap,
     /// Map each user to RootBucketId
-    user_canisters: UserCanisters,
+    pub user_canisters: UserCanisters,
     /// List of the index canisters.
-    index_canisters: CanisterList,
+    pub index_canisters: CanisterList,
 }
 
 impl Default for Data {

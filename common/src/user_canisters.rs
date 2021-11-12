@@ -1,8 +1,11 @@
 use crate::canister_list::CanisterList;
 use crate::{RootBucketId, UserId};
 use ic_certified_map::{AsHashTree, Hash, HashTree, RbTree};
+use ic_kit::Principal;
+use serde::de::{MapAccess, Visitor};
 use serde::ser::SerializeMap;
-use serde::{Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::fmt::Formatter;
 
 #[derive(Default)]
 pub struct UserCanisters {
@@ -65,5 +68,74 @@ impl Serialize for UserCanisters {
         });
 
         s.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for UserCanisters {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_map(UserCanistersVisitor)
+    }
+}
+
+struct UserCanistersVisitor;
+
+impl<'de> Visitor<'de> for UserCanistersVisitor {
+    type Value = UserCanisters;
+
+    fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
+        write!(formatter, "expected a map")
+    }
+
+    fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+    where
+        A: MapAccess<'de>,
+    {
+        let mut data = RbTree::default();
+        let mut len = 0;
+
+        loop {
+            if let Some((key, value)) = map.next_entry::<Vec<u8>, CanisterList>()? {
+                let principal = Principal::from_slice(&key);
+                data.insert(principal, value);
+                len += 1;
+                continue;
+            }
+
+            break;
+        }
+
+        Ok(UserCanisters { data, len })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ic_kit::mock_principals;
+
+    #[test]
+    fn serde() {
+        let mut data = UserCanisters::default();
+        data.insert(mock_principals::alice(), mock_principals::xtc());
+        data.insert(mock_principals::alice(), mock_principals::bob());
+        data.insert(mock_principals::john(), mock_principals::alice());
+        data.insert(mock_principals::john(), mock_principals::xtc());
+        data.insert(mock_principals::john(), mock_principals::bob());
+
+        let serialized = serde_cbor::to_vec(&data).expect("Failed to serialize");
+        let actual =
+            serde_cbor::from_slice::<UserCanisters>(&serialized).expect("Failed to deserialize");
+
+        assert_eq!(
+            actual.get(&mock_principals::alice()),
+            data.get(&mock_principals::alice())
+        );
+        assert_eq!(
+            actual.get(&mock_principals::john()),
+            data.get(&mock_principals::john())
+        );
     }
 }

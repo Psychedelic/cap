@@ -106,7 +106,9 @@ impl<'de> Visitor<'de> for CanisterMapVisitor {
     {
         let mut data = CanisterMap::default();
 
-        while let Some((key, value)) = map.next_entry::<Principal, Principal>()? {
+        while let Some((key, value)) = map.next_entry::<Vec<u8>, Vec<u8>>()? {
+            let key = Principal::from_slice(&key);
+            let value = Principal::from_slice(&value);
             data.insert(key, value);
         }
 
