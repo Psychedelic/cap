@@ -5,6 +5,7 @@ use ic_kit::candid::{candid_method, encode_args};
 use ic_kit::ic;
 use ic_kit::macros::{post_upgrade, pre_upgrade, update};
 use ic_kit::Principal;
+use std::io::Read;
 
 #[derive(Default)]
 struct RootBucketsToUpgrade(Vec<RootBucketId>);
@@ -19,7 +20,15 @@ fn pre_upgrade() {
 #[post_upgrade]
 fn post_upgrade() {
     let reader = StableReader::default();
-    let data = serde_cbor::from_reader(reader).expect("Failed to deserialize");
+    let data: Data = match serde_cbor::from_reader(reader) {
+        Ok(t) => t,
+        Err(err) => {
+            let limit = err.offset() - 1;
+            let reader = StableReader::default().take(limit);
+            serde_cbor::from_reader(reader).expect("Failed to deserialize.")
+        }
+    };
+
     ic::store::<Data>(data);
 
     let root_buckets = get_user_root_buckets(GetUserRootBucketsArg {
@@ -109,7 +118,7 @@ mod tests {
         data.user_canisters.insert(alice, rb_2);
         data.user_canisters.insert(bob, rb_2);
 
-        let serialized = serde_cbor::to_vec(&data).expect("Failed to serialize.");
+        let serialized: Vec<u8> = serde_cbor::to_vec(&data).expect("Failed to serialize.");
         let actual: Data = serde_cbor::from_slice(&serialized).expect("Failed to deserialize.");
 
         assert_eq!(

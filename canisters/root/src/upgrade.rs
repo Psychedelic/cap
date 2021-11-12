@@ -8,6 +8,7 @@ use ic_kit::macros::{post_upgrade, pre_upgrade};
 use ic_kit::{ic, Principal};
 use serde::Deserialize;
 use std::collections::BTreeSet;
+use std::io::Read;
 
 #[derive(Deserialize)]
 struct DataDe {
@@ -32,7 +33,14 @@ fn pre_upgrade() {
 #[post_upgrade]
 fn post_upgrade() {
     let reader = StableReader::default();
-    let data: DataDe = serde_cbor::from_reader(reader).expect("Failed to deserialize");
+    let data: DataDe = match serde_cbor::from_reader(reader) {
+        Ok(t) => t,
+        Err(err) => {
+            let limit = err.offset() - 1;
+            let reader = StableReader::default().take(limit);
+            serde_cbor::from_reader(reader).expect("Failed to deserialize.")
+        }
+    };
 
     let contract = data.contract;
 
