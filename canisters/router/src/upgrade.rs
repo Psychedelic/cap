@@ -83,19 +83,12 @@ async fn upgrade_root_bucket(canister_id: Principal) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ic_certified_map::AsHashTree;
     use ic_kit::MockContext;
 
+    // TODO(qti3e) Move this to ic-kit.
     const fn p(id: u8) -> Principal {
         Principal::from_slice(&[id, 0x00])
-    }
-
-    #[test]
-    fn test_p() {
-        let principal = p(67);
-        let serialized = serde_cbor::to_vec(&principal).expect("Failed to serialize.");
-        let actual: Principal =
-            serde_cbor::from_slice(&serialized).expect("Failed to deserialize.");
-        assert_eq!(principal, actual);
     }
 
     #[test]
@@ -109,6 +102,7 @@ mod tests {
 
         MockContext::new().with_id(p(17)).inject();
 
+
         let mut data = Data::default();
         data.root_buckets.insert(contract_1, rb_1);
         data.root_buckets.insert(contract_2, rb_2);
@@ -118,5 +112,18 @@ mod tests {
 
         let serialized = serde_cbor::to_vec(&data).expect("Failed to serialize.");
         let actual: Data = serde_cbor::from_slice(&serialized).expect("Failed to deserialize.");
+
+        assert_eq!(
+            actual.user_canisters.root_hash(),
+            data.user_canisters.root_hash()
+        );
+        assert_eq!(
+            actual.root_buckets.root_hash(),
+            data.root_buckets.root_hash()
+        );
+        assert_eq!(
+            actual.index_canisters.root_hash(),
+            data.index_canisters.root_hash()
+        );
     }
 }
