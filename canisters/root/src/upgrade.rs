@@ -52,3 +52,40 @@ fn post_upgrade() {
         allow_migration: data.allow_migration,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ic_history_common::transaction::DetailValue;
+    use ic_kit::{MockContext, Principal};
+
+    const fn p(id: u8) -> Principal {
+        Principal::from_slice(&[id, 0x00])
+    }
+
+    #[test]
+    fn test() {
+        let root_bucket_id = p(0);
+        let contract_id = p(1);
+
+        MockContext::new()
+            .with_id(root_bucket_id)
+            .with_caller(contract_id)
+            .inject();
+
+        let data = ic::get_mut::<Data>();
+
+        for i in 0..100 {
+            let e = Event {
+                time: i as u64,
+                caller: p(i + 5),
+                operation: "mint".to_string(),
+                details: vec![("amount".into(), DetailValue::U64(i as u64))],
+            };
+            data.bucket.insert(&contract_id, e);
+        }
+
+        let serialized = serde_cbor::to_vec(data).expect("Failed to serialize.");
+        let _: DataDe = serde_cbor::from_slice(&serialized).expect("Failed to deserialize.");
+    }
+}
