@@ -1,0 +1,34 @@
+[package]
+name = "cap-standards"
+version = "0.1.0-alpha1"
+edition = "2018"
+
+# license = "IDK"
+description = "A collection of transaction standards that can be used with Cap."
+homepage = "https://github.com/Psychedelic/cap"
+repository = "https://github.com/Psychedelic/cap"
+readme = "https://github.com/Psychedelic/cap/README.md"
+documentation = "https://crates.io/cap_standards"
+
+[features]
+default = ["sdk-impls"]
+sdk-impls = ["cap-sdk"]
+alpha-xtc = []
+alpha-dip721 = []
+alpha-dip20 = ["num-bigint"]
+alpha-dip20-dank = ["alpha-dip20"]
+
+[dependencies]
+candid = "0.7"
+serde = { version = "1", features = ["derive"] }
+bincode = "1"
+ic-cdk = "0.3"
+thiserror = "1"
+
+[dependencies.cap-sdk]
+path = "../"
+optional = true
+
+[dependencies.num-bigint]
+version = "0.4"
+optional = true

@@ -1,9 +1,10 @@
 use crate::did::EventHash;
-use ic_kit::candid::{CandidType, Deserialize};
+use ic_kit::candid::{CandidType, Deserialize, Nat};
 use ic_kit::Principal;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
+use std::convert::TryInto;
 
 #[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
 pub struct Event {
@@ -143,6 +144,16 @@ impl Event {
     }
 }
 
+impl Into<IndefiniteEvent> for Event {
+    fn into(self) -> IndefiniteEvent {
+        IndefiniteEvent {
+            caller: self.caller,
+            operation: self.operation,
+            details: self.details,
+        }
+    }
+}
+
 impl IndefiniteEvent {
     /// Convert an indefinite event to a definite one by adding the token and time fields.
     #[inline]
@@ -152,6 +163,122 @@ impl IndefiniteEvent {
             caller: self.caller,
             operation: self.operation,
             details: self.details,
+        }
+    }
+}
+
+impl From<u64> for DetailValue {
+    fn from(num: u64) -> Self {
+        Self::U64(num)
+    }
+}
+
+impl TryInto<u64> for DetailValue {
+    type Error = ();
+
+    fn try_into(self) -> Result<u64, Self::Error> {
+        if let Self::U64(num) = self {
+            Ok(num)
+        } else {
+            Err(())
+        }
+    }
+}
+
+impl From<i64> for DetailValue {
+    fn from(num: i64) -> Self {
+        Self::I64(num)
+    }
+}
+
+impl TryInto<i64> for DetailValue {
+    type Error = ();
+
+    fn try_into(self) -> Result<i64, Self::Error> {
+        if let Self::I64(num) = self {
+            Ok(num)
+        } else {
+            Err(())
+        }
+    }
+}
+
+impl From<f64> for DetailValue {
+    fn from(float: f64) -> Self {
+        Self::Float(float)
+    }
+}
+
+impl TryInto<f64> for DetailValue {
+    type Error = ();
+
+    fn try_into(self) -> Result<f64, Self::Error> {
+        if let Self::Float(num) = self {
+            Ok(num)
+        } else {
+            Err(())
+        }
+    }
+}
+
+impl From<String> for DetailValue {
+    fn from(string: String) -> Self {
+        Self::Text(string)
+    }
+}
+
+impl TryInto<String> for DetailValue {
+    type Error = ();
+
+    fn try_into(self) -> Result<String, Self::Error> {
+        if let Self::Text(val) = self {
+            Ok(val)
+        } else {
+            Err(())
+        }
+    }
+}
+
+impl From<Principal> for DetailValue {
+    fn from(principal: Principal) -> Self {
+        Self::Principal(principal)
+    }
+}
+
+impl TryInto<Principal> for DetailValue {
+    type Error = ();
+
+    fn try_into(self) -> Result<Principal, Self::Error> {
+        if let Self::Principal(principal) = self {
+            Ok(principal)
+        } else {
+            Err(())
+        }
+    }
+}
+
+impl From<Nat> for DetailValue {
+    fn from(nat: Nat) -> Self {
+        let mut vec = vec![];
+
+        nat.encode(&mut vec).unwrap();
+
+        DetailValue::Slice(vec)
+    }
+}
+
+impl TryInto<Nat> for DetailValue {
+    type Error = ();
+
+    fn try_into(self) -> Result<Nat, Self::Error> {
+        if let Self::Slice(nat) = self {
+            if let Ok(nat) = Nat::parse(&nat) {
+                Ok(nat)
+            } else {
+                Err(())
+            }
+        } else {
+            Err(())
         }
     }
 }
