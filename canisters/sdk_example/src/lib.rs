@@ -1,13 +1,12 @@
-use cap_sdk::{DetailValue, Event, IndefiniteEventBuilder, IntoEvent};
+use cap_sdk::{CapEnv, DetailValue, Event, IndefiniteEventBuilder, IntoEvent};
 use ic_kit::candid::CandidType;
 use ic_kit::candid::{candid_method, export_service};
-use ic_kit::macros::{query, update};
 use ic_kit::{ic, Principal};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::str::FromStr;
 
-mod upgrade;
+use ic_kit::macros::*;
 
 /// The datastore used to hold the canister state.
 #[derive(Serialize, Deserialize, CandidType)]
@@ -29,6 +28,37 @@ impl Default for Data {
     }
 }
 
+#[init]
+fn init() {
+    // Handshake with a mock cap, we are assuming the first deployed canister
+    // on your local is used for Cap.
+    // In the real world when you're deploying a real bucket canister, you should
+    // put a higher amount of creation cycles, we recommend 10TC.
+    cap_sdk::handshake(
+        1_000_000_000_000,
+        Some(Principal::from_str("rrkah-fqaaa-aaaaa-aaaaq-cai").unwrap()),
+    );
+}
+
+#[pre_upgrade]
+fn pre_upgrade() {
+    // Store the canister state alongside CapEnv data to the stable storage
+    // so that we can recover this data after an upgrade.
+    let data = ic::get::<Data>();
+    let stable_data = (data, cap_sdk::CapEnv::to_archive());
+    ic::stable_store(stable_data).expect("Failed to write data to stable storage.");
+}
+
+#[post_upgrade]
+fn post_upgrade() {
+    if let Ok((data, env)) = ic::stable_restore::<(Data, CapEnv)>() {
+        // Always remember to call "load_from_archive" to load the CapEnv that
+        // we stored during the pre_upgrade.
+        CapEnv::load_from_archive(env);
+        ic::store(data);
+    }
+}
+
 #[query(name = "get_nft_owner")]
 #[candid_method(query)]
 pub async fn get_nft_owner(token_id: u64) -> Principal {
@@ -38,20 +68,6 @@ pub async fn get_nft_owner(token_id: u64) -> Principal {
         .get(&token_id)
         .expect("Error finding owner.");
     *owner
-}
-
-#[update(name = "setup_cap")]
-#[candid_method(update)]
-pub async fn setup_cap() {
-    let cycles_to_give = 1_000_000_000_000;
-
-    cap_sdk::handshake(
-        cycles_to_give,
-        Some(Principal::from_str("rrkah-fqaaa-aaaaa-aaaaq-cai").unwrap()),
-    );
-
-    // Uncomment this for main net lunch.
-    // cap_sdk::handshake(cycles_togive, None);
 }
 
 /// The data structure used to store the "Mint" history event.

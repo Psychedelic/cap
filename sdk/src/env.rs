@@ -1,6 +1,8 @@
 use cap_sdk_core::{Index, RootBucket, Router};
 use futures::{future::LocalBoxFuture, task::AtomicWaker, Future};
+use ic_kit::candid::CandidType;
 use ic_kit::ic::{get_maybe, store};
+use serde::{Deserialize, Serialize};
 use std::{
     cell::RefCell,
     pin::Pin,
@@ -12,7 +14,7 @@ use std::{
 };
 
 /// Contains data about the cap environment.
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize, CandidType)]
 pub struct CapEnv {
     pub(crate) root: RootBucket,
     pub(crate) router: Router,

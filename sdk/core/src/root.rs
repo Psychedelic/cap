@@ -6,8 +6,9 @@
 use crate::Bucket;
 use ic_history_common::transaction::IndefiniteEvent;
 use ic_history_common::{GetBucketResponse, WithIdArg};
-use ic_kit::ic::call;
-use ic_kit::{Principal, RejectionCode};
+use ic_kit::candid::CandidType;
+use ic_kit::{ic::call, Principal, RejectionCode};
+use serde::{Deserialize, Serialize};
 
 /// A root bucket.
 ///
@@ -17,7 +18,7 @@ use ic_kit::{Principal, RejectionCode};
 /// A root bucket implements the same interface as [`Bucket`], but with 3 additional methods.
 ///
 /// Use [`RootBucket`]'s [`Into<Bucket>`] implementation to use a [`RootBucket`] as a [`Bucket`].
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Serialize, Deserialize, CandidType)]
 pub struct RootBucket(pub(crate) Principal);
 
 impl RootBucket {

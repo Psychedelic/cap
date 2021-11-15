@@ -3,7 +3,9 @@
 //! For more information on the purpose of the main router, see the documentation on
 //! [`Router`].
 
+use ic_kit::candid::CandidType;
 use ic_kit::{ic::call, Principal, RejectionCode};
+use serde::{Deserialize, Serialize};
 
 /// A router.
 ///
@@ -14,7 +16,7 @@ use ic_kit::{ic::call, Principal, RejectionCode};
 /// A router bucket implements the same interface as [`Index`], but with 1 additional method.
 ///
 /// Use [`Router`]'s [`Into<Index>`] implementation to use a [`Router`] as an [`Index`].
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, CandidType)]
 pub struct Router(pub(crate) Principal);
 
 impl Router {
