@@ -10,7 +10,7 @@ pub async fn get_transactions(
     end_page: u32,
 ) -> impl Stream<Item = Result<Transaction, GetTransactionsError>> {
     try_stream! {
-        let context = CapEnv::get();
+        let context = CapEnv::get().await;
 
         let bucket: Bucket = context.root.into();
 
@@ -34,7 +34,7 @@ pub async fn get_user_transactions(
     end_page: u32,
 ) -> impl Stream<Item = Result<Transaction, GetTransactionsError>> {
     try_stream! {
-        let context = CapEnv::get();
+        let context = CapEnv::get().await;
 
         let bucket: Bucket = context.root.into();
 

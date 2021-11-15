@@ -20,7 +20,7 @@ use crate::{AsTransactionsPage, CapEnv, GetTransactionsError, GetTransactionsRes
 pub async fn get_transaction_page(
     page: impl AsTransactionsPage,
 ) -> Result<GetTransactionsResponse, GetTransactionsError> {
-    let context = CapEnv::get();
+    let context = CapEnv::get().await;
 
     let bucket: Bucket = context.root.into();
 

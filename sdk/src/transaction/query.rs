@@ -20,7 +20,7 @@ use crate::{CapEnv, GetTransactionError, Transaction, TransactionId};
 /// let typed_transaction: TypedEvent<DIP20Details> = transaction.try_into().unwrap();
 /// ```
 pub async fn get_transaction(id: TransactionId) -> Result<Transaction, GetTransactionError> {
-    let context = CapEnv::get();
+    let context = CapEnv::get().await;
 
     let bucket = context
         .root

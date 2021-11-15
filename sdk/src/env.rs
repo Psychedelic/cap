@@ -33,11 +33,12 @@ impl CapEnv {
         store(self.clone());
     }
 
-    pub(crate) fn get<'a>() -> &'a Self {
+    pub(crate) async fn get<'a>() -> &'a Self {
         if let Some(data) = get_maybe::<CapEnv>() {
             data
         } else {
-            panic!("No context created.");
+            CapEnv::await_futures().await;
+            get_maybe::<CapEnv>().expect("No context created.")
         }
     }
 
@@ -90,7 +91,7 @@ impl CapEnv {
     ///
     /// Afterwards, write it back with [`CapEnv::load_from_archive`]
     pub fn to_archive() -> Self {
-        CapEnv::get().clone()
+        get_maybe::<CapEnv>().expect("No context created.").clone()
     }
 }
 

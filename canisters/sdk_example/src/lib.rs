@@ -123,7 +123,6 @@ pub async fn mint(owner: Principal) -> u64 {
     let token_id = data.next_id;
     let accepted = ctx.msg_cycles_accept(available);
 
-
     let transaction_details = MintDetails {
         owner: owner,
         token_id,
@@ -160,7 +159,10 @@ pub async fn transfer(new_owner: Principal, token_id: u64) {
     let accepted = ctx.msg_cycles_accept(available);
     let data = ic::get_mut::<Data>();
 
-    let existing_owner = data.nft_owners.get(&token_id).expect("Error finding owner.");
+    let existing_owner = data
+        .nft_owners
+        .get(&token_id)
+        .expect("Error finding owner.");
 
     let caller = ic::caller();
 

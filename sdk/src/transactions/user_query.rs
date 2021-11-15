@@ -15,7 +15,7 @@ pub async fn get_user_transactions_page(
     user: Principal,
     page: impl AsTransactionsPage,
 ) -> Result<GetTransactionsResponse, GetTransactionsError> {
-    let context = CapEnv::get();
+    let context = CapEnv::get().await;
 
     let as_bucket: Bucket = context.root.into();
 
