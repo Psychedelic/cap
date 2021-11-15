@@ -1,11 +1,16 @@
 use crate::Data;
-use ic_cdk::api::stable::StableWriter;
 use ic_kit::ic;
-use ic_kit::macros::pre_upgrade;
+use ic_kit::macros::{post_upgrade, pre_upgrade};
 
 #[pre_upgrade]
 fn pre_upgrade() {
     let data = ic::get::<Data>();
-    let writer = StableWriter::default();
-    serde_cbor::to_writer(writer, &data).expect("Failed to serialize data.");
+    ic::stable_store((data,)).expect("Failed to write data to stable storage.");
+}
+
+#[post_upgrade]
+fn post_upgrade() {
+    if let Ok((data,)) = ic::stable_restore::<(Data,)>() {
+        ic::store(data);
+    }
 }

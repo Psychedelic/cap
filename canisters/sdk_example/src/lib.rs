@@ -1,80 +1,60 @@
-use cap_sdk::{
-    get_transaction, handshake, insert, DetailValue, Event, IndefiniteEventBuilder, IntoEvent,
-};
-use ic_certified_map::{fork, fork_hash, AsHashTree, HashTree};
+use cap_sdk::{DetailValue, Event, IndefiniteEventBuilder, IntoEvent};
+use ic_kit::candid::CandidType;
 use ic_kit::candid::{candid_method, export_service};
-use ic_kit::interfaces::{management, Method};
-use ic_kit::macros::*;
-use ic_kit::{
-    candid::{CandidType, Int, Nat},
-    get_context, ic, Context, Principal,
-};
-use serde::Serialize;
+use ic_kit::macros::{query, update};
+use ic_kit::{ic, Principal};
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::str::FromStr;
 
-// is this needed?
-//mod upgrade;
+mod upgrade;
 
-// required by crate::Data;
-#[derive(Serialize)]
+/// The datastore used to hold the canister state.
+#[derive(Serialize, Deserialize, CandidType)]
 struct Data {
+    /// Next token id that should be used.
     next_id: u64,
-    cap_root: Principal,
-    owner: Principal,
+    /// Map each token id to the owner of it.
     nft_owners: BTreeMap<u64, Principal>,
 }
 
+/// The default implementation for the data store used to initialize
+/// the data.
 impl Default for Data {
     fn default() -> Self {
         Self {
             next_id: 0,
-            cap_root: Principal::management_canister(),
-            owner: Principal::management_canister(),
             nft_owners: BTreeMap::new(),
         }
     }
-}
-
-#[init]
-fn init() {
-    let data = ic::get_mut::<Data>();
-    data.owner = ic::caller();
-}
-
-#[query(name = "get_owner")]
-#[candid_method(query)]
-pub async fn get_owner() -> Principal {
-    let data = ic::get::<Data>();
-    data.owner
 }
 
 #[query(name = "get_nft_owner")]
 #[candid_method(query)]
 pub async fn get_nft_owner(token_id: u64) -> Principal {
     let data = ic::get::<Data>();
-    let existing_owner = match data.nft_owners.get(&token_id) {
-        Some(o) => o,
-        None => {
-            panic!("Error finding owner.");
-        }
-    };
-
-    *existing_owner
+    let owner = data
+        .nft_owners
+        .get(&token_id)
+        .expect("Error finding owner.");
+    *owner
 }
 
 #[update(name = "setup_cap")]
 #[candid_method(update)]
 pub async fn setup_cap() {
-    let cycles_to_give = 100000000000;
+    let cycles_to_give = 1_000_000_000_000;
 
-    handshake(
+    cap_sdk::handshake(
         cycles_to_give,
         Some(Principal::from_str("rrkah-fqaaa-aaaaa-aaaaq-cai").unwrap()),
     );
-    //handshake(cycles_togive, None);
+
+    // Uncomment this for main net lunch.
+    // cap_sdk::handshake(cycles_togive, None);
 }
 
+/// The data structure used to store the "Mint" history event.
 pub struct MintDetails {
     owner: Principal,
     token_id: u64,
@@ -91,6 +71,7 @@ impl IntoEvent for MintDetails {
     }
 }
 
+/// The structure used to encode "Transfer" events.
 pub struct TransferDetails {
     to: Principal,
     token_id: u64,
@@ -108,29 +89,29 @@ impl IntoEvent for TransferDetails {
 #[update(name = "mint")]
 #[candid_method(update)]
 pub async fn mint(owner: Principal) -> u64 {
-    let ctx = get_context();
-    let available = ctx.msg_cycles_available();
-    let fee = 2000000000000;
+    let available = ic::msg_cycles_available();
+    let fee = 2_000_000_000_000;
 
-    ic::print("avail:");
-    ic::print(available.to_string());
+    ic::print(format!("Available cycles: {}", available));
 
-    if available <= fee {
-        panic!("Cannot mint less than {}", fee);
+    if available < fee {
+        panic!(
+            "Can not mint: {} provided cycles is less than the required fee of {}",
+            available, fee
+        );
     }
 
     let data = ic::get_mut::<Data>();
     let token_id = data.next_id;
-    let accepted = ctx.msg_cycles_accept(available);
+    ic::msg_cycles_accept(fee);
 
     let transaction_details = MintDetails {
-        owner: owner,
+        owner,
         token_id,
         cycles: available,
     };
 
     data.nft_owners.insert(transaction_details.token_id, owner);
-
     data.next_id += 1;
 
     let event = IndefiniteEventBuilder::new()
@@ -140,7 +121,7 @@ pub async fn mint(owner: Principal) -> u64 {
         .build()
         .unwrap();
 
-    insert(event).await.unwrap();
+    cap_sdk::insert(event).await.unwrap();
 
     token_id
 }
@@ -148,15 +129,17 @@ pub async fn mint(owner: Principal) -> u64 {
 #[update(name = "transfer")]
 #[candid_method(update)]
 pub async fn transfer(new_owner: Principal, token_id: u64) {
-    let ctx = get_context();
-    let available = ctx.msg_cycles_available();
-    let fee = 1000000000;
+    let available = ic::msg_cycles_available();
+    let fee = 1_000_000_000;
 
-    if available <= fee {
-        panic!("Cannot transfer less than {}", fee);
+    if available < fee {
+        panic!(
+            "Can not transfer: {} provided cycles is less than the required fee of {}",
+            available, fee
+        );
     }
 
-    let accepted = ctx.msg_cycles_accept(available);
+    ic::msg_cycles_accept(fee);
     let data = ic::get_mut::<Data>();
 
     let existing_owner = data
@@ -174,7 +157,7 @@ pub async fn transfer(new_owner: Principal, token_id: u64) {
 
     let transaction_details = TransferDetails {
         to: new_owner,
-        token_id: token_id,
+        token_id,
     };
 
     let event = IndefiniteEventBuilder::new()
@@ -184,24 +167,15 @@ pub async fn transfer(new_owner: Principal, token_id: u64) {
         .build()
         .unwrap();
 
-    insert(event).await.unwrap();
+    cap_sdk::insert(event).await.unwrap();
 }
 
 #[candid_method(update)]
 #[update(name = "get_transaction_by_id")]
 pub async fn get_transaction_by_id(id: u64) -> Event {
-    let ctx = get_context();
-
-    let result = get_transaction(id).await;
-
-    let tx = match result {
-        Ok(t) => t,
-        Err(e) => {
-            panic!("Error finding transactions.");
-        }
-    };
-
-    tx
+    cap_sdk::get_transaction(id)
+        .await
+        .expect("Error retrieving transaction")
 }
 
 // needed to export candid on save

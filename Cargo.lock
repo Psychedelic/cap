@@ -465,17 +465,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "derive-new"
-version = "0.5.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3418329ca0ad70234b9735dc4ceed10af4df60eff9c8e7b06cb5e520d92c3535"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "diff"
 version = "0.1.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1253,14 +1242,9 @@ version = "0.1.0"
 dependencies = [
  "async-std",
  "cap-sdk",
- "cap-sdk-core",
- "derive-new",
  "ic-cdk",
- "ic-certified-map",
- "ic-history-common",
  "ic-kit",
  "serde",
- "serde_cbor",
 ]
 
 [[package]]
