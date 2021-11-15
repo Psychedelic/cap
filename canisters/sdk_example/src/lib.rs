@@ -56,6 +56,10 @@ fn post_upgrade() {
         // we stored during the pre_upgrade.
         CapEnv::load_from_archive(env);
         ic::store(data);
+    } else {
+        ic::print("There was an error reading data from stable storage.");
+        // Do a init instead.
+        init();
     }
 }
 
