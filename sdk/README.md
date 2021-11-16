@@ -16,6 +16,6 @@ This repository has the base codebase **(in development)**, for all the canister
 
 - Visit [our website](https://cap.ooo)
 - Read [our announcement](https://medium.com/@cap_ois/db9bdfe9129f?source=friends_link&sk=924b190ea080ed4e4593fc81396b0a7a)
-- Visit [CAP-SDK repository](https://github.com/Psychedelic/cap/tree/cap-sdk/sdk)
+- Visit [CAP-SDK repository](https://github.com/Psychedelic/cap/tree/main/sdk)
 - Visit [CAP-js repository](https://github.com/Psychedelic/cap-js/) 
 
