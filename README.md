@@ -9,11 +9,11 @@
 
 This repository has the base codebase **(in development)**, for all the canisters involved in the CAP open internet service.
 
-For integrations visit the [CAP-SDK repository](https://github.com/Psychedelic/cap/tree/cap-sdk/sdk) in the case of Tokens/NFTs wanting to integrate CAP to have a transaction history; and the [CAP-js repository](https://github.com/Psychedelic/cap-js/) for UIs that want to surface transaction history data for users from CAP.
+For integrations visit the [CAP-SDK repository](https://github.com/Psychedelic/cap/tree/main/sdk) in the case of Tokens/NFTs wanting to integrate CAP to have a transaction history; and the [CAP-js repository](https://github.com/Psychedelic/cap-js/) for UIs that want to surface transaction history data for users from CAP.
 
 - Visit [our website](https://cap.ooo)
 - Read [our announcement](https://medium.com/@cap_ois/db9bdfe9129f?source=friends_link&sk=924b190ea080ed4e4593fc81396b0a7a)
-- Visit [CAP-SDK repository](https://github.com/Psychedelic/cap/tree/cap-sdk/sdk)
+- Visit [CAP-SDK repository](https://github.com/Psychedelic/cap/tree/main/sdk)
 - Visit [CAP-js repository](https://github.com/Psychedelic/cap-js/) 
 
 >**IMPORTANT:** CAP is currently in development 🚧 and will release in the first week of November, thus it is not on mainnet or usable yet. You might see our documentation is light on the SDK/Main repo still. We're delayed in this to focus on testing, but will soon update this page with guides & detailed examples for developers.
