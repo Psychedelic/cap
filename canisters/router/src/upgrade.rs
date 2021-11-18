@@ -1,6 +1,6 @@
 use crate::{get_user_root_buckets, Data};
 use ic_cdk::api::stable::{StableReader, StableWriter};
-use ic_history_common::{GetUserRootBucketsArg, RootBucketId};
+use cap_common::{GetUserRootBucketsArg, RootBucketId};
 use ic_kit::candid::{candid_method, encode_args};
 use ic_kit::ic;
 use ic_kit::macros::{post_upgrade, pre_upgrade, update};

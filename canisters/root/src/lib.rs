@@ -1,14 +1,14 @@
 use ic_certified_map::{fork, fork_hash, AsHashTree, HashTree};
-use ic_history_common::bucket_lookup_table::BucketLookupTable;
-use ic_history_common::canister_list::CanisterList;
-use ic_history_common::transaction::{Event, IndefiniteEvent};
-use ic_history_common::Bucket;
+use cap_common::bucket_lookup_table::BucketLookupTable;
+use cap_common::canister_list::CanisterList;
+use cap_common::transaction::{Event, IndefiniteEvent};
+use cap_common::Bucket;
 use ic_kit::candid::{candid_method, export_service};
 use ic_kit::{ic, Principal};
 use serde::Serialize;
 use std::collections::BTreeSet;
 
-use ic_history_common::did::*;
+use cap_common::did::*;
 use ic_kit::macros::*;
 
 mod upgrade;

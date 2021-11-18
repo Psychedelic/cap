@@ -5,7 +5,7 @@
 
 use crate::root::RootBucket;
 use crate::router::Router;
-use ic_history_common::{
+use cap_common::{
     GetIndexCanistersResponse, GetTokenContractRootBucketArg, GetTokenContractRootBucketResponse,
     GetUserRootBucketsArg, GetUserRootBucketsResponse, WithWitnessArg,
 };

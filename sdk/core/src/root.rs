@@ -4,8 +4,8 @@
 //! [`RootBucket`].
 
 use crate::Bucket;
-use ic_history_common::transaction::IndefiniteEvent;
-use ic_history_common::{GetBucketResponse, WithIdArg};
+use cap_common::transaction::IndefiniteEvent;
+use cap_common::{GetBucketResponse, WithIdArg};
 use ic_kit::candid::CandidType;
 use ic_kit::{ic::call, Principal, RejectionCode};
 use serde::{Deserialize, Serialize};

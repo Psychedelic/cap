@@ -2,7 +2,7 @@ use ic_kit::ic::call;
 use ic_kit::{Principal, RejectionCode};
 
 use crate::root::RootBucket;
-use ic_history_common::{
+use cap_common::{
     GetIndexCanistersResponse, GetTransactionResponse, GetTransactionsArg, GetTransactionsResponse,
     GetUserTransactionsArg, WithIdArg, WithWitnessArg,
 };

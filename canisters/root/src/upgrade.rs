@@ -1,9 +1,9 @@
 use crate::Data;
 use ic_cdk::api::stable::{StableReader, StableWriter};
-use ic_history_common::bucket_lookup_table::BucketLookupTable;
-use ic_history_common::canister_list::CanisterList;
-use ic_history_common::transaction::Event;
-use ic_history_common::{Bucket, TokenContractId};
+use cap_common::bucket_lookup_table::BucketLookupTable;
+use cap_common::canister_list::CanisterList;
+use cap_common::transaction::Event;
+use cap_common::{Bucket, TokenContractId};
 use ic_kit::macros::{post_upgrade, pre_upgrade};
 use ic_kit::{ic, Principal};
 use serde::Deserialize;
@@ -64,7 +64,7 @@ fn post_upgrade() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ic_history_common::transaction::DetailValue;
+    use cap_common::transaction::DetailValue;
     use ic_kit::{MockContext, Principal};
 
     const fn p(id: u8) -> Principal {

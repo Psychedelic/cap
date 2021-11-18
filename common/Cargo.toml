@@ -4,6 +4,11 @@ version = "0.1.0"
 edition = "2018"
 authors = ["Parsa Ghadimi <parsa@fleek.co>"]
 
+description = "The common data structures of CAP. This crate shouldn't be used for implementing support for cap, see cap-sdk instead."
+homepage = "https://github.com/Psychedelic/cap"
+repository = "https://github.com/Psychedelic/cap"
+readme = "https://github.com/Psychedelic/cap/README.md"
+
 [dependencies]
 ic-certified-map = "0.1.0"
 ic-kit = "0.4.2"

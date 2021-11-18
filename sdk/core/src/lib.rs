@@ -19,4 +19,4 @@ mod router;
 
 pub use router::Router;
 
-pub use ic_history_common::*;
+pub use cap_common::*;

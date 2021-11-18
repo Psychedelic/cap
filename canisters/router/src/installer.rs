@@ -8,7 +8,7 @@ use ic_kit::{ic, Principal};
 use serde::Deserialize;
 
 // It's ok.
-use ic_history_common::*;
+use cap_common::*;
 use ic_kit::macros::*;
 
 #[cfg(debug_cfg)]
