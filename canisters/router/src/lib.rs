@@ -1,15 +1,15 @@
-use ic_certified_map::{fork, HashTree};
-use ic_certified_map::{fork_hash, AsHashTree};
 use cap_common::canister_list::CanisterList;
 use cap_common::canister_map::CanisterMap;
 use cap_common::user_canisters::UserCanisters;
+use ic_certified_map::{fork, HashTree};
+use ic_certified_map::{fork_hash, AsHashTree};
 use ic_kit::candid::{candid_method, export_service};
 use ic_kit::ic;
 use serde::{Deserialize, Serialize};
 
 // It's ok.
-use ic_cdk::export::Principal;
 use cap_common::*;
+use ic_cdk::export::Principal;
 use ic_kit::macros::*;
 
 mod installer;

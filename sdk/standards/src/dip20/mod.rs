@@ -1,13 +1,13 @@
 use std::convert::TryFrom;
 
-use candid::{Int, Nat, Principal};
+use candid::{CandidType, Int, Nat, Principal};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 #[cfg(feature = "sdk-impls")]
-mod cap;
+pub mod cap;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(CandidType, Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum TransactionStatus {
     Succeeded,
     Failed,
@@ -40,13 +40,12 @@ impl TransactionStatus {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(CandidType, Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum Operation {
     Approve,
     Mint,
     Transfer,
     TransferFrom,
-    #[cfg(feature = "alpha-dip20-dank")]
     Burn,
     #[cfg(feature = "alpha-dip20-dank")]
     CanisterCalled,
@@ -63,7 +62,6 @@ impl<'a> TryFrom<&'a str> for Operation {
             "mint" => Self::Mint,
             "transfer" => Self::Transfer,
             "transfer_from" => Self::TransferFrom,
-            #[cfg(feature = "alpha-dip20-dank")]
             "burn" => Self::Burn,
             #[cfg(feature = "alpha-dip20-dank")]
             "canister_called" => Self::CanisterCalled,
@@ -81,7 +79,6 @@ impl Into<&'static str> for Operation {
             Self::Mint => "mint",
             Self::Transfer => "transfer",
             Self::TransferFrom => "transfer_from",
-            #[cfg(feature = "alpha-dip20-dank")]
             Self::Burn => "burn",
             #[cfg(feature = "alpha-dip20-dank")]
             Self::CanisterCalled => "canister_called",
