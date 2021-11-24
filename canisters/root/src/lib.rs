@@ -1,8 +1,8 @@
-use ic_certified_map::{fork, fork_hash, AsHashTree, HashTree};
 use cap_common::bucket_lookup_table::BucketLookupTable;
 use cap_common::canister_list::CanisterList;
 use cap_common::transaction::{Event, IndefiniteEvent};
 use cap_common::Bucket;
+use ic_certified_map::{fork, fork_hash, AsHashTree, HashTree};
 use ic_kit::candid::{candid_method, export_service};
 use ic_kit::{ic, Principal};
 use serde::Serialize;

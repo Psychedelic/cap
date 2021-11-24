@@ -108,7 +108,6 @@ pub enum DIP20Details {
         fee: Nat,
         status: TransactionStatus,
     },
-    #[cfg(feature = "alpha-dip20-dank")]
     Burn {
         from: Principal,
         to: Principal,
@@ -221,7 +220,6 @@ impl DIP20EventExt for TypedEvent<DIP20Details> {
                 status,
                 operation: Operation::TransferFrom,
             },
-            #[cfg(feature = "alpha-dip20-dank")]
             DIP20Details::Burn {
                 from,
                 to,
@@ -287,7 +285,6 @@ impl IntoEvent for DIP20Details {
             Self::Mint { .. } => "mint",
             Self::Transfer { .. } => "transfer",
             Self::TransferFrom { .. } => "transfer_from",
-            #[cfg(feature = "alpha-dip20-dank")]
             Self::Burn { .. } => "burn",
             #[cfg(feature = "alpha-dip20-dank")]
             Self::CanisterCalled { .. } => "canister_called",
@@ -366,7 +363,6 @@ impl IntoEvent for DIP20Details {
                     .insert("status", status_string.clone())
                     .build()
             }
-            #[cfg(feature = "alpha-dip20-dank")]
             Self::Burn {
                 from,
                 to,
@@ -503,7 +499,7 @@ impl TryFromEvent for DIP20Details {
                     status: status_string.as_str().try_into().map_failure("status")?,
                 }
             }
-            #[cfg(feature = "alpha-dip20-dank")]
+
             "burn" => {
                 let status_string: String = details
                     .get_detail("status")?
@@ -629,7 +625,6 @@ impl Into<TypedEvent<DIP20Details>> for TxRecord {
                     },
                 }
             }
-            #[cfg(feature = "alpha-dip20-dank")]
             Operation::Burn => {
                 let time: u64 = self.timestamp.0.try_into().unwrap();
 
