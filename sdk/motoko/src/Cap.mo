@@ -9,7 +9,7 @@ class Cap(canister_id: Principal, creation_cycles: Nat) {
 
     let ?rootBucket = null;
 
-    func getTransaction(id: Nat64) : async Result.Result<Root.Event, Types.GetTransactionError> {
+    public func getTransaction(id: Nat64) : async Result.Result<Root.Event, Types.GetTransactionError> {
         await awaitHandshake();
 
         let rootBucket = (actor (rootBucket) : Root.Self);
@@ -33,7 +33,7 @@ class Cap(canister_id: Principal, creation_cycles: Nat) {
         }
     };
 
-    func insert(event: Root.IndefiniteEvent) : async Result.Result<Nat64, Types.InsertTransactionError> {
+    public func insert(event: Root.IndefiniteEvent) : async Result.Result<Nat64, Types.InsertTransactionError> {
         await awaitHandshake();
 
         let rootBucket = (actor (rootBucket) : Root.Self);
