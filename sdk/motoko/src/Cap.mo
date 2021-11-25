@@ -1,8 +1,10 @@
 import Result "mo:base/Result";
 import Principal "mo:base/Principal";
+import Debug "mo:base/Debug";
 import Root "Root";
 import Types "Types";
 import Router "Router";
+import ic "ic:aaaaa-aa";
 
 class Cap(canister_id: Principal, creation_cycles: Nat) {
     let router = "text";
@@ -55,7 +57,35 @@ class Cap(canister_id: Principal, creation_cycles: Nat) {
 
         switch(result.canister) {
             case(null) {
-                // TODO
+                let settings = ic.canister_settings {
+                    controllers = router;
+                    compute_allocation = null;
+                    memory_allocation = null;
+                    freezing_threshold = null;
+                };
+
+                // Add cycles and perform the create call
+                ExperimentalCycles.add(creation_cycles);
+                let create_response = await ic.create_canister(settings);
+
+                // Install the cap code
+                let canister = create_response.canister_id;
+                let router = (actor (router) : Router.Self);
+                await router.install_code(canister);
+
+                let result = await router.get_token_contract_root_bucket({
+                    witness=false;
+                    canister= canisterId;
+                });
+
+                switch(result.canister) {
+                    case(null) {
+                        Debug.trap("Error while creating root bucket");
+                    };
+                    case(?canister) {
+                        rootBucket := canister;
+                    };
+                };
             };
             case (?canister) {
                 rootBucket := canister;
@@ -64,6 +94,10 @@ class Cap(canister_id: Principal, creation_cycles: Nat) {
     };
 
     func awaitForHandshake(): async () {
-        // TODO D:
+        if(rootBucket == null) {
+            await performHandshake();
+        } else {
+            return;
+        }
     }
 };
