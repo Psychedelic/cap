@@ -19,7 +19,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// Use [`RootBucket`]'s [`Into<Bucket>`] implementation to use a [`RootBucket`] as a [`Bucket`].
 #[derive(Copy, Clone, Serialize, Deserialize, CandidType)]
-pub struct RootBucket(pub(crate) Principal);
+pub struct RootBucket(pub Principal);
 
 impl RootBucket {
     /// Returns a bucket that be used to query for the given transaction ID.
