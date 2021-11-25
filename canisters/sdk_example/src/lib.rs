@@ -19,7 +19,6 @@ struct Data {
 
 /// The default implementation for the data store used to initialize
 /// the data.
-#[allow(clippy::derivable_impls)]
 impl Default for Data {
     fn default() -> Self {
         Self {
