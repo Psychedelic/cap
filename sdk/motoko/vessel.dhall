@@ -1,1 +1,0 @@
-{ dependencies = [ "base", "ic-history-router" ], compiler = Some "0.6.2" }
