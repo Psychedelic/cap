@@ -1,0 +1,4 @@
+type GetTransactionError = {
+    #unsupportedResponse : ();
+    #noTransaction : ()
+}

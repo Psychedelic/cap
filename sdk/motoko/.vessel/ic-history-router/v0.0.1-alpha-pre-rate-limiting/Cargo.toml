@@ -1,0 +1,10 @@
+[workspace]
+members = [
+    "common",
+    "canisters/router",
+    "canisters/root",
+]
+
+[profile.release]
+lto = true
+opt-level = 'z'
