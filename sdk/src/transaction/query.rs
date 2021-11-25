@@ -1,4 +1,4 @@
-use cap_sdk_core::GetTransactionResponse;
+use cap_sdk_core::{Bucket, GetTransactionResponse};
 
 use crate::{CapEnv, GetTransactionError, Transaction, TransactionId};
 
@@ -28,10 +28,17 @@ pub async fn get_transaction(id: TransactionId) -> Result<Transaction, GetTransa
         .await
         .map_err(|(code, details)| GetTransactionError::Unexpected(code, details))?;
 
-    let transaction = bucket
+    let mut transaction = bucket
         .get_transaction(id)
         .await
         .map_err(|(code, details)| GetTransactionError::Unexpected(code, details))?;
+
+    while let GetTransactionResponse::Delegate(bucket, _) = transaction {
+        transaction = Bucket(bucket)
+            .get_transaction(id)
+            .await
+            .map_err(|(code, details)| GetTransactionError::Unexpected(code, details))?;
+    }
 
     if let GetTransactionResponse::Found(event, _) = transaction {
         if let Some(event) = event {
@@ -40,7 +47,6 @@ pub async fn get_transaction(id: TransactionId) -> Result<Transaction, GetTransa
             Err(GetTransactionError::InvalidId)
         }
     } else {
-        // TODO: Delegate
-        unimplemented!("This version of cap-sdk does not support multi-canister.")
+        Err(GetTransactionError::InvalidId)
     }
 }

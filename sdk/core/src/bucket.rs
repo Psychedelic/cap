@@ -13,7 +13,7 @@ use cap_common::{
 /// contract is created using multiple bucket canisters, which are interconnected using a root bucket
 /// and router system. Querying buckets also features pagination.
 #[derive(Copy, Clone)]
-pub struct Bucket(pub(crate) Principal);
+pub struct Bucket(pub Principal);
 
 impl Bucket {
     /// Returns the list of canisters which have different pages of data.
