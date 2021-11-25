@@ -40,12 +40,8 @@ pub async fn get_transaction(id: TransactionId) -> Result<Transaction, GetTransa
             .map_err(|(code, details)| GetTransactionError::Unexpected(code, details))?;
     }
 
-    if let GetTransactionResponse::Found(event, _) = transaction {
-        if let Some(event) = event {
-            Ok(event)
-        } else {
-            Err(GetTransactionError::InvalidId)
-        }
+    if let GetTransactionResponse::Found(Some(event), _) = transaction {
+        Ok(event)
     } else {
         Err(GetTransactionError::InvalidId)
     }
