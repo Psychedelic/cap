@@ -5,7 +5,6 @@ import Cycles "mo:base/ExperimentalCycles";
 import Root "Root";
 import Types "Types";
 import Router "Router";
-// import ic "ic:aaaaa-aa";
 import IC "IC";
 
 class Cap(canister_id: Principal, creation_cycles: Nat) {
