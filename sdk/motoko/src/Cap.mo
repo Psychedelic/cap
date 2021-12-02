@@ -52,7 +52,7 @@ class Cap(canister_id: Principal, creation_cycles: Nat) {
 
         let result = await router.get_token_contract_root_bucket({
             witness=false;
-            canister= canisterId;
+            canister=canister_id;
         });
 
         switch(result.canister) {
@@ -75,7 +75,7 @@ class Cap(canister_id: Principal, creation_cycles: Nat) {
 
                 let result = await router.get_token_contract_root_bucket({
                     witness=false;
-                    canister= canisterId;
+                    canister=canister_id;
                 });
 
                 switch(result.canister) {
