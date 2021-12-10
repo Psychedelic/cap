@@ -4,9 +4,9 @@ members = [
     "canisters/router",
     "canisters/root",
     "canisters/sdk_example",
-    "sdk/core",
-    "sdk",
-    "sdk/standards"
+    "sdk/rust/core",
+    "sdk/rust",
+    "sdk/rust/standards"
 ]
 
 [profile.release]
