@@ -54,7 +54,9 @@ pub async fn install_code(canister_id: Principal, contract_id: Principal, writer
     .await
     .expect("Failed to retrieve canister status");
 
-    if response.settings.controllers.len() > 1 {
+    let controller_count = response.settings.controllers.len();
+    let has_contract_ctrlr = response.settings.controllers.contains(&contract_id);
+    if controller_count > 1 && !(controller_count == 2 && has_contract_ctrlr) {
         panic!("Expected one controller on canister {}", canister_id);
     }
 
