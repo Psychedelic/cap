@@ -1,6 +1,7 @@
 import Result "mo:base/Result";
 import Principal "mo:base/Principal";
 import Debug "mo:base/Debug";
+import Prelude "mo:base/Prelude";
 import Cycles "mo:base/ExperimentalCycles";
 import Root "Root";
 import Types "Types";
@@ -19,11 +20,11 @@ module {
 
             let root = switch(rootBucket) {
                 case(?r) { r };
-                case(_) { "" }; // unreachable
+                case(_) { Prelude.unreachable() };
             };
             let rb: Root.Self = actor(root);
 
-            let transaction_response = await rb.get_transaction({ id=id; witness=false; }); 
+            let transaction_response = await rb.get_transaction({ id=id; witness=false; });
 
             switch(transaction_response) {
                 case (#Found(event, witness)) {
@@ -47,7 +48,7 @@ module {
 
             let root = switch(rootBucket) {
                 case(?r) { r };
-                case(_) { "" }; // unreachable
+                case(_) { Prelude.unreachable() };
             };
             let rb: Root.Self = actor(root);
 
@@ -59,6 +60,10 @@ module {
 
         /// Returns the principal of the root canister
         public func performHandshake(): async () {
+            switch(rootBucket) {
+                case(?r) { return; };
+                case(_) { };
+            };
             let router: Router.Self = actor(router_id);
 
             let result = await router.get_token_contract_root_bucket({
@@ -75,9 +80,13 @@ module {
                         freezing_threshold = null;
                     };
 
+                    let params: IC.CreateCanisterParams = {
+                        settings = ?settings
+                    };
+
                     // Add cycles and perform the create call
                     Cycles.add(creation_cycles);
-                    let create_response = await ic.create_canister(?settings);
+                    let create_response = await ic.create_canister(params);
 
                     // Install the cap code
                     let canister = create_response.canister_id;
@@ -114,3 +123,4 @@ module {
         }
     };
 }
+
