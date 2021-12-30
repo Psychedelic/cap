@@ -308,6 +308,12 @@ async fn write_new_users_to_cap(cap_id: Principal, contract_id: Principal, users
     }
 }
 
+#[query]
+#[candid_method(query)]
+fn balance() -> u64 {
+    ic::balance()
+}
+
 #[query(name = "__get_candid_interface_tmp_hack")]
 fn export_candid() -> String {
     export_service!();
