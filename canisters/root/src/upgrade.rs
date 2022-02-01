@@ -30,6 +30,19 @@ fn pre_upgrade() {
     serde_cbor::to_writer(writer, &data).expect("Failed to serialize data.");
 }
 
+fn next_post_upgrade() {
+    let reader = StableReader::default();
+    let data: Data = match serde_cbor::from_reader(reader) {
+        Ok(t) => t,
+        Err(err) => {
+            let limit = err.offset() - 1;
+            let reader = StableReader::default().take(limit);
+            serde_cbor::from_reader(reader).expect("Failed to deserialize.")
+        }
+    };
+    ic::store(data);
+}
+
 #[post_upgrade]
 fn post_upgrade() {
     let reader = StableReader::default();
@@ -44,9 +57,9 @@ fn post_upgrade() {
 
     let contract = data.contract;
 
-    let mut bucket = Bucket::new(0);
+    let mut bucket = Bucket::new(contract, 0);
     for event in data.bucket {
-        bucket.insert(&contract, event);
+        bucket.insert(event);
     }
 
     ic::store(Data {
@@ -90,11 +103,11 @@ mod tests {
                 operation: "mint".to_string(),
                 details: vec![("amount".into(), DetailValue::U64(i as u64))],
             };
-            data.bucket.insert(&contract_id, e);
+            data.bucket.insert(e);
         }
 
         let serialized = serde_cbor::to_vec(data).expect("Failed to serialize.");
-        let actual: DataDe = serde_cbor::from_slice(&serialized).expect("Failed to deserialize.");
+        let actual: Data = serde_cbor::from_slice(&serialized).expect("Failed to deserialize.");
 
         assert_eq!(actual.bucket.len(), 100);
     }

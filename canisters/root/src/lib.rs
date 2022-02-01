@@ -5,7 +5,7 @@ use cap_common::Bucket;
 use ic_certified_map::{fork, fork_hash, AsHashTree, HashTree};
 use ic_kit::candid::{candid_method, export_service};
 use ic_kit::{ic, Principal};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
 use cap_common::did::*;
@@ -23,7 +23,7 @@ mod upgrade;
 ///     /   \
 ///   / \    2
 ///  0   1
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct Data {
     bucket: Bucket,
     buckets: BucketLookupTable,
@@ -39,7 +39,7 @@ struct Data {
 impl Default for Data {
     fn default() -> Self {
         Self {
-            bucket: Bucket::new(0),
+            bucket: Bucket::new(Principal::management_canister(), 0),
             buckets: {
                 let mut table = BucketLookupTable::default();
                 table.insert(0, ic::id());
@@ -61,6 +61,7 @@ fn init(contract: Principal, writers: BTreeSet<Principal>) {
     data.cap_id = ic::caller();
     data.contract = contract;
     data.writers = writers;
+    data.bucket = Bucket::new(contract, 0);
 }
 
 #[query]
@@ -246,7 +247,7 @@ fn insert(event: IndefiniteEvent) -> TransactionId {
         new_users,
     ));
 
-    let id = data.bucket.insert(&data.contract, event);
+    let id = data.bucket.insert(event);
 
     data.allow_migration = false;
 
@@ -281,7 +282,7 @@ fn migrate(events: Vec<Event>) {
             }
         }
 
-        data.bucket.insert(&data.contract, event);
+        data.bucket.insert(event);
     }
 
     ic_cdk::block_on(write_new_users_to_cap(
