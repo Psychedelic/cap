@@ -2,7 +2,7 @@
 //! files across the different canisters and the services.
 
 use crate::transaction::Event;
-use ic_certified_map::{Hash, HashTree};
+use certified_vars::{Hash, HashTree};
 use ic_kit::candid::{CandidType, Deserialize};
 use ic_kit::ic;
 use ic_kit::Principal;

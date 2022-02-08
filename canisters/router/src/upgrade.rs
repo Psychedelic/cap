@@ -1,26 +1,42 @@
 use crate::{get_user_root_buckets, Data};
 use cap_common::{GetUserRootBucketsArg, RootBucketId};
+use certified_vars::{Hash, Seq};
 use ic_cdk::api::stable::{StableReader, StableWriter};
 use ic_kit::candid::{candid_method, encode_args};
 use ic_kit::ic;
 use ic_kit::macros::{post_upgrade, pre_upgrade, update};
 use ic_kit::Principal;
+use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use std::io::Read;
 
 #[derive(Default)]
 struct RootBucketsToUpgrade(Vec<RootBucketId>);
 
+#[derive(Serialize, Deserialize)]
+pub struct DataV0 {
+    pub root_buckets: BTreeMap<Vec<u8>, Vec<u8>>,
+    /// Map each user to RootBucketId
+    pub user_canisters: BTreeMap<Vec<u8>, CanisterListV0>,
+    /// List of the index canisters.
+    pub index_canisters: CanisterListV0,
+}
+
+#[derive(Default, Deserialize, Serialize)]
+pub struct CanisterListV0 {
+    data: Vec<Principal>,
+    hash: Hash,
+}
+
 #[pre_upgrade]
 fn pre_upgrade() {
-    let data = ic::get::<Data>();
-    let writer = StableWriter::default();
-    serde_cbor::to_writer(writer, &data).expect("Failed to serialize data.");
+    ic::stable_store((ic::get::<Data>(),)).expect("Failed to serialize data.");
 }
 
 #[post_upgrade]
 fn post_upgrade() {
     let reader = StableReader::default();
-    let data: Data = match serde_cbor::from_reader(reader) {
+    let data: DataV0 = match serde_cbor::from_reader(reader) {
         Ok(t) => t,
         Err(err) => {
             let limit = err.offset() - 1;
@@ -29,7 +45,30 @@ fn post_upgrade() {
         }
     };
 
-    ic::store::<Data>(data);
+    let mut deserialized = Data::default();
+
+    for (key, value) in data.root_buckets {
+        let key = Principal::from_slice(&key);
+        let value = Principal::from_slice(&value);
+        deserialized.root_buckets.insert(key, value);
+    }
+
+    for (key, value) in data.user_canisters {
+        let key = Principal::from_slice(&key);
+        let value = {
+            let mut r = Seq::new();
+            for v in value.data {
+                r.append(v);
+            }
+            r
+        };
+
+        deserialized.user_canisters.insert(key, value);
+    }
+
+    deserialized.index_canisters = data.index_canisters.data.into_iter().collect();
+
+    ic::store::<Data>(deserialized);
 
     let root_buckets = get_user_root_buckets(GetUserRootBucketsArg {
         user: Principal::management_canister(),
@@ -87,51 +126,4 @@ async fn upgrade_root_bucket(canister_id: Principal) {
     }
 
     trigger_upgrade();
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use ic_certified_map::AsHashTree;
-    use ic_kit::MockContext;
-
-    // TODO(qti3e) Move this to ic-kit.
-    const fn p(id: u8) -> Principal {
-        Principal::from_slice(&[id, 0x00])
-    }
-
-    #[test]
-    fn test() {
-        let contract_1 = p(0);
-        let rb_1 = p(1);
-        let contract_2 = p(2);
-        let rb_2 = p(3);
-        let alice = p(4);
-        let bob = p(5);
-
-        MockContext::new().with_id(p(17)).inject();
-
-        let mut data = Data::default();
-        data.root_buckets.insert(contract_1, rb_1);
-        data.root_buckets.insert(contract_2, rb_2);
-        data.user_canisters.insert(alice, rb_1);
-        data.user_canisters.insert(alice, rb_2);
-        data.user_canisters.insert(bob, rb_2);
-
-        let serialized: Vec<u8> = serde_cbor::to_vec(&data).expect("Failed to serialize.");
-        let actual: Data = serde_cbor::from_slice(&serialized).expect("Failed to deserialize.");
-
-        assert_eq!(
-            actual.user_canisters.root_hash(),
-            data.user_canisters.root_hash()
-        );
-        assert_eq!(
-            actual.root_buckets.root_hash(),
-            data.root_buckets.root_hash()
-        );
-        assert_eq!(
-            actual.index_canisters.root_hash(),
-            data.index_canisters.root_hash()
-        );
-    }
 }

@@ -1,7 +1,6 @@
-use crate::index::Index;
 use crate::transaction::Event;
-use ic_certified_map::HashTree::Pruned;
-use ic_certified_map::{fork, fork_hash, leaf_hash, AsHashTree, Hash, HashTree, RbTree};
+use certified_vars::Paged;
+use certified_vars::{rbtree::RbTree, AsHashTree, Hash, HashTree};
 use ic_kit::Principal;
 use serde::ser::{SerializeSeq, SerializeTuple};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -28,7 +27,7 @@ use std::ptr::NonNull;
 /// ```
 pub struct Bucket {
     /// Map each local Transaction ID to its hash.
-    event_hashes: RbTree<EventKey, Hash>,
+    event_hashes: RbTree<u32, Hash>,
     /// ID of the current contract.
     contract: Principal,
     /// The offset of this bucket, i.e the actual id of the first event in the bucket.
@@ -38,30 +37,14 @@ pub struct Bucket {
     /// value of the `global_offset` we can use this slice.
     global_offset_be: [u8; 8],
     /// Maps each user principal id to the vector of events they have.
-    user_indexer: Index,
+    user_indexer: Paged<Principal, NonNull<Event>, 64>,
     /// Maps contract id to each transaction page.
-    contract_indexer: Index,
+    contract_indexer: Paged<Principal, NonNull<Event>, 64>,
     /// All of the events in this bucket, we store a pointer to an allocated memory. Which is used
     /// only internally in this struct. And this Vec should be considered the actual owner of this
     /// pointers.
     /// So this should be the last thing that will be dropped.
     events: Vec<NonNull<Event>>,
-}
-
-pub struct EventKey([u8; 4]);
-
-impl From<u32> for EventKey {
-    #[inline(always)]
-    fn from(n: u32) -> Self {
-        EventKey(n.to_be_bytes())
-    }
-}
-
-impl AsRef<[u8]> for EventKey {
-    #[inline(always)]
-    fn as_ref(&self) -> &[u8] {
-        &self.0
-    }
 }
 
 impl Bucket {
@@ -74,8 +57,8 @@ impl Bucket {
             event_hashes: RbTree::new(),
             global_offset: offset,
             global_offset_be: offset.to_be_bytes(),
-            user_indexer: Index::default(),
-            contract_indexer: Index::default(),
+            user_indexer: Paged::new(),
+            contract_indexer: Paged::new(),
         }
     }
 
@@ -105,38 +88,22 @@ impl Bucket {
         let eve = unsafe { event.as_ref() };
 
         // Update the indexers for the transaction.
-        self.contract_indexer.insert(&self.contract, event, &hash);
+        self.contract_indexer.insert(self.contract, event);
         for user in eve.extract_principal_ids() {
-            self.user_indexer.insert(user, event, &hash);
+            self.user_indexer.insert(*user, event);
         }
 
         // Insert the event itself.
-        self.event_hashes.insert(local_index.into(), hash);
+        self.event_hashes.insert(local_index, hash);
         self.events.push(event);
 
         self.global_offset + (local_index as u64)
     }
 
-    /// Create the hash of the left virtual node.
-    #[inline]
-    fn left_v_hash(&self) -> Hash {
-        let offset_hash = leaf_hash(&self.global_offset_be);
-        fork_hash(&self.event_hashes.root_hash(), &offset_hash)
-    }
-
-    /// Create the hash of the right virtual node.
-    #[inline]
-    fn right_v_hash(&self) -> Hash {
-        fork_hash(
-            &self.user_indexer.root_hash(),
-            &self.contract_indexer.root_hash(),
-        )
-    }
-
     /// Return the transactions associated with a user's principal id at the given page.
     #[inline]
     pub fn get_transactions_for_user(&self, principal: &Principal, page: u32) -> Vec<&Event> {
-        if let Some(data) = self.user_indexer.get(principal, page) {
+        if let Some(data) = self.user_indexer.get(principal, page as usize) {
             data.iter().map(|v| unsafe { v.as_ref() }).collect()
         } else {
             vec![]
@@ -146,47 +113,39 @@ impl Bucket {
     /// Return the last page number associated with the given user.
     #[inline]
     pub fn last_page_for_user(&self, principal: &Principal) -> u32 {
-        self.user_indexer.last_page(principal)
+        self.user_indexer
+            .get_last_page_number(principal)
+            .unwrap_or(0) as u32
     }
 
     /// Return the transactions associated with a token's principal id at the given page.
     #[inline]
     pub fn get_transactions_for_contract(&self, principal: &Principal, page: u32) -> Vec<&Event> {
-        if let Some(data) = self.contract_indexer.get(principal, page) {
+        if let Some(data) = self.contract_indexer.get(principal, page as usize) {
             data.iter().map(|v| unsafe { v.as_ref() }).collect()
         } else {
             vec![]
         }
     }
 
-    /// Return the last page number associated with the given token.
+    /// Return the last page number associated with the given token contract.
     #[inline]
     pub fn last_page_for_contract(&self, principal: &Principal) -> u32 {
-        self.contract_indexer.last_page(principal)
+        self.contract_indexer
+            .get_last_page_number(principal)
+            .unwrap_or(0) as u32
     }
 
     /// Return the witness that can be used to prove the response from get_transactions_for_user.
     #[inline]
     pub fn witness_transactions_for_user(&self, principal: &Principal, page: u32) -> HashTree {
-        fork(
-            Pruned(self.left_v_hash()),
-            fork(
-                self.user_indexer.witness(principal, page),
-                Pruned(self.contract_indexer.root_hash()),
-            ),
-        )
+        todo!()
     }
 
     /// Return the witness that can be used to prove the response from get_transactions_for_token.
     #[inline]
     pub fn witness_transactions_for_contract(&self, principal: &Principal, page: u32) -> HashTree {
-        fork(
-            Pruned(self.left_v_hash()),
-            fork(
-                Pruned(self.user_indexer.root_hash()),
-                self.contract_indexer.witness(principal, page),
-            ),
-        )
+        todo!()
     }
 
     /// Return a transaction by its global id.
@@ -207,43 +166,17 @@ impl Bucket {
     /// Return a witness which proves the response returned by get_transaction.
     #[inline]
     pub fn witness_transaction(&self, id: u64) -> HashTree {
-        if id < self.global_offset {
-            fork(
-                fork(
-                    Pruned(self.event_hashes.root_hash()),
-                    HashTree::Leaf(&self.global_offset_be),
-                ),
-                Pruned(self.right_v_hash()),
-            )
-        } else {
-            let local = (id - self.global_offset) as u32;
-            fork(
-                fork(
-                    self.event_hashes.witness(&local.to_be_bytes()),
-                    HashTree::Leaf(&self.global_offset_be),
-                ),
-                Pruned(self.right_v_hash()),
-            )
-        }
+        todo!()
     }
 }
 
 impl AsHashTree for Bucket {
     fn root_hash(&self) -> Hash {
-        fork_hash(&self.left_v_hash(), &self.right_v_hash())
+        todo!()
     }
 
     fn as_hash_tree(&self) -> HashTree<'_> {
-        fork(
-            fork(
-                self.event_hashes.as_hash_tree(),
-                HashTree::Leaf(&self.global_offset_be),
-            ),
-            fork(
-                self.user_indexer.as_hash_tree(),
-                self.contract_indexer.as_hash_tree(),
-            ),
-        )
+        todo!()
     }
 }
 

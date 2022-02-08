@@ -1,26 +1,31 @@
 use crate::Data;
-use cap_common::bucket_lookup_table::BucketLookupTable;
-use cap_common::canister_list::CanisterList;
 use cap_common::transaction::Event;
-use cap_common::{Bucket, TokenContractId};
+use cap_common::{Bucket, TokenContractId, TransactionId};
+use certified_vars::{Hash, Map, Seq};
 use ic_cdk::api::stable::{StableReader, StableWriter};
 use ic_kit::macros::{post_upgrade, pre_upgrade};
 use ic_kit::{ic, Principal};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use std::io::Read;
 
 #[derive(Deserialize)]
-struct DataDe {
+struct DataV0 {
     bucket: Vec<Event>,
-    buckets: BucketLookupTable,
-    next_canisters: CanisterList,
+    buckets: Vec<(TransactionId, Principal)>,
+    next_canisters: CanisterListV0,
     /// List of all the users in this token contract.
     users: BTreeSet<Principal>,
     cap_id: Principal,
     contract: TokenContractId,
     writers: BTreeSet<TokenContractId>,
     allow_migration: bool,
+}
+
+#[derive(Deserialize)]
+pub struct CanisterListV0 {
+    data: Vec<Principal>,
+    hash: Hash,
 }
 
 #[pre_upgrade]
@@ -46,7 +51,7 @@ fn next_post_upgrade() {
 #[post_upgrade]
 fn post_upgrade() {
     let reader = StableReader::default();
-    let data: DataDe = match serde_cbor::from_reader(reader) {
+    let data: DataV0 = match serde_cbor::from_reader(reader) {
         Ok(t) => t,
         Err(err) => {
             let limit = err.offset() - 1;
@@ -64,8 +69,14 @@ fn post_upgrade() {
 
     ic::store(Data {
         bucket,
-        buckets: data.buckets,
-        next_canisters: data.next_canisters,
+        buckets: {
+            let mut table = Map::new();
+            table.insert(0, ic::id());
+            table
+        },
+        // For now we never had next_canisters,
+        // so this is safe.
+        next_canisters: Seq::new(),
         users: data.users,
         cap_id: data.cap_id,
         contract,

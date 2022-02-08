@@ -1,8 +1,9 @@
-use cap_common::bucket_lookup_table::BucketLookupTable;
-use cap_common::canister_list::CanisterList;
 use cap_common::transaction::{Event, IndefiniteEvent};
 use cap_common::Bucket;
-use ic_certified_map::{fork, fork_hash, AsHashTree, HashTree};
+use certified_vars::{
+    hashtree::{fork, fork_hash},
+    AsHashTree, HashTree, Map, Seq,
+};
 use ic_kit::candid::{candid_method, export_service};
 use ic_kit::{ic, Principal};
 use serde::{Deserialize, Serialize};
@@ -26,8 +27,8 @@ mod upgrade;
 #[derive(Serialize, Deserialize)]
 struct Data {
     bucket: Bucket,
-    buckets: BucketLookupTable,
-    next_canisters: CanisterList,
+    buckets: Map<TransactionId, Principal>,
+    next_canisters: Seq<BucketId>,
     /// List of all the users in this token contract.
     users: BTreeSet<Principal>,
     cap_id: Principal,
@@ -41,11 +42,11 @@ impl Default for Data {
         Self {
             bucket: Bucket::new(Principal::management_canister(), 0),
             buckets: {
-                let mut table = BucketLookupTable::default();
+                let mut table = Map::new();
                 table.insert(0, ic::id());
                 table
             },
-            next_canisters: CanisterList::new(),
+            next_canisters: Seq::new(),
             users: BTreeSet::new(),
             cap_id: Principal::management_canister(),
             contract: Principal::management_canister(),
@@ -83,7 +84,7 @@ fn get_next_canisters(arg: WithWitnessArg) -> GetNextCanistersResponse {
         ),
     };
 
-    let canisters = data.next_canisters.to_vec();
+    let canisters = data.next_canisters.as_vec().clone();
 
     GetNextCanistersResponse { canisters, witness }
 }
@@ -191,7 +192,7 @@ fn get_bucket_for(arg: WithIdArg) -> GetBucketResponse {
             fork(
                 fork(
                     HashTree::Pruned(data.bucket.root_hash()),
-                    data.buckets.gen_witness(arg.id),
+                    data.buckets.witness(&arg.id),
                 ),
                 HashTree::Pruned(data.next_canisters.root_hash()),
             )
@@ -199,9 +200,10 @@ fn get_bucket_for(arg: WithIdArg) -> GetBucketResponse {
         ),
     };
 
-    let canister = *data.buckets.get_bucket_for(arg.id);
-
-    GetBucketResponse { canister, witness }
+    GetBucketResponse {
+        canister: ic::id(),
+        witness,
+    }
 }
 
 #[query]

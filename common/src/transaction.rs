@@ -1,4 +1,6 @@
 use crate::did::EventHash;
+use certified_vars::HashTree::Pruned;
+use certified_vars::{AsHashTree, Hash, HashTree};
 use ic_kit::candid::{CandidType, Deserialize, Nat};
 use ic_kit::Principal;
 use serde::Serialize;
@@ -40,6 +42,7 @@ pub enum DetailValue {
     #[serde(with = "serde_bytes")]
     Slice(Vec<u8>),
     Vec(Vec<DetailValue>),
+    TokenIdU64(u64),
 }
 
 impl Event {
@@ -69,6 +72,32 @@ impl Event {
         }
 
         principals
+    }
+
+    /// Return a set containing all of the token ids involved in an event.
+    #[inline]
+    pub fn extract_token_ids(&self) -> BTreeSet<u64> {
+        let mut tokens = BTreeSet::new();
+
+        fn visit(tokens: &mut BTreeSet<u64>, value: &DetailValue) {
+            match value {
+                DetailValue::TokenIdU64(id) => {
+                    tokens.insert(*id);
+                }
+                DetailValue::Vec(items) => {
+                    for item in items {
+                        visit(tokens, item);
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        for (_, value) in &self.details {
+            visit(&mut tokens, value);
+        }
+
+        tokens
     }
 
     /// Compute the hash for the given event.
@@ -130,6 +159,12 @@ impl Event {
                     for item in val.iter() {
                         hash_value(h, item);
                     }
+                }
+                DetailValue::TokenIdU64(val) => {
+                    let bytes = val.to_be_bytes();
+                    h.update(&[9]);
+                    h.update(&bytes.len().to_be_bytes() as &[u8]);
+                    h.update(bytes);
                 }
             }
         }
@@ -289,6 +324,16 @@ fn domain_sep(s: &str) -> sha2::Sha256 {
     h.update(&buf[..]);
     h.update(s.as_bytes());
     h
+}
+
+impl AsHashTree for Event {
+    fn root_hash(&self) -> Hash {
+        self.hash()
+    }
+
+    fn as_hash_tree(&self) -> HashTree<'_> {
+        Pruned(self.hash())
+    }
 }
 
 // TODO(qti3e) Test
