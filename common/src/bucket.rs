@@ -1,6 +1,7 @@
 use crate::transaction::Event;
-use certified_vars::Paged;
+use certified_vars::hashtree::{fork, fork_hash};
 use certified_vars::{rbtree::RbTree, AsHashTree, Hash, HashTree};
+use certified_vars::{GroupBuilder, Paged};
 use ic_kit::Principal;
 use serde::ser::{SerializeSeq, SerializeTuple};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -15,7 +16,8 @@ use std::ptr::NonNull;
 /// 0: event_hashes
 /// 1: offset
 /// 3: user_indexer
-/// 4: token_indexer
+/// 4: contract_indexer
+/// 5: token_indexer
 ///
 /// ```text
 ///       ROOT
@@ -23,7 +25,9 @@ use std::ptr::NonNull;
 ///     /      \
 ///    V        V
 ///   /  \     /  \
-///  0    1   3    4
+///  0    1   3    V
+///               / \
+///              4   5
 /// ```
 pub struct Bucket {
     /// Map each local Transaction ID to its hash.
@@ -32,14 +36,12 @@ pub struct Bucket {
     contract: Principal,
     /// The offset of this bucket, i.e the actual id of the first event in the bucket.
     global_offset: u64,
-    /// Same as `global_offset` but is the encoded big endian, this struct should own this data
-    /// since it is used in the HashTree, so whenever we want to pass a reference to a BE encoded
-    /// value of the `global_offset` we can use this slice.
-    global_offset_be: [u8; 8],
     /// Maps each user principal id to the vector of events they have.
     user_indexer: Paged<Principal, NonNull<Event>, 64>,
     /// Maps contract id to each transaction page.
     contract_indexer: Paged<Principal, NonNull<Event>, 64>,
+    /// Map each token id to a map of transactions for that token.
+    token_indexer: Paged<u64, NonNull<Event>, 64>,
     /// All of the events in this bucket, we store a pointer to an allocated memory. Which is used
     /// only internally in this struct. And this Vec should be considered the actual owner of this
     /// pointers.
@@ -56,9 +58,9 @@ impl Bucket {
             contract,
             event_hashes: RbTree::new(),
             global_offset: offset,
-            global_offset_be: offset.to_be_bytes(),
             user_indexer: Paged::new(),
             contract_indexer: Paged::new(),
+            token_indexer: Paged::new(),
         }
     }
 
@@ -91,6 +93,9 @@ impl Bucket {
         self.contract_indexer.insert(self.contract, event);
         for user in eve.extract_principal_ids() {
             self.user_indexer.insert(*user, event);
+        }
+        for token_id in eve.extract_token_ids() {
+            self.token_indexer.insert(token_id, event);
         }
 
         // Insert the event itself.
@@ -136,16 +141,75 @@ impl Bucket {
             .unwrap_or(0) as u32
     }
 
+    /// Return the transactions for a specific token.
+    #[inline]
+    pub fn get_transactions_for_token(&self, token_id: &u64, page: u32) -> Vec<&Event> {
+        if let Some(data) = self.token_indexer.get(token_id, page as usize) {
+            data.iter().map(|v| unsafe { v.as_ref() }).collect()
+        } else {
+            vec![]
+        }
+    }
+
+    #[inline]
+    pub fn last_page_for_token(&self, token_id: &u64) -> u32 {
+        self.token_indexer
+            .get_last_page_number(token_id)
+            .unwrap_or(0) as u32
+    }
+
     /// Return the witness that can be used to prove the response from get_transactions_for_user.
     #[inline]
     pub fn witness_transactions_for_user(&self, principal: &Principal, page: u32) -> HashTree {
-        todo!()
+        fork(
+            HashTree::Pruned(fork_hash(
+                &self.event_hashes.root_hash(),
+                &self.global_offset.root_hash(),
+            )),
+            fork(
+                self.user_indexer.witness(principal, page as usize),
+                HashTree::Pruned(fork_hash(
+                    &self.contract_indexer.root_hash(),
+                    &self.token_indexer.root_hash(),
+                )),
+            ),
+        )
     }
 
     /// Return the witness that can be used to prove the response from get_transactions_for_token.
     #[inline]
     pub fn witness_transactions_for_contract(&self, principal: &Principal, page: u32) -> HashTree {
-        todo!()
+        fork(
+            HashTree::Pruned(fork_hash(
+                &self.event_hashes.root_hash(),
+                &self.global_offset.root_hash(),
+            )),
+            fork(
+                HashTree::Pruned(self.user_indexer.root_hash()),
+                fork(
+                    self.contract_indexer.witness(principal, page as usize),
+                    HashTree::Pruned(self.token_indexer.root_hash()),
+                ),
+            ),
+        )
+    }
+
+    /// Return the witness that can be used to prove the response from get_transactions_for_token.
+    #[inline]
+    pub fn witness_transactions_for_token(&self, token_id: &u64, page: u32) -> HashTree {
+        fork(
+            HashTree::Pruned(fork_hash(
+                &self.event_hashes.root_hash(),
+                &self.global_offset.root_hash(),
+            )),
+            fork(
+                HashTree::Pruned(self.user_indexer.root_hash()),
+                fork(
+                    HashTree::Pruned(self.contract_indexer.root_hash()),
+                    self.token_indexer.witness(token_id, page as usize),
+                ),
+            ),
+        )
     }
 
     /// Return a transaction by its global id.
@@ -166,17 +230,63 @@ impl Bucket {
     /// Return a witness which proves the response returned by get_transaction.
     #[inline]
     pub fn witness_transaction(&self, id: u64) -> HashTree {
-        todo!()
+        let left = if id < self.global_offset {
+            fork(
+                HashTree::Pruned(self.event_hashes.root_hash()),
+                self.global_offset.as_hash_tree(),
+            )
+        } else {
+            let local = (id - self.global_offset) as u32;
+            fork(
+                self.event_hashes.witness(&local),
+                self.global_offset.as_hash_tree(),
+            )
+        };
+
+        fork(
+            left,
+            HashTree::Pruned(fork_hash(
+                &self.user_indexer.root_hash(),
+                &fork_hash(
+                    &self.contract_indexer.root_hash(),
+                    &self.token_indexer.root_hash(),
+                ),
+            )),
+        )
     }
 }
 
 impl AsHashTree for Bucket {
     fn root_hash(&self) -> Hash {
-        todo!()
+        fork_hash(
+            &fork_hash(
+                &self.event_hashes.root_hash(),
+                &self.global_offset.root_hash(),
+            ),
+            &fork_hash(
+                &self.user_indexer.root_hash(),
+                &fork_hash(
+                    &self.contract_indexer.root_hash(),
+                    &self.token_indexer.root_hash(),
+                ),
+            ),
+        )
     }
 
     fn as_hash_tree(&self) -> HashTree<'_> {
-        todo!()
+        fork(
+            fork(
+                self.event_hashes.as_hash_tree(),
+                self.global_offset.as_hash_tree(),
+            ),
+            fork(
+                self.user_indexer.as_hash_tree(),
+                fork(
+                    self.contract_indexer.as_hash_tree(),
+                    self.token_indexer.as_hash_tree(),
+                ),
+            ),
+        )
     }
 }
 
