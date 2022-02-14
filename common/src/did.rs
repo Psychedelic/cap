@@ -118,6 +118,13 @@ pub struct GetUserTransactionsArg {
 }
 
 #[derive(Serialize, Deserialize, CandidType)]
+pub struct GetTokenTransactionsArg {
+    pub token_id: u64,
+    pub page: Option<u32>,
+    pub witness: bool,
+}
+
+#[derive(Serialize, Deserialize, CandidType)]
 pub struct GetBucketResponse {
     pub canister: BucketId,
     pub witness: Option<Witness>,

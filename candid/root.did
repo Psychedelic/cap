@@ -3,6 +3,7 @@ type DetailValue = variant {
   U64 : nat64;
   Vec : vec DetailValue;
   Slice : vec nat8;
+  TokenIdU64 : nat64;
   Text : text;
   True;
   False;
@@ -19,6 +20,11 @@ type GetBucketResponse = record { witness : opt Witness; canister : principal };
 type GetNextCanistersResponse = record {
   witness : opt Witness;
   canisters : vec principal;
+};
+type GetTokenTransactionsArg = record {
+  token_id : nat64;
+  page : opt nat32;
+  witness : bool;
 };
 type GetTransactionResponse = variant {
   Delegate : record { principal; opt Witness };
@@ -48,6 +54,9 @@ service : {
   contract_id : () -> (principal) query;
   get_bucket_for : (WithIdArg) -> (GetBucketResponse) query;
   get_next_canisters : (WithWitnessArg) -> (GetNextCanistersResponse) query;
+  get_token_transactions : (GetTokenTransactionsArg) -> (
+      GetTransactionsResponseBorrowed,
+    ) query;
   get_transaction : (WithIdArg) -> (GetTransactionResponse) query;
   get_transactions : (GetTransactionsArg) -> (
       GetTransactionsResponseBorrowed,

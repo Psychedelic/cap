@@ -183,6 +183,41 @@ fn get_user_transactions(arg: GetUserTransactionsArg) -> GetTransactionsResponse
 
 #[query]
 #[candid_method(query)]
+fn get_token_transactions(
+    arg: GetTokenTransactionsArg,
+) -> GetTransactionsResponseBorrowed<'static> {
+    let data = ic::get::<Data>();
+
+    let page = arg
+        .page
+        .unwrap_or_else(|| data.bucket.last_page_for_token(&arg.token_id));
+
+    let witness = match arg.witness {
+        false => None,
+        true => Some(
+            fork(
+                fork(
+                    data.bucket
+                        .witness_transactions_for_token(&arg.token_id, page),
+                    HashTree::Pruned(data.buckets.root_hash()),
+                ),
+                HashTree::Pruned(data.next_canisters.root_hash()),
+            )
+            .into(),
+        ),
+    };
+
+    let events = data.bucket.get_transactions_for_token(&arg.token_id, page);
+
+    GetTransactionsResponseBorrowed {
+        data: events,
+        page,
+        witness,
+    }
+}
+
+#[query]
+#[candid_method(query)]
 fn get_bucket_for(arg: WithIdArg) -> GetBucketResponse {
     let data = ic::get::<Data>();
 

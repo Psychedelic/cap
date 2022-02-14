@@ -3,6 +3,7 @@ type DetailValue = variant {
   U64 : nat64;
   Vec : vec DetailValue;
   Slice : vec nat8;
+  TokenIdU64 : nat64;
   Text : text;
   True;
   False;
