@@ -1,7 +1,7 @@
 use crate::{get_user_root_buckets, Data};
 use cap_common::{GetUserRootBucketsArg, RootBucketId};
 use certified_vars::{Hash, Seq};
-use ic_cdk::api::stable::{StableReader};
+use ic_cdk::api::stable::StableReader;
 use ic_kit::candid::{candid_method, encode_args};
 use ic_kit::ic;
 use ic_kit::macros::{post_upgrade, pre_upgrade, update};

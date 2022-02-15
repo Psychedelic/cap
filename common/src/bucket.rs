@@ -1,7 +1,7 @@
 use crate::transaction::Event;
 use certified_vars::hashtree::{fork, fork_hash};
+use certified_vars::Paged;
 use certified_vars::{rbtree::RbTree, AsHashTree, Hash, HashTree};
-use certified_vars::{Paged};
 use ic_kit::Principal;
 use serde::ser::{SerializeSeq, SerializeTuple};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};

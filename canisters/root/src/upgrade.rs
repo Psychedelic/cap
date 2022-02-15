@@ -5,7 +5,7 @@ use certified_vars::{Hash, Map, Seq};
 use ic_cdk::api::stable::{StableReader, StableWriter};
 use ic_kit::macros::{post_upgrade, pre_upgrade};
 use ic_kit::{ic, Principal};
-use serde::{Deserialize};
+use serde::Deserialize;
 use std::collections::BTreeSet;
 use std::io::Read;
 
