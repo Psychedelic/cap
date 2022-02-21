@@ -4,7 +4,7 @@ use ic_kit::{Principal, RejectionCode};
 use crate::root::RootBucket;
 use cap_common::{
     GetIndexCanistersResponse, GetTransactionResponse, GetTransactionsArg, GetTransactionsResponse,
-    GetUserTransactionsArg, WithIdArg, WithWitnessArg,
+    GetUserTransactionsArg, WithIdArg, WithWitnessArg, GetTokenTransactionsArg,
 };
 
 /// A contract-specific bucket canister.
@@ -77,6 +77,26 @@ impl Bucket {
             "get_user_transactions",
             (GetUserTransactionsArg {
                 user,
+                page,
+                witness: false,
+            },),
+        )
+        .await?;
+
+        Ok(result.0)
+    }
+
+    /// Returns paged transactions for a specific [`token_id`]
+    pub async fn get_token_transactions(
+        &self,
+        token_id: u64,
+        page: Option<u32>,
+    ) -> Result<GetTransactionsResponse, (RejectionCode, String)> {
+        let result: (GetTransactionsResponse,) = call(
+            self.0,
+            "get_token_transactions",
+            (GetTokenTransactionsArg {
+                token_id,
                 page,
                 witness: false,
             },),
