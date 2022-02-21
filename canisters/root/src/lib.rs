@@ -12,7 +12,7 @@ use std::collections::BTreeSet;
 use cap_common::did::*;
 use ic_kit::macros::*;
 
-mod upgrade;
+pub mod upgrade;
 
 /// Merkle tree of the canister.
 ///

@@ -12,8 +12,8 @@ use std::io::Read;
 #[derive(Deserialize)]
 struct DataV0 {
     bucket: Vec<Event>,
-    buckets: Vec<(TransactionId, Principal)>,
-    next_canisters: CanisterListV0,
+    _buckets: Vec<(TransactionId, Principal)>,
+    _next_canisters: CanisterListV0,
     /// List of all the users in this token contract.
     users: BTreeSet<Principal>,
     cap_id: Principal,
@@ -24,8 +24,8 @@ struct DataV0 {
 
 #[derive(Deserialize)]
 pub struct CanisterListV0 {
-    data: Vec<Principal>,
-    hash: Hash,
+    _data: Vec<Principal>,
+    _hash: Hash,
 }
 
 #[pre_upgrade]
@@ -35,7 +35,7 @@ fn pre_upgrade() {
     serde_cbor::to_writer(writer, &data).expect("Failed to serialize data.");
 }
 
-fn next_post_upgrade() {
+pub fn next_post_upgrade() {
     let reader = StableReader::default();
     let data: Data = match serde_cbor::from_reader(reader) {
         Ok(t) => t,
