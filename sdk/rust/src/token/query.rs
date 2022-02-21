@@ -2,7 +2,7 @@ use cap_sdk_core::Bucket;
 
 use crate::{AsTransactionsPage, CapEnv, GetTransactionsError, GetTransactionsResponse};
 
-/// Gets the transaction with the given token_id [`u64`] 
+/// Gets the transaction with the given token_id [`u64`]
 /// and `page` accepts any [`Into<TransactionsPage>`].
 ///
 /// # Panics

@@ -3,8 +3,8 @@ use ic_kit::{Principal, RejectionCode};
 
 use crate::root::RootBucket;
 use cap_common::{
-    GetIndexCanistersResponse, GetTransactionResponse, GetTransactionsArg, GetTransactionsResponse,
-    GetUserTransactionsArg, WithIdArg, WithWitnessArg, GetTokenTransactionsArg,
+    GetIndexCanistersResponse, GetTokenTransactionsArg, GetTransactionResponse, GetTransactionsArg,
+    GetTransactionsResponse, GetUserTransactionsArg, WithIdArg, WithWitnessArg,
 };
 
 /// A contract-specific bucket canister.
