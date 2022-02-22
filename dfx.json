@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "dfx": "0.8.1",
+  "dfx": "0.8.4",
   "canisters": {
     "ic-history-router": {
       "build": "node build.js",
@@ -8,14 +8,12 @@
       "wasm": "target/wasm32-unknown-unknown/release/ic_history_router-rel-opt.wasm",
       "type": "custom"
     },
-   "sdk-example": {
+    "sdk-example": {
       "build": "node build.js",
       "candid": "candid/sdk_example.did",
       "wasm": "target/wasm32-unknown-unknown/release/sdk_example-rel-opt.wasm",
       "type": "custom",
-      "dependencies": [
-        "ic-history-router"
-      ]
+      "dependencies": ["ic-history-router"]
     }
   },
   "networks": {
