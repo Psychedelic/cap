@@ -306,9 +306,9 @@ fn migrate(events: Vec<Event>) {
         panic!("The method can only be invoked by one of the writers.");
     }
 
-    if !data.allow_migration {
-        panic!("Migration is not allowed after an insert.")
-    }
+    // if !data.allow_migration {
+    //     panic!("Migration is not allowed after an insert.")
+    // }
 
     let mut new_users = Vec::new();
 
