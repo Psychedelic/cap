@@ -1,17 +1,18 @@
-use cap_common::bucket_lookup_table::BucketLookupTable;
-use cap_common::canister_list::CanisterList;
 use cap_common::transaction::{Event, IndefiniteEvent};
 use cap_common::Bucket;
-use ic_certified_map::{fork, fork_hash, AsHashTree, HashTree};
+use certified_vars::{
+    hashtree::{fork, fork_hash},
+    AsHashTree, HashTree, Map, Seq,
+};
 use ic_kit::candid::{candid_method, export_service};
 use ic_kit::{ic, Principal};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
 use cap_common::did::*;
 use ic_kit::macros::*;
 
-mod upgrade;
+pub mod upgrade;
 
 /// Merkle tree of the canister.
 ///
@@ -23,11 +24,11 @@ mod upgrade;
 ///     /   \
 ///   / \    2
 ///  0   1
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct Data {
     bucket: Bucket,
-    buckets: BucketLookupTable,
-    next_canisters: CanisterList,
+    buckets: Map<TransactionId, Principal>,
+    next_canisters: Seq<BucketId>,
     /// List of all the users in this token contract.
     users: BTreeSet<Principal>,
     cap_id: Principal,
@@ -39,13 +40,13 @@ struct Data {
 impl Default for Data {
     fn default() -> Self {
         Self {
-            bucket: Bucket::new(0),
+            bucket: Bucket::new(Principal::management_canister(), 0),
             buckets: {
-                let mut table = BucketLookupTable::default();
+                let mut table = Map::new();
                 table.insert(0, ic::id());
                 table
             },
-            next_canisters: CanisterList::new(),
+            next_canisters: Seq::new(),
             users: BTreeSet::new(),
             cap_id: Principal::management_canister(),
             contract: Principal::management_canister(),
@@ -61,6 +62,7 @@ fn init(contract: Principal, writers: BTreeSet<Principal>) {
     data.cap_id = ic::caller();
     data.contract = contract;
     data.writers = writers;
+    data.bucket = Bucket::new(contract, 0);
 }
 
 #[query]
@@ -82,7 +84,7 @@ fn get_next_canisters(arg: WithWitnessArg) -> GetNextCanistersResponse {
         ),
     };
 
-    let canisters = data.next_canisters.to_vec();
+    let canisters = data.next_canisters.as_vec().clone();
 
     GetNextCanistersResponse { canisters, witness }
 }
@@ -181,6 +183,41 @@ fn get_user_transactions(arg: GetUserTransactionsArg) -> GetTransactionsResponse
 
 #[query]
 #[candid_method(query)]
+fn get_token_transactions(
+    arg: GetTokenTransactionsArg,
+) -> GetTransactionsResponseBorrowed<'static> {
+    let data = ic::get::<Data>();
+
+    let page = arg
+        .page
+        .unwrap_or_else(|| data.bucket.last_page_for_token(&arg.token_id));
+
+    let witness = match arg.witness {
+        false => None,
+        true => Some(
+            fork(
+                fork(
+                    data.bucket
+                        .witness_transactions_for_token(&arg.token_id, page),
+                    HashTree::Pruned(data.buckets.root_hash()),
+                ),
+                HashTree::Pruned(data.next_canisters.root_hash()),
+            )
+            .into(),
+        ),
+    };
+
+    let events = data.bucket.get_transactions_for_token(&arg.token_id, page);
+
+    GetTransactionsResponseBorrowed {
+        data: events,
+        page,
+        witness,
+    }
+}
+
+#[query]
+#[candid_method(query)]
 fn get_bucket_for(arg: WithIdArg) -> GetBucketResponse {
     let data = ic::get::<Data>();
 
@@ -190,7 +227,7 @@ fn get_bucket_for(arg: WithIdArg) -> GetBucketResponse {
             fork(
                 fork(
                     HashTree::Pruned(data.bucket.root_hash()),
-                    data.buckets.gen_witness(arg.id),
+                    data.buckets.witness(&arg.id),
                 ),
                 HashTree::Pruned(data.next_canisters.root_hash()),
             )
@@ -198,9 +235,10 @@ fn get_bucket_for(arg: WithIdArg) -> GetBucketResponse {
         ),
     };
 
-    let canister = *data.buckets.get_bucket_for(arg.id);
-
-    GetBucketResponse { canister, witness }
+    GetBucketResponse {
+        canister: ic::id(),
+        witness,
+    }
 }
 
 #[query]
@@ -246,7 +284,7 @@ fn insert(event: IndefiniteEvent) -> TransactionId {
         new_users,
     ));
 
-    let id = data.bucket.insert(&data.contract, event);
+    let id = data.bucket.insert(event);
 
     data.allow_migration = false;
 
@@ -268,9 +306,9 @@ fn migrate(events: Vec<Event>) {
         panic!("The method can only be invoked by one of the writers.");
     }
 
-    if !data.allow_migration {
-        panic!("Migration is not allowed after an insert.")
-    }
+    // if !data.allow_migration {
+    //     panic!("Migration is not allowed after an insert.")
+    // }
 
     let mut new_users = Vec::new();
 
@@ -281,7 +319,7 @@ fn migrate(events: Vec<Event>) {
             }
         }
 
-        data.bucket.insert(&data.contract, event);
+        data.bucket.insert(event);
     }
 
     ic_cdk::block_on(write_new_users_to_cap(

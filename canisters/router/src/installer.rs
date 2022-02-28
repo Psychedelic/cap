@@ -1,4 +1,5 @@
 use crate::Data;
+use certified_vars::Seq;
 use ic_kit::candid::candid_method;
 use ic_kit::candid::encode_args;
 use ic_kit::candid::CandidType;
@@ -86,5 +87,7 @@ pub async fn install_code(canister_id: Principal, contract_id: Principal, writer
     data.root_buckets.insert(contract_id, canister_id);
 
     data.user_canisters
-        .insert(Principal::management_canister(), canister_id);
+        .entry(Principal::management_canister())
+        .or_insert(Seq::new())
+        .append(canister_id);
 }

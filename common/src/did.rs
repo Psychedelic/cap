@@ -2,7 +2,7 @@
 //! files across the different canisters and the services.
 
 use crate::transaction::Event;
-use ic_certified_map::{Hash, HashTree};
+use certified_vars::{Hash, HashTree};
 use ic_kit::candid::{CandidType, Deserialize};
 use ic_kit::ic;
 use ic_kit::Principal;
@@ -113,6 +113,13 @@ pub struct GetTransactionsResponseBorrowed<'a> {
 #[derive(Serialize, Deserialize, CandidType)]
 pub struct GetUserTransactionsArg {
     pub user: UserId,
+    pub page: Option<u32>,
+    pub witness: bool,
+}
+
+#[derive(Serialize, Deserialize, CandidType)]
+pub struct GetTokenTransactionsArg {
+    pub token_id: u64,
     pub page: Option<u32>,
     pub witness: bool,
 }

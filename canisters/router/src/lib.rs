@@ -1,9 +1,9 @@
-use cap_common::canister_list::CanisterList;
-use cap_common::canister_map::CanisterMap;
-use cap_common::user_canisters::UserCanisters;
-use ic_certified_map::{fork, HashTree};
-use ic_certified_map::{fork_hash, AsHashTree};
-use ic_kit::candid::{candid_method, export_service};
+use certified_vars::Map;
+use certified_vars::{
+    hashtree::{fork, fork_hash},
+    AsHashTree, HashTree, Seq,
+};
+use ic_kit::candid::{candid_method, export_service, CandidType};
 use ic_kit::ic;
 use serde::{Deserialize, Serialize};
 
@@ -26,24 +26,24 @@ mod upgrade;
 ///     /   \
 ///   / \    2
 ///  0   1
-#[derive(Serialize, Deserialize)]
+#[derive(CandidType, Serialize, Deserialize)]
 pub struct Data {
     /// Map: TokenContractId -> RootBucketId
-    pub root_buckets: CanisterMap,
+    pub root_buckets: Map<TokenContractId, RootBucketId>,
     /// Map each user to RootBucketId
-    pub user_canisters: UserCanisters,
+    pub user_canisters: Map<UserId, Seq<RootBucketId>>,
     /// List of the index canisters.
-    pub index_canisters: CanisterList,
+    pub index_canisters: Seq<IndexCanisterId>,
 }
 
 impl Default for Data {
     fn default() -> Self {
         Data {
-            root_buckets: CanisterMap::default(),
-            user_canisters: UserCanisters::default(),
+            root_buckets: Map::new(),
+            user_canisters: Map::new(),
             index_canisters: {
-                let mut list = CanisterList::new();
-                list.push(ic::id());
+                let mut list = Seq::new();
+                list.append(ic::id());
                 list
             },
         }
@@ -62,7 +62,7 @@ fn get_token_contract_root_bucket(
         true => Some(
             fork(
                 fork(
-                    data.root_buckets.gen_witness(&arg.canister),
+                    data.root_buckets.witness(&arg.canister),
                     HashTree::Pruned(data.user_canisters.root_hash()),
                 ),
                 HashTree::Pruned(data.index_canisters.root_hash()),
@@ -95,7 +95,12 @@ fn get_user_root_buckets(arg: GetUserRootBucketsArg) -> GetUserRootBucketsRespon
         ),
     };
 
-    let contracts = data.user_canisters.get(&arg.user).to_vec();
+    let contracts = data
+        .user_canisters
+        .get(&arg.user)
+        .unwrap_or(&Seq::new())
+        .as_vec()
+        .clone();
 
     GetUserRootBucketsResponse { contracts, witness }
 }
@@ -119,7 +124,7 @@ fn get_index_canisters(arg: WithWitnessArg) -> GetIndexCanistersResponse {
         ),
     };
 
-    let canisters = data.index_canisters.to_vec();
+    let canisters = data.index_canisters.as_vec().clone();
 
     GetIndexCanistersResponse { canisters, witness }
 }
@@ -137,7 +142,10 @@ fn insert_new_users(contract_id: Principal, users: Vec<Principal>) {
     );
 
     for user in users {
-        data.user_canisters.insert(user, root_bucket);
+        data.user_canisters
+            .entry(user)
+            .or_insert(Seq::new())
+            .append(root_bucket);
     }
 }
 
