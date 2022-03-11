@@ -9,7 +9,7 @@ use std::alloc::{dealloc, Layout};
 use std::ptr;
 use std::ptr::NonNull;
 
-/// A bucket contains a series of transactions and appropriate indexers.
+/// A list contains a series of transactions and appropriate indexers.
 ///
 /// This structure exposes a virtual merkle-tree in the following form:
 ///
@@ -29,12 +29,12 @@ use std::ptr::NonNull;
 ///               / \
 ///              4   5
 /// ```
-pub struct Bucket {
+pub struct TransactionList {
     /// Map each local Transaction ID to its hash.
     event_hashes: RbTree<u32, Hash>,
     /// ID of the current contract.
     contract: Principal,
-    /// The offset of this bucket, i.e the actual id of the first event in the bucket.
+    /// The offset of this list, i.e the actual id of the first event in the list.
     global_offset: u64,
     /// Maps each user principal id to the vector of events they have.
     user_indexer: Paged<Principal, NonNull<Event>, 64>,
@@ -42,18 +42,18 @@ pub struct Bucket {
     contract_indexer: Paged<Principal, NonNull<Event>, 64>,
     /// Map each token id to a map of transactions for that token.
     token_indexer: Paged<u64, NonNull<Event>, 64>,
-    /// All of the events in this bucket, we store a pointer to an allocated memory. Which is used
+    /// All of the events in this list, we store a pointer to an allocated memory. Which is used
     /// only internally in this struct. And this Vec should be considered the actual owner of this
     /// pointers.
     /// So this should be the last thing that will be dropped.
     events: Vec<NonNull<Event>>,
 }
 
-impl Bucket {
-    /// Create a new bucket with the given global offset.
+impl TransactionList {
+    /// Create a new list with the given global offset.
     #[inline]
     pub fn new(contract: Principal, offset: u64) -> Self {
-        Bucket {
+        TransactionList {
             events: vec![],
             contract,
             event_hashes: RbTree::new(),
@@ -70,19 +70,19 @@ impl Bucket {
         self.global_offset + (self.events.len() as u64)
     }
 
-    /// Return the total number of items in this bucket.
+    /// Return the total number of items in this list.
     #[inline]
     pub fn len(&self) -> usize {
         self.events.len()
     }
 
-    /// Returns `tru` if there are no events in this bucket.
+    /// Returns `tru` if there are no events in this list.
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.events.is_empty()
     }
 
-    /// Try to insert an event into the bucket.
+    /// Try to insert an event into the list.
     pub fn insert(&mut self, event: Event) -> u64 {
         let local_index = self.events.len() as u32;
         let hash = event.hash();
@@ -256,7 +256,7 @@ impl Bucket {
     }
 }
 
-impl AsHashTree for Bucket {
+impl AsHashTree for TransactionList {
     fn root_hash(&self) -> Hash {
         fork_hash(
             &fork_hash(
@@ -290,7 +290,7 @@ impl AsHashTree for Bucket {
     }
 }
 
-impl Drop for Bucket {
+impl Drop for TransactionList {
     fn drop(&mut self) {
         unsafe {
             for event in &self.events {
@@ -302,7 +302,7 @@ impl Drop for Bucket {
     }
 }
 
-impl Serialize for Bucket {
+impl Serialize for TransactionList {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -329,7 +329,7 @@ impl Serialize for Bucket {
     }
 }
 
-impl<'de> Deserialize<'de> for Bucket {
+impl<'de> Deserialize<'de> for TransactionList {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -338,13 +338,13 @@ impl<'de> Deserialize<'de> for Bucket {
         struct BucketDe(u64, Principal, Vec<Event>);
 
         let data = BucketDe::deserialize(deserializer)?;
-        let mut bucket = Bucket::new(data.1, data.0);
+        let mut list = TransactionList::new(data.1, data.0);
 
         for event in data.2 {
-            bucket.insert(event);
+            list.insert(event);
         }
 
-        Ok(bucket)
+        Ok(list)
     }
 }
 
@@ -365,66 +365,66 @@ mod tests {
     /// root_hash and as_hash_tree should use the same tree layout.
     #[test]
     fn test_hash_tree() {
-        let mut bucket = Bucket::new(mock_principals::xtc(), 0);
-        bucket.insert(e(0, mock_principals::alice()));
-        bucket.insert(e(1, mock_principals::alice()));
-        bucket.insert(e(2, mock_principals::alice()));
-        bucket.insert(e(3, mock_principals::alice()));
-        assert_eq!(bucket.as_hash_tree().reconstruct(), bucket.root_hash());
+        let mut list = TransactionList::new(mock_principals::xtc(), 0);
+        list.insert(e(0, mock_principals::alice()));
+        list.insert(e(1, mock_principals::alice()));
+        list.insert(e(2, mock_principals::alice()));
+        list.insert(e(3, mock_principals::alice()));
+        assert_eq!(list.as_hash_tree().reconstruct(), list.root_hash());
     }
 
     /// This test tires to see if the witness created for a lookup is minimal
     /// and reconstructs to the root_hash.
     #[test]
     fn test_witness_transaction() {
-        let mut bucket = Bucket::new(mock_principals::xtc(), 0);
-        bucket.insert(e(0, mock_principals::alice()));
-        bucket.insert(e(1, mock_principals::alice()));
-        bucket.insert(e(2, mock_principals::alice()));
-        bucket.insert(e(3, mock_principals::alice()));
+        let mut list = TransactionList::new(mock_principals::xtc(), 0);
+        list.insert(e(0, mock_principals::alice()));
+        list.insert(e(1, mock_principals::alice()));
+        list.insert(e(2, mock_principals::alice()));
+        list.insert(e(3, mock_principals::alice()));
 
-        let event = bucket.get_transaction(1).unwrap();
-        let witness = bucket.witness_transaction(1);
+        let event = list.get_transaction(1).unwrap();
+        let witness = list.witness_transaction(1);
         assert_eq!(event.time, 1);
-        assert_eq!(witness.reconstruct(), bucket.root_hash());
+        assert_eq!(witness.reconstruct(), list.root_hash());
     }
 
     #[test]
     fn test_witness_transaction_large() {
-        let mut bucket = Bucket::new(mock_principals::xtc(), 0);
-        bucket.insert(e(0, mock_principals::alice()));
-        bucket.insert(e(1, mock_principals::alice()));
-        bucket.insert(e(2, mock_principals::alice()));
-        bucket.insert(e(3, mock_principals::alice()));
+        let mut list = TransactionList::new(mock_principals::xtc(), 0);
+        list.insert(e(0, mock_principals::alice()));
+        list.insert(e(1, mock_principals::alice()));
+        list.insert(e(2, mock_principals::alice()));
+        list.insert(e(3, mock_principals::alice()));
 
-        assert_eq!(bucket.get_transaction(4).is_none(), true);
+        assert_eq!(list.get_transaction(4).is_none(), true);
 
-        let witness = bucket.witness_transaction(4);
-        assert_eq!(witness.reconstruct(), bucket.root_hash());
+        let witness = list.witness_transaction(4);
+        assert_eq!(witness.reconstruct(), list.root_hash());
     }
 
     #[test]
     fn test_witness_transaction_below_offset() {
-        let mut bucket = Bucket::new(mock_principals::xtc(), 10);
-        bucket.insert(e(10, mock_principals::alice()));
-        bucket.insert(e(11, mock_principals::alice()));
-        bucket.insert(e(12, mock_principals::alice()));
-        bucket.insert(e(13, mock_principals::alice()));
+        let mut list = TransactionList::new(mock_principals::xtc(), 10);
+        list.insert(e(10, mock_principals::alice()));
+        list.insert(e(11, mock_principals::alice()));
+        list.insert(e(12, mock_principals::alice()));
+        list.insert(e(13, mock_principals::alice()));
 
-        assert_eq!(bucket.get_transaction(5).is_none(), true);
-        let witness = bucket.witness_transaction(5);
-        assert_eq!(witness.reconstruct(), bucket.root_hash());
+        assert_eq!(list.get_transaction(5).is_none(), true);
+        let witness = list.witness_transaction(5);
+        assert_eq!(witness.reconstruct(), list.root_hash());
     }
 
     #[test]
     fn test_witness_user_transactions() {
-        let mut bucket = Bucket::new(mock_principals::xtc(), 0);
+        let mut list = TransactionList::new(mock_principals::xtc(), 0);
 
         for i in 0..5000 {
             if i % 27 == 0 {
-                bucket.insert(e(i, mock_principals::bob()));
+                list.insert(e(i, mock_principals::bob()));
             } else {
-                bucket.insert(e(i, mock_principals::alice()));
+                list.insert(e(i, mock_principals::alice()));
             }
         }
 
@@ -432,11 +432,11 @@ mod tests {
 
         for page in 0.. {
             let principal = mock_principals::bob();
-            let data = bucket.get_transactions_for_user(&principal, page);
-            let witness = bucket.witness_transactions_for_user(&principal, page);
+            let data = list.get_transactions_for_user(&principal, page);
+            let witness = list.witness_transactions_for_user(&principal, page);
             let len = data.len();
 
-            assert_eq!(witness.reconstruct(), bucket.root_hash());
+            assert_eq!(witness.reconstruct(), list.root_hash());
 
             count += len;
 
@@ -451,15 +451,15 @@ mod tests {
 
     #[test]
     fn serde() {
-        let mut bucket = Bucket::new(mock_principals::xtc(), 0);
-        bucket.insert(e(0, mock_principals::alice()));
-        bucket.insert(e(1, mock_principals::alice()));
-        bucket.insert(e(2, mock_principals::alice()));
-        bucket.insert(e(3, mock_principals::alice()));
-        let expected = bucket.root_hash();
+        let mut list = TransactionList::new(mock_principals::xtc(), 0);
+        list.insert(e(0, mock_principals::alice()));
+        list.insert(e(1, mock_principals::alice()));
+        list.insert(e(2, mock_principals::alice()));
+        list.insert(e(3, mock_principals::alice()));
+        let expected = list.root_hash();
 
-        let data: Vec<u8> = serde_cbor::to_vec(&bucket).unwrap();
-        let bucket: Bucket = serde_cbor::from_slice(&data).unwrap();
-        assert_eq!(bucket.root_hash(), expected);
+        let data: Vec<u8> = serde_cbor::to_vec(&list).unwrap();
+        let list: TransactionList = serde_cbor::from_slice(&data).unwrap();
+        assert_eq!(list.root_hash(), expected);
     }
 }

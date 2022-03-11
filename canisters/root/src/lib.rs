@@ -1,5 +1,5 @@
 use cap_common::transaction::{Event, IndefiniteEvent};
-use cap_common::Bucket;
+use cap_common::TransactionList;
 use certified_vars::{
     hashtree::{fork, fork_hash},
     AsHashTree, HashTree, Map, Seq,
@@ -26,30 +26,40 @@ pub mod upgrade;
 ///  0   1
 #[derive(Serialize, Deserialize)]
 struct Data {
-    bucket: Bucket,
+    bucket: TransactionList,
     buckets: Map<TransactionId, Principal>,
     next_canisters: Seq<BucketId>,
-    /// List of all the users in this token contract.
+    contract: TokenContractId,
+}
+
+#[derive(Serialize, Deserialize)]
+struct RootBucketData {
     users: BTreeSet<Principal>,
     cap_id: Principal,
-    contract: TokenContractId,
-    writers: BTreeSet<TokenContractId>,
     allow_migration: bool,
+    writers: BTreeSet<TokenContractId>,
 }
 
 impl Default for Data {
     fn default() -> Self {
         Self {
-            bucket: Bucket::new(Principal::management_canister(), 0),
+            bucket: TransactionList::new(Principal::management_canister(), 0),
             buckets: {
                 let mut table = Map::new();
                 table.insert(0, ic::id());
                 table
             },
             next_canisters: Seq::new(),
+            contract: Principal::management_canister(),
+        }
+    }
+}
+
+impl Default for RootBucketData {
+    fn default() -> Self {
+        Self {
             users: BTreeSet::new(),
             cap_id: Principal::management_canister(),
-            contract: Principal::management_canister(),
             writers: BTreeSet::new(),
             allow_migration: true,
         }
@@ -62,7 +72,7 @@ fn init(contract: Principal, writers: BTreeSet<Principal>) {
     data.cap_id = ic::caller();
     data.contract = contract;
     data.writers = writers;
-    data.bucket = Bucket::new(contract, 0);
+    data.bucket = TransactionList::new(contract, 0);
 }
 
 #[query]

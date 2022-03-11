@@ -1,6 +1,6 @@
 use crate::Data;
 use cap_common::transaction::Event;
-use cap_common::{Bucket, TokenContractId, TransactionId};
+use cap_common::{TokenContractId, TransactionId, TransactionList};
 use certified_vars::{Hash, Map, Seq};
 use ic_cdk::api::stable::{StableReader, StableWriter};
 use ic_kit::macros::{post_upgrade, pre_upgrade};
@@ -62,7 +62,7 @@ fn post_upgrade() {
 
     let contract = data.contract;
 
-    let mut bucket = Bucket::new(contract, 0);
+    let mut bucket = TransactionList::new(contract, 0);
     for event in data.bucket {
         bucket.insert(event);
     }
