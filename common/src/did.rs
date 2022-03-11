@@ -1,6 +1,7 @@
 //! This file contains all of the type definitions used in the candid
 //! files across the different canisters and the services.
 
+use crate::bucket::Bucket;
 use crate::transaction::Event;
 use certified_vars::{Hash, HashTree};
 use ic_kit::candid::{CandidType, Deserialize};
@@ -137,4 +138,11 @@ impl From<HashTree<'_>> for Witness {
             tree: serde_cbor::to_vec(&tree).unwrap(),
         }
     }
+}
+
+#[derive(Serialize, Deserialize, CandidType)]
+pub struct BucketInitArgs {
+    pub contract: TokenContractId,
+    pub offset: u64,
+    pub next_canisters: Vec<BucketId>,
 }

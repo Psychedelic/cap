@@ -208,6 +208,11 @@ impl Bucket {
     pub fn insert(&mut self, event: Event) -> u64 {
         self.bucket.insert(event)
     }
+
+    #[inline]
+    pub fn set_next_canisters(&mut self, canisters: Vec<Principal>) {
+        self.next_canisters = canisters.iter().collect();
+    }
 }
 
 impl AsHashTree for Bucket {
