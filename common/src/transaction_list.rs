@@ -64,6 +64,12 @@ impl TransactionList {
         }
     }
 
+    /// Return the principal id of the contract we're storing transactions for.
+    #[inline]
+    pub fn contract_id(&self) -> &Principal {
+        &self.contract
+    }
+
     /// Return the total number of transactions.
     #[inline]
     pub fn size(&self) -> u64 {
