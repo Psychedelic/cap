@@ -211,7 +211,7 @@ impl Bucket {
 
     #[inline]
     pub fn set_next_canisters(&mut self, canisters: Vec<Principal>) {
-        self.next_canisters = canisters.iter().collect();
+        self.next_canisters = canisters.into();
     }
 }
 

@@ -1,6 +1,6 @@
 use cap_common::bucket::Bucket;
 use cap_common::did::*;
-use ic_kit::candid::candid_method;
+use ic_kit::candid::{candid_method, export_service};
 use ic_kit::macros::*;
 use ic_kit::{ic, Principal};
 use serde::{Deserialize, Serialize};
@@ -84,6 +84,12 @@ fn contract_id() -> &'static Principal {
 #[candid_method(query)]
 fn balance() -> u64 {
     ic::balance()
+}
+
+#[query(name = "__get_candid_interface_tmp_hack")]
+fn export_candid() -> String {
+    export_service!();
+    __export_service()
 }
 
 #[cfg(test)]

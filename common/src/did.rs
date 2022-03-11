@@ -1,7 +1,6 @@
 //! This file contains all of the type definitions used in the candid
 //! files across the different canisters and the services.
 
-use crate::bucket::Bucket;
 use crate::transaction::Event;
 use certified_vars::{Hash, HashTree};
 use ic_kit::candid::{CandidType, Deserialize};
