@@ -1,5 +1,6 @@
 use cap_common::bucket::Bucket;
 use cap_common::did::*;
+use cap_common::transaction::Event;
 use ic_kit::candid::{candid_method, export_service};
 use ic_kit::macros::*;
 use ic_kit::{ic, Principal};
@@ -84,6 +85,20 @@ fn contract_id() -> &'static Principal {
 #[candid_method(query)]
 fn balance() -> u64 {
     ic::balance()
+}
+
+#[update]
+#[candid_method(update)]
+fn insert_many(transactions: Vec<Event>) {
+    let data = ic::get_mut::<Data>();
+
+    if ic::caller() != data.parent {
+        panic!("Non authorized caller.");
+    }
+
+    for tx in transactions {
+        data.bucket.insert(tx);
+    }
 }
 
 #[query(name = "__get_candid_interface_tmp_hack")]
