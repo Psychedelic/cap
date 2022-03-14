@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 mod upgrade;
 
 #[derive(Serialize, Deserialize)]
-struct Data {
+pub struct Data {
     bucket: Bucket,
     parent: Principal,
 }
