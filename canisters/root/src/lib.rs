@@ -142,6 +142,40 @@ fn insert(event: IndefiniteEvent) -> TransactionId {
 
 #[update]
 #[candid_method(update)]
+fn insert_many(transactions: Vec<IndefiniteEvent>) {
+    let data = ic::get_mut::<Data>();
+    let caller = ic::caller();
+    let time = ic::time() / 1_000_000;
+
+    if !(&caller == data.bucket.contract_id() || data.writers.contains(&caller)) {
+        panic!("The method can only be invoked by one of the writers.");
+    }
+
+    let mut new_users = Vec::new();
+
+    for tx in transactions {
+        let event = tx.to_event(time);
+
+        for principal in event.extract_principal_ids() {
+            if data.users.insert(*principal) {
+                new_users.push(*principal);
+            }
+        }
+
+        data.bucket.insert(event);
+    }
+
+    ic_cdk::block_on(write_new_users_to_cap(
+        data.cap_id,
+        *data.bucket.contract_id(),
+        new_users,
+    ));
+
+    ic::set_certified_data(&data.bucket.root_hash());
+}
+
+#[update]
+#[candid_method(update)]
 fn migrate(events: Vec<Event>) {
     let data = ic::get_mut::<Data>();
     let caller = ic::caller();
