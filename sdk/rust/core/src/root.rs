@@ -35,10 +35,20 @@ impl RootBucket {
     }
 
     /// Inserts the given transaction and returns it's issued transaction ID.
-    pub async fn insert(&self, event: IndefiniteEvent) -> Result<u64, (RejectionCode, String)> {
+    pub async fn insert(&self, event: &IndefiniteEvent) -> Result<u64, (RejectionCode, String)> {
         let result: (u64,) = call(self.0, "insert", (event,)).await?;
 
         Ok(result.0)
+    }
+
+    /// Inserts the given transactions.
+    pub async fn insert_many(
+        &self,
+        events: &[IndefiniteEvent],
+    ) -> Result<(), (RejectionCode, String)> {
+        let _result: ((),) = call(self.0, "insert_many", (events,)).await?;
+
+        Ok(())
     }
 
     /// The time on the canister.

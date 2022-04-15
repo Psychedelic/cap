@@ -1,6 +1,11 @@
 use cap_sdk_core::transaction::IndefiniteEvent;
+use std::cell::RefCell;
 
 use crate::{env::CapEnv, InsertTransactionError, TransactionId};
+
+thread_local! {
+    pub(crate) static PENDING: RefCell<Vec<IndefiniteEvent>> = RefCell::new(vec![]);
+}
 
 /// Inserts a transaction into the contract's history.
 ///
@@ -65,18 +70,66 @@ pub async fn insert(
     transaction: impl Into<IndefiniteEvent>,
 ) -> Result<TransactionId, InsertTransactionError> {
     let context = CapEnv::get().await;
+    let event = transaction.into();
 
-    let id =
-        context
-            .root
-            .insert(transaction.into())
-            .await
-            .map_err(|(code, details)| match details.as_str() {
-                "The method can only be invoked by one of the writers." => {
-                    InsertTransactionError::CantWrite
-                }
-                _ => InsertTransactionError::Unexpected(code, details),
-            })?;
+    let id = context
+        .root
+        .insert(&event)
+        .await
+        .map_err(|(code, details)| match details.as_str() {
+            "The method can only be invoked by one of the writers." => {
+                InsertTransactionError::CantWrite
+            }
+            _ => InsertTransactionError::Unexpected(code, details),
+        })?;
 
     Ok(id)
+}
+
+pub fn insert_sync(event: impl Into<IndefiniteEvent>) {
+    PENDING.with(|p| {
+        p.borrow_mut().push(event.into());
+    });
+
+    ic_cdk::block_on(async {
+        let _ = perform_insert().await;
+    });
+}
+
+pub fn insert_many_sync<T: Into<IndefiniteEvent>>(events: impl Iterator<Item = T>) {
+    PENDING.with(|p| {
+        p.borrow_mut().extend(events.map(|e| e.into()));
+    });
+
+    ic_cdk::block_on(async {
+        let _ = perform_insert().await;
+    });
+}
+
+pub async fn perform_insert() -> Result<(), InsertTransactionError> {
+    let context = CapEnv::get().await;
+    let mut events = PENDING.with(|p| p.take());
+
+    context
+        .root
+        .insert_many(&events)
+        .await
+        .map_err(|(code, details)| match details.as_str() {
+            "The method can only be invoked by one of the writers." => {
+                InsertTransactionError::CantWrite
+            }
+            _ => InsertTransactionError::Unexpected(code, details),
+        })
+        .map_err(|e| {
+            // TODO(qti3e) Is ordering preserved this way?
+            // need to be double checked.
+            PENDING.with(|p| {
+                events.extend(p.take());
+                p.replace(events);
+            });
+
+            e
+        })?;
+
+    Ok(())
 }
