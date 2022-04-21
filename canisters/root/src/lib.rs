@@ -142,7 +142,7 @@ fn insert(event: IndefiniteEvent) -> TransactionId {
 
 #[update]
 #[candid_method(update)]
-fn insert_many(transactions: Vec<IndefiniteEvent>) {
+fn insert_many(transactions: Vec<IndefiniteEvent>) -> TransactionId {
     let data = ic::get_mut::<Data>();
     let caller = ic::caller();
     let time = ic::time() / 1_000_000;
@@ -151,6 +151,7 @@ fn insert_many(transactions: Vec<IndefiniteEvent>) {
         panic!("The method can only be invoked by one of the writers.");
     }
 
+    let id = data.bucket.size();
     let mut new_users = Vec::new();
 
     for tx in transactions {
@@ -172,6 +173,8 @@ fn insert_many(transactions: Vec<IndefiniteEvent>) {
     ));
 
     ic::set_certified_data(&data.bucket.root_hash());
+
+    id
 }
 
 #[update]

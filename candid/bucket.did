@@ -59,5 +59,6 @@ service : {
   get_user_transactions : (GetUserTransactionsArg) -> (
       GetTransactionsResponseBorrowed,
     ) query;
+  insert_many : (vec Event) -> ();
   size : () -> (nat64) query;
 }

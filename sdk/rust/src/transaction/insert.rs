@@ -69,21 +69,41 @@ thread_local! {
 pub async fn insert(
     transaction: impl Into<IndefiniteEvent>,
 ) -> Result<TransactionId, InsertTransactionError> {
-    let context = CapEnv::get().await;
     let event = transaction.into();
 
-    let id = context
-        .root
-        .insert(&event)
-        .await
-        .map_err(|(code, details)| match details.as_str() {
-            "The method can only be invoked by one of the writers." => {
-                InsertTransactionError::CantWrite
-            }
-            _ => InsertTransactionError::Unexpected(code, details),
-        })?;
+    let (event, offset) = PENDING.with(|p| {
+        let mut r = p.borrow_mut();
+        if r.is_empty() {
+            (Some(event), 0)
+        } else {
+            r.push(event);
+            (None, r.len() as u64)
+        }
+    });
 
-    Ok(id)
+    if offset > 0 {
+        match flush_to_cap().await {
+            Ok(id) => Ok(id + offset - 1),
+            Err(e) => {
+                PENDING.with(|p| {
+                    p.borrow_mut().remove(offset as usize - 1);
+                });
+                Err(e)
+            }
+        }
+    } else {
+        CapEnv::get()
+            .await
+            .root
+            .insert(&event.unwrap())
+            .await
+            .map_err(|(code, details)| match details.as_str() {
+                "The method can only be invoked by one of the writers." => {
+                    InsertTransactionError::CantWrite
+                }
+                _ => InsertTransactionError::Unexpected(code, details),
+            })
+    }
 }
 
 pub fn insert_sync(event: impl Into<IndefiniteEvent>) {
@@ -92,7 +112,7 @@ pub fn insert_sync(event: impl Into<IndefiniteEvent>) {
     });
 
     ic_cdk::block_on(async {
-        let _ = perform_insert().await;
+        let _ = flush_to_cap().await;
     });
 }
 
@@ -102,15 +122,26 @@ pub fn insert_many_sync<T: Into<IndefiniteEvent>>(events: impl Iterator<Item = T
     });
 
     ic_cdk::block_on(async {
-        let _ = perform_insert().await;
+        let _ = flush_to_cap().await;
     });
 }
 
-pub async fn perform_insert() -> Result<(), InsertTransactionError> {
+pub fn pending_transactions() -> Vec<IndefiniteEvent> {
+    PENDING.with(|p| p.borrow().iter().cloned().collect::<Vec<_>>())
+}
+
+pub fn restore_pending_transactions(mut events: Vec<IndefiniteEvent>) {
+    PENDING.with(|p| {
+        events.extend(p.take());
+        p.replace(events);
+    });
+}
+
+pub async fn flush_to_cap() -> Result<TransactionId, InsertTransactionError> {
     let context = CapEnv::get().await;
     let mut events = PENDING.with(|p| p.take());
 
-    context
+    let id = context
         .root
         .insert_many(&events)
         .await
@@ -131,5 +162,5 @@ pub async fn perform_insert() -> Result<(), InsertTransactionError> {
             e
         })?;
 
-    Ok(())
+    Ok(id)
 }

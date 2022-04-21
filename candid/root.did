@@ -65,6 +65,7 @@ service : {
       GetTransactionsResponseBorrowed,
     ) query;
   insert : (IndefiniteEvent) -> (nat64);
+  insert_many : (vec IndefiniteEvent) -> (nat64);
   migrate : (vec Event) -> ();
   size : () -> (nat64) query;
   time : () -> (nat64) query;

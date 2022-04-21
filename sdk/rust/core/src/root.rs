@@ -45,10 +45,10 @@ impl RootBucket {
     pub async fn insert_many(
         &self,
         events: &[IndefiniteEvent],
-    ) -> Result<(), (RejectionCode, String)> {
-        let _result: ((),) = call(self.0, "insert_many", (events,)).await?;
+    ) -> Result<u64, (RejectionCode, String)> {
+        let result: (u64,) = call(self.0, "insert_many", (events,)).await?;
 
-        Ok(())
+        Ok(result.0)
     }
 
     /// The time on the canister.
