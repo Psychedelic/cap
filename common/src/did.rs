@@ -138,3 +138,10 @@ impl From<HashTree<'_>> for Witness {
         }
     }
 }
+
+#[derive(Serialize, Deserialize, CandidType)]
+pub struct BucketInitArgs {
+    pub contract: TokenContractId,
+    pub offset: u64,
+    pub next_canisters: Vec<BucketId>,
+}

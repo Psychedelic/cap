@@ -3,6 +3,7 @@ members = [
     "common",
     "canisters/router",
     "canisters/root",
+    "canisters/bucket",
     "canisters/sdk_example",
     "sdk/rust/core",
     "sdk/rust",

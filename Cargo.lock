@@ -778,6 +778,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "ic-history-bucket"
+version = "0.1.0"
+dependencies = [
+ "async-std",
+ "cap-common",
+ "certified-vars",
+ "ic-cdk",
+ "ic-kit",
+ "serde",
+ "serde_cbor",
+]
+
+[[package]]
 name = "ic-history-root"
 version = "0.1.0"
 dependencies = [
