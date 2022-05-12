@@ -110,20 +110,23 @@ impl IntoEvent for TransferDetails {
 #[candid_method(update)]
 pub async fn mint(owner: Principal) -> u64 {
     let available = ic::msg_cycles_available();
-    let fee = 2_000_000_000_000;
+
+    // commenting fee related lines for testing locally
+
+    //let fee = 2_000_000_000_000;
 
     ic::print(format!("Available cycles: {}", available));
 
-    if available < fee {
-        panic!(
-            "Can not mint: {} provided cycles is less than the required fee of {}",
-            available, fee
-        );
-    }
+    // if available < fee {
+    //     panic!(
+    //         "Can not mint: {} provided cycles is less than the required fee of {}",
+    //         available, fee
+    //     );
+    // }
 
     let data = ic::get_mut::<Data>();
     let token_id = data.next_id;
-    ic::msg_cycles_accept(fee);
+    //ic::msg_cycles_accept(fee);
 
     let transaction_details = MintDetails {
         owner,
