@@ -107,6 +107,12 @@ fn export_candid() -> String {
     __export_service()
 }
 
+#[query]
+#[candid_method(query)]
+fn git_commit_hash() -> String {
+    compile_time_run::run_command_str!("git", "rev-parse", "HEAD").into()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

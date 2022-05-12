@@ -434,6 +434,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "compile-time-run"
+version = "0.2.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "43b5affba7c91c039a483065125dd8c6d4a0985e1e9ac5ab6dffdea4fe4e637f"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "concurrent-queue"
 version = "1.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -784,6 +795,7 @@ dependencies = [
  "async-std",
  "cap-common",
  "certified-vars",
+ "compile-time-run",
  "ic-cdk",
  "ic-kit",
  "serde",
@@ -797,6 +809,7 @@ dependencies = [
  "async-std",
  "cap-common",
  "certified-vars",
+ "compile-time-run",
  "ic-cdk",
  "ic-kit",
  "serde",
@@ -810,6 +823,7 @@ dependencies = [
  "async-std",
  "cap-common",
  "certified-vars",
+ "compile-time-run",
  "ic-cdk",
  "ic-kit",
  "lazy_static",
