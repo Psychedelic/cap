@@ -151,17 +151,12 @@ async fn custom_upgrade_root_bucket(canister_id: Principal, wasm: Vec<u8>) -> bo
         arg,
     };
 
-    if ic::call::<_, (), _>(
+    ic::call::<_, (), _>(
         //        \_______/
         Principal::management_canister(),
         "install_code",
         (install_config,),
     )
     .await
-    .is_err()
-    {
-        false
-    } else {
-        true
-    }
+    .is_ok()
 }
