@@ -1,6 +1,6 @@
 use cap_common::transaction::{Event, IndefiniteEvent};
 use certified_vars::AsHashTree;
-use ic_kit::candid::{candid_method, export_service};
+use ic_kit::candid::{candid_method, export_service, CandidType};
 use ic_kit::{ic, Principal};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
@@ -21,7 +21,7 @@ pub mod upgrade;
 ///     /   \
 ///   / \    2
 ///  0   1
-#[derive(Serialize, Deserialize)]
+#[derive(CandidType, Serialize, Deserialize)]
 pub struct Data {
     pub bucket: Bucket,
     pub users: BTreeSet<Principal>,

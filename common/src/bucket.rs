@@ -3,10 +3,11 @@ use crate::transaction::Event;
 use crate::TransactionList;
 use certified_vars::hashtree::{fork, fork_hash};
 use certified_vars::{AsHashTree, Hash, HashTree, Map, Seq};
+use ic_kit::candid::CandidType;
 use ic_kit::Principal;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(CandidType, Serialize, Deserialize)]
 pub struct Bucket {
     bucket: TransactionList,
     buckets: Map<TransactionId, Principal>,

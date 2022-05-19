@@ -2,6 +2,8 @@ use crate::transaction::Event;
 use certified_vars::hashtree::{fork, fork_hash};
 use certified_vars::Paged;
 use certified_vars::{rbtree::RbTree, AsHashTree, Hash, HashTree};
+use ic_kit::candid::types::{Compound, Type};
+use ic_kit::candid::CandidType;
 use ic_kit::Principal;
 use serde::ser::{SerializeSeq, SerializeTuple};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -308,29 +310,47 @@ impl Drop for TransactionList {
     }
 }
 
+struct EventsWrapper<'a>(&'a Vec<NonNull<Event>>);
+
+impl<'a> Serialize for EventsWrapper<'a> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut s = serializer.serialize_seq(Some(self.0.len()))?;
+        for ev in self.0 {
+            s.serialize_element(unsafe { ev.as_ref() })?;
+        }
+        s.end()
+    }
+}
+
+impl<'a> CandidType for EventsWrapper<'a> {
+    fn _ty() -> Type {
+        <Vec<Event>>::_ty()
+    }
+
+    fn idl_serialize<S>(&self, serializer: S) -> Result<(), S::Error>
+    where
+        S: ic_kit::candid::types::Serializer,
+    {
+        let mut ser = serializer.serialize_vec(self.0.len())?;
+        for e in self.0.iter() {
+            Compound::serialize_element(&mut ser, unsafe { e.as_ref() })?;
+        }
+        Ok(())
+    }
+}
+
 impl Serialize for TransactionList {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        struct Events<'a>(&'a Vec<NonNull<Event>>);
-        impl<'a> Serialize for Events<'a> {
-            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-            where
-                S: Serializer,
-            {
-                let mut s = serializer.serialize_seq(Some(self.0.len()))?;
-                for ev in self.0 {
-                    s.serialize_element(unsafe { ev.as_ref() })?;
-                }
-                s.end()
-            }
-        }
-
         let mut s = serializer.serialize_tuple(3)?;
         s.serialize_element(&self.global_offset)?;
         s.serialize_element(&self.contract)?;
-        s.serialize_element(&Events(&self.events))?;
+        s.serialize_element(&EventsWrapper(&self.events))?;
         s.end()
     }
 }
@@ -354,9 +374,28 @@ impl<'de> Deserialize<'de> for TransactionList {
     }
 }
 
+impl CandidType for TransactionList {
+    fn _ty() -> Type {
+        <(u64, Principal, EventsWrapper)>::_ty()
+    }
+
+    fn idl_serialize<S>(&self, serializer: S) -> Result<(), S::Error>
+    where
+        S: ic_kit::candid::types::Serializer,
+    {
+        (
+            &self.global_offset,
+            &self.contract,
+            &EventsWrapper(&self.events),
+        )
+            .idl_serialize(serializer)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ic_kit::candid::{decode_one, encode_one};
     use ic_kit::mock_principals;
 
     fn e(time: u64, caller: Principal) -> Event {
@@ -467,5 +506,19 @@ mod tests {
         let data: Vec<u8> = serde_cbor::to_vec(&list).unwrap();
         let list: TransactionList = serde_cbor::from_slice(&data).unwrap();
         assert_eq!(list.root_hash(), expected);
+    }
+
+    #[test]
+    fn candid() {
+        let mut list = TransactionList::new(mock_principals::xtc(), 0);
+        list.insert(e(0, mock_principals::alice()));
+        list.insert(e(1, mock_principals::alice()));
+        list.insert(e(2, mock_principals::alice()));
+        list.insert(e(3, mock_principals::alice()));
+        let expected = list.root_hash();
+
+        let encoded = encode_one(&list).unwrap();
+        let decoded: TransactionList = decode_one(&encoded).unwrap();
+        assert_eq!(decoded.root_hash(), expected);
     }
 }
