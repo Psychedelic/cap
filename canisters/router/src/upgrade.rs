@@ -110,7 +110,8 @@ async fn custom_upgrade_root_bucket(canister_id: Principal, wasm: Option<Vec<u8>
         Principal::from_text("qti3e-ren42-maxnk-dwpe5-h4hhi-zgnmd-fm4ak-o2vfg-64r7w-al6hm-zqe")
             .unwrap();
     let janison =
-        Principal::from_text("63wyd-ar7cf-pnlor-3ovyf-i6gkl-rmbea-6cpau-pw3xk-epqjz-bqjvt-2qe");
+        Principal::from_text("63wyd-ar7cf-pnlor-3ovyf-i6gkl-rmbea-6cpau-pw3xk-epqjz-bqjvt-2qe")
+            .unwrap();
 
     if !(ic::caller() == parsa || ic::caller() == janison) {
         panic!("Only Janison or Parsa can call this method.")
