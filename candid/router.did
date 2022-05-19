@@ -18,7 +18,7 @@ type GetUserRootBucketsResponse = record {
 type WithWitnessArg = record { witness : bool };
 type Witness = record { certificate : vec nat8; tree : vec nat8 };
 service : {
-  custom_upgrade_root_bucket : (principal, opt vec nat8) -> (bool);
+  custom_upgrade_root_bucket : (principal, opt vec nat8) -> (text);
   deploy_plug_bucket : (principal, nat64) -> ();
   get_index_canisters : (WithWitnessArg) -> (GetIndexCanistersResponse) query;
   get_token_contract_root_bucket : (GetTokenContractRootBucketArg) -> (

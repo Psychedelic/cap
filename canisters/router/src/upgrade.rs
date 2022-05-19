@@ -105,7 +105,7 @@ fn root_buckets_to_upgrade() -> (usize, Vec<RootBucketId>) {
 
 #[update]
 #[candid_method(update)]
-async fn custom_upgrade_root_bucket(canister_id: Principal, wasm: Option<Vec<u8>>) -> bool {
+async fn custom_upgrade_root_bucket(canister_id: Principal, wasm: Option<Vec<u8>>) -> String {
     use crate::installer::{InstallCodeArgumentBorrowed, WASM};
     use ic_kit::interfaces::management::InstallMode;
 
@@ -132,17 +132,17 @@ async fn custom_upgrade_root_bucket(canister_id: Principal, wasm: Option<Vec<u8>
         arg,
     };
 
-    if ic::call::<_, (), _>(
+    let result = ic::call::<_, (), _>(
         Principal::management_canister(),
         "install_code",
         (install_config,),
     )
-    .await
-    .is_ok()
-    {
+    .await;
+
+    if result.is_ok() {
         ic::get_mut::<SkipUpgrade>().0.insert(canister_id);
-        true
+        "Yay".into()
     } else {
-        false
+        result.err().unwrap().1
     }
 }
