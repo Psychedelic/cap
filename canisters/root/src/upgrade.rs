@@ -61,6 +61,13 @@ pub fn post_upgrade() {
     };
 
     let data = if let Some(data) = data {
+        let contract = data.contract;
+
+        let mut bucket = TransactionList::new(contract, 0);
+        for event in data.bucket {
+            bucket.insert(event);
+        }
+
         DataV0 {
             bucket,
             buckets: {
