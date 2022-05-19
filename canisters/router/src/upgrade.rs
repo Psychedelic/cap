@@ -5,9 +5,13 @@ use ic_kit::ic;
 use ic_kit::macros::{post_upgrade, pre_upgrade, query, update};
 use ic_kit::Principal;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeSet;
 
 #[derive(Default, CandidType, Serialize, Deserialize)]
 struct RootBucketsToUpgrade(Vec<RootBucketId>);
+
+#[derive(Default)]
+struct SkipUpgrade(BTreeSet<RootBucketId>);
 
 #[pre_upgrade]
 fn pre_upgrade() {
@@ -17,16 +21,11 @@ fn pre_upgrade() {
 
 #[post_upgrade]
 fn post_upgrade() {
-    let (data,): (Data,) = ic::stable_restore().expect("Failed to deserialize");
-    ic::store::<Data>(data);
+    let (data, to_upgrade): (Data, RootBucketsToUpgrade) =
+        ic::stable_restore().expect("Failed to deserialize.");
 
-    let root_buckets = get_user_root_buckets(GetUserRootBucketsArg {
-        user: Principal::management_canister(),
-        witness: false,
-    })
-    .contracts;
-
-    ic::store(RootBucketsToUpgrade(root_buckets.to_vec()));
+    ic::store(data);
+    ic::store(to_upgrade);
 }
 
 // Codes related to upgrading root buckets.
@@ -65,6 +64,10 @@ fn perform_upgrades(depth: usize) {
 async fn upgrade_root_bucket(canister_id: Principal, depth: usize) {
     use crate::installer::{InstallCodeArgumentBorrowed, WASM};
     use ic_kit::interfaces::management::InstallMode;
+
+    if ic::get::<SkipUpgrade>().0.contains(&canister_id) {
+        return;
+    }
 
     let arg = encode_args(()).expect("Failed to serialize upgrade arg");
     let install_config = InstallCodeArgumentBorrowed {
@@ -129,11 +132,17 @@ async fn custom_upgrade_root_bucket(canister_id: Principal, wasm: Option<Vec<u8>
         arg,
     };
 
-    ic::call::<_, (), _>(
+    if ic::call::<_, (), _>(
         Principal::management_canister(),
         "install_code",
         (install_config,),
     )
     .await
     .is_ok()
+    {
+        ic::get_mut::<SkipUpgrade>().0.insert(canister_id);
+        true
+    } else {
+        false
+    }
 }
