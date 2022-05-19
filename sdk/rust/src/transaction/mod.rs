@@ -2,7 +2,7 @@ use ic_kit::RejectionCode;
 use thiserror::Error;
 
 mod insert;
-pub use insert::insert;
+pub use insert::*;
 
 mod query;
 pub use query::get_transaction;

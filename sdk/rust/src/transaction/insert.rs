@@ -69,14 +69,21 @@ thread_local! {
 pub async fn insert(
     transaction: impl Into<IndefiniteEvent>,
 ) -> Result<TransactionId, InsertTransactionError> {
-    let event = transaction.into();
+    insert_many(vec![transaction].into_iter()).await
+}
 
-    let (event, offset) = PENDING.with(|p| {
+/// Insert many transactions using one write to Cap.
+pub async fn insert_many<T: Into<IndefiniteEvent>>(
+    events: impl Iterator<Item = T>,
+) -> Result<TransactionId, InsertTransactionError> {
+    let events = events.map(|x| x.into()).collect::<Vec<_>>();
+
+    let (events, offset) = PENDING.with(|p| {
         let mut r = p.borrow_mut();
         if r.is_empty() {
-            (Some(event), 0)
+            (Some(events), 0)
         } else {
-            r.push(event);
+            r.extend(events.into_iter());
             (None, r.len() as u64)
         }
     });
@@ -95,7 +102,7 @@ pub async fn insert(
         CapEnv::get()
             .await
             .root
-            .insert(&event.unwrap())
+            .insert_many(&events.unwrap())
             .await
             .map_err(|(code, details)| match details.as_str() {
                 "The method can only be invoked by one of the writers." => {
@@ -106,6 +113,15 @@ pub async fn insert(
     }
 }
 
+/// Insert a transaction into Cap without needing an await, this method guarantees finality of
+/// the transactions and can handle insertion errors that might happen on the root bucket. (e.g
+/// if the root bucket has gone out of cycles)
+///
+/// It works by having a local pending transactions buffer, in the heap storage, which it uses
+/// to track failed transactions.
+///
+/// If you're using this method, be sure you store/restore the pending transactions during
+/// upgrades. You can use [pending_transactions] and [restore_pending_transactions].
 pub fn insert_sync(event: impl Into<IndefiniteEvent>) {
     PENDING.with(|p| {
         p.borrow_mut().push(event.into());
@@ -116,6 +132,7 @@ pub fn insert_sync(event: impl Into<IndefiniteEvent>) {
     });
 }
 
+/// Like [insert_sync], but allows you to insert more than one transaction at a time.
 pub fn insert_many_sync<T: Into<IndefiniteEvent>>(events: impl Iterator<Item = T>) {
     PENDING.with(|p| {
         p.borrow_mut().extend(events.map(|e| e.into()));
@@ -126,10 +143,12 @@ pub fn insert_many_sync<T: Into<IndefiniteEvent>>(events: impl Iterator<Item = T
     });
 }
 
+/// Return the array of pending transactions. Can be used in a pre-upgrade hook.
 pub fn pending_transactions() -> Vec<IndefiniteEvent> {
     PENDING.with(|p| p.borrow().iter().cloned().collect::<Vec<_>>())
 }
 
+/// Restore the transactions, it keeps the previous pending transactions as well.
 pub fn restore_pending_transactions(mut events: Vec<IndefiniteEvent>) {
     PENDING.with(|p| {
         events.extend(p.take());
@@ -137,6 +156,7 @@ pub fn restore_pending_transactions(mut events: Vec<IndefiniteEvent>) {
     });
 }
 
+/// Force a flush of pending transactions to Cap.
 pub async fn flush_to_cap() -> Result<TransactionId, InsertTransactionError> {
     let context = CapEnv::get().await;
     let mut events = PENDING.with(|p| p.take());
