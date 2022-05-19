@@ -91,7 +91,10 @@ pub fn post_upgrade() {
             Err(err) => {
                 let limit = err.offset() - 1;
                 let reader = StableReader::default().take(limit);
-                serde_cbor::from_reader(reader).expect("Failed to deserialize.")
+                match serde_cbor::from_reader(reader) {
+                    Ok(e) => e,
+                    Err(e) => ic::trap(&e.to_string()),
+                }
             }
         };
         data
