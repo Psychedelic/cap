@@ -1,32 +1,13 @@
 use crate::{get_user_root_buckets, Data};
 use cap_common::{GetUserRootBucketsArg, RootBucketId};
-use certified_vars::{Hash, Seq};
-use ic_cdk::api::stable::StableReader;
 use ic_kit::candid::{candid_method, encode_args, CandidType};
 use ic_kit::ic;
 use ic_kit::macros::{post_upgrade, pre_upgrade, update};
 use ic_kit::Principal;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use std::io::Read;
 
 #[derive(Default, CandidType, Serialize, Deserialize)]
 struct RootBucketsToUpgrade(Vec<RootBucketId>);
-
-#[derive(Serialize, Deserialize)]
-pub struct DataV0 {
-    pub root_buckets: BTreeMap<Vec<u8>, Vec<u8>>,
-    /// Map each user to RootBucketId
-    pub user_canisters: BTreeMap<Vec<u8>, CanisterListV0>,
-    /// List of the index canisters.
-    pub index_canisters: CanisterListV0,
-}
-
-#[derive(Default, Deserialize, Serialize)]
-pub struct CanisterListV0 {
-    data: Vec<Principal>,
-    hash: Hash,
-}
 
 #[pre_upgrade]
 fn pre_upgrade() {
@@ -36,40 +17,8 @@ fn pre_upgrade() {
 
 #[post_upgrade]
 fn post_upgrade() {
-    let reader = StableReader::default();
-    let data: DataV0 = match serde_cbor::from_reader(reader) {
-        Ok(t) => t,
-        Err(err) => {
-            let limit = err.offset() - 1;
-            let reader = StableReader::default().take(limit);
-            serde_cbor::from_reader(reader).expect("Failed to deserialize.")
-        }
-    };
-
-    let mut deserialized = Data::default();
-
-    for (key, value) in data.root_buckets {
-        let key = Principal::from_slice(&key);
-        let value = Principal::from_slice(&value);
-        deserialized.root_buckets.insert(key, value);
-    }
-
-    for (key, value) in data.user_canisters {
-        let key = Principal::from_slice(&key);
-        let value = {
-            let mut r = Seq::new();
-            for v in value.data {
-                r.append(v);
-            }
-            r
-        };
-
-        deserialized.user_canisters.insert(key, value);
-    }
-
-    deserialized.index_canisters = data.index_canisters.data.into_iter().collect();
-
-    ic::store::<Data>(deserialized);
+    let (data,): (Data,) = ic::stable_restore().expect("Failed to deserialize");
+    ic::store::<Data>(data);
 
     let root_buckets = get_user_root_buckets(GetUserRootBucketsArg {
         user: Principal::management_canister(),
