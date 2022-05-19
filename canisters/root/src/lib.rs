@@ -230,16 +230,16 @@ fn balance() -> u64 {
     ic::balance()
 }
 
-#[query(name = "__get_candid_interface_tmp_hack")]
-fn export_candid() -> String {
-    export_service!();
-    __export_service()
-}
-
 #[query]
 #[candid_method(query)]
 fn git_commit_hash() -> String {
     compile_time_run::run_command_str!("git", "rev-parse", "HEAD").into()
+}
+
+#[query(name = "__get_candid_interface_tmp_hack")]
+fn export_candid() -> String {
+    export_service!();
+    __export_service()
 }
 
 #[cfg(test)]
