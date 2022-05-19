@@ -59,6 +59,7 @@ service : {
   get_user_transactions : (GetUserTransactionsArg) -> (
       GetTransactionsResponseBorrowed,
     ) query;
+  git_commit_hash : () -> (text) query;
   insert_many : (vec Event) -> ();
   size : () -> (nat64) query;
 }
