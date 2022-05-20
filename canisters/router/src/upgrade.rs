@@ -45,14 +45,14 @@ fn trigger_upgrade(passcode: String) {
 
     for _ in 0..32 {
         if let Some(canister_id) = canisters.0.pop() {
-            ic_cdk::block_on(upgrade_root_bucket(canister_id, depth));
+            ic_cdk::block_on(upgrade_root_bucket(canister_id));
         } else {
             break;
         }
     }
 }
 
-async fn upgrade_root_bucket(canister_id: Principal, depth: usize) {
+async fn upgrade_root_bucket(canister_id: Principal) {
     use crate::installer::{InstallCodeArgumentBorrowed, WASM};
     use ic_kit::interfaces::management::InstallMode;
 
