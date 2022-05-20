@@ -9,6 +9,7 @@ use cap_common::bucket::Bucket;
 use cap_common::did::*;
 use ic_kit::macros::*;
 
+mod migration;
 pub mod upgrade;
 
 /// Merkle tree of the canister.

@@ -1,5 +1,5 @@
-use crate::{get_user_root_buckets, Data};
-use cap_common::{GetUserRootBucketsArg, RootBucketId};
+use crate::Data;
+use cap_common::RootBucketId;
 use ic_kit::candid::{candid_method, encode_args, CandidType};
 use ic_kit::ic;
 use ic_kit::macros::{post_upgrade, pre_upgrade, query, update};
@@ -37,22 +37,13 @@ fn trigger_upgrade(passcode: String) {
         panic!("You don't know what you are doing.");
     }
 
-    perform_upgrades(0);
-}
-
-fn perform_upgrades(depth: usize) {
-    // Just a stop condition, so we don't run forever.
-    if depth > 2 {
-        return;
-    }
-
     let canisters = ic::get_mut::<RootBucketsToUpgrade>();
 
     if canisters.0.is_empty() {
         return;
     }
 
-    for _ in 0..16 {
+    for _ in 0..32 {
         if let Some(canister_id) = canisters.0.pop() {
             ic_cdk::block_on(upgrade_root_bucket(canister_id, depth));
         } else {
@@ -92,8 +83,6 @@ async fn upgrade_root_bucket(canister_id: Principal, depth: usize) {
         let canisters = ic::get_mut::<RootBucketsToUpgrade>();
         canisters.0.push(canister_id);
     }
-
-    perform_upgrades(depth + 1);
 }
 
 #[query]
