@@ -44,8 +44,8 @@ pub mod v0 {
 
     #[derive(Deserialize)]
     pub struct CanisterList {
-        _data: Vec<Principal>,
-        _hash: Hash,
+        data: Vec<Principal>,
+        hash: Hash,
     }
 
     #[derive(Deserialize)]
