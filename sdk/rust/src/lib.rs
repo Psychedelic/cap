@@ -38,6 +38,9 @@ pub use details::*;
 mod event;
 pub use event::*;
 
+mod archive;
+pub use archive::*;
+
 mod handshake;
 pub use handshake::*;
 

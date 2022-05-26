@@ -5,6 +5,7 @@ use crate::{env::CapEnv, InsertTransactionError, TransactionId};
 
 thread_local! {
     pub(crate) static PENDING: RefCell<Vec<IndefiniteEvent>> = RefCell::new(vec![]);
+    pub(crate) static FLUSH_IN_PROGRESS: RefCell<u32> = RefCell::new(0);
 }
 
 /// Inserts a transaction into the contract's history.
@@ -144,7 +145,13 @@ pub fn insert_many_sync<T: Into<IndefiniteEvent>>(events: impl Iterator<Item = T
 }
 
 /// Return the array of pending transactions. Can be used in a pre-upgrade hook.
+///
+/// # Panics
+/// If there is an ongoing flush that is not finalized yet.
 pub fn pending_transactions() -> Vec<IndefiniteEvent> {
+    if FLUSH_IN_PROGRESS.with(|e| *e.borrow()) > 0 {
+        panic!("There is a flush in progress.");
+    }
     PENDING.with(|p| p.borrow().iter().cloned().collect::<Vec<_>>())
 }
 
@@ -159,9 +166,11 @@ pub fn restore_pending_transactions(mut events: Vec<IndefiniteEvent>) {
 /// Force a flush of pending transactions to Cap.
 pub async fn flush_to_cap() -> Result<TransactionId, InsertTransactionError> {
     let context = CapEnv::get().await;
+
+    FLUSH_IN_PROGRESS.with(|e| *e.borrow_mut() += 1);
     let mut events = PENDING.with(|p| p.take());
 
-    let id = context
+    let res = context
         .root
         .insert_many(&events)
         .await
@@ -180,43 +189,48 @@ pub async fn flush_to_cap() -> Result<TransactionId, InsertTransactionError> {
             });
 
             e
-        })?;
+        });
 
-    Ok(id)
+    FLUSH_IN_PROGRESS.with(|e| *e.borrow_mut() -= 1);
+
+    res
 }
 
 #[cfg(test)]
 mod test {
+    use super::*;
+    use cap_sdk_core::{RootBucket, Router};
     use ic_cdk::api::call::RejectionCode;
     use ic_kit::{MockContext, Principal, RawHandler};
-    use cap_sdk_core::{RootBucket, Router};
-    use super::*;
 
     fn t(x: &str) -> IndefiniteEvent {
         IndefiniteEvent {
             caller: Principal::anonymous(),
             operation: x.to_string(),
-            details: vec![]
+            details: vec![],
         }
     }
 
     #[async_std::test]
     async fn insert_ordering() {
         MockContext::new()
-            .with_handler(RawHandler::raw(Box::new(move |_, _, _,_| {
+            .with_handler(RawHandler::raw(Box::new(move |_, _, _, _| {
                 Err((RejectionCode::CanisterError, "X".into()))
             })))
             .with_data(CapEnv {
                 root: RootBucket(Principal::anonymous()),
-                router: Router(Principal::anonymous())
+                router: Router(Principal::anonymous()),
             })
             .inject();
 
-        insert_sync(t("A", ));
-        assert!(insert(t("B", )).await.is_err());
-        insert_sync(t("C", ));
+        insert_sync(t("A"));
+        assert!(insert(t("B",)).await.is_err());
+        insert_sync(t("C"));
 
-        let tx = pending_transactions().into_iter().map(|x| x.operation).collect::<Vec<_>>();
+        let tx = pending_transactions()
+            .into_iter()
+            .map(|x| x.operation)
+            .collect::<Vec<_>>();
         assert_eq!(tx, vec!["A".to_string(), "C".to_string()])
     }
 }

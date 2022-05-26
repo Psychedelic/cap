@@ -49,14 +49,12 @@ impl CapEnv {
     }
 
     pub(crate) async fn await_futures() {
-        let futures = FUTURES.with(|futures| {
-            let mut inner = futures.take();
-            inner.drain(0..inner.len()).collect::<Vec<_>>()
-        });
+        let futures = FUTURES.with(|futures| futures.take());
 
         if futures.is_empty() {
             return;
         }
+
         let flag = Flag::new();
         let f2 = flag.clone();
 
@@ -82,6 +80,7 @@ impl CapEnv {
     /// Sets the [`CapEnv`] using the provided value.
     ///
     /// Used to restore the generated canister's ID after an upgrade.
+    #[deprecated(note = "Use the safer cap_sdk::from_archive")]
     pub fn load_from_archive(env: CapEnv) {
         env.store();
     }
@@ -92,6 +91,7 @@ impl CapEnv {
     /// Call it during `pre_upgrade` to write it somewhere in stable storage.
     ///
     /// Afterwards, write it back with [`CapEnv::load_from_archive`]
+    #[deprecated(note = "Use the safer cap_sdk::archive")]
     pub fn to_archive() -> Self {
         get_maybe::<CapEnv>().expect("No context created.").clone()
     }
