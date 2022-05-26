@@ -184,3 +184,39 @@ pub async fn flush_to_cap() -> Result<TransactionId, InsertTransactionError> {
 
     Ok(id)
 }
+
+#[cfg(test)]
+mod test {
+    use ic_cdk::api::call::RejectionCode;
+    use ic_kit::{MockContext, Principal, RawHandler};
+    use cap_sdk_core::{RootBucket, Router};
+    use super::*;
+
+    fn t(x: &str) -> IndefiniteEvent {
+        IndefiniteEvent {
+            caller: Principal::anonymous(),
+            operation: x.to_string(),
+            details: vec![]
+        }
+    }
+
+    #[async_std::test]
+    async fn insert_ordering() {
+        MockContext::new()
+            .with_handler(RawHandler::raw(Box::new(move |_, _, _,_| {
+                Err((RejectionCode::CanisterError, "X".into()))
+            })))
+            .with_data(CapEnv {
+                root: RootBucket(Principal::anonymous()),
+                router: Router(Principal::anonymous())
+            })
+            .inject();
+
+        insert_sync(t("A", ));
+        assert!(insert(t("B", )).await.is_err());
+        insert_sync(t("C", ));
+
+        let tx = pending_transactions().into_iter().map(|x| x.operation).collect::<Vec<_>>();
+        assert_eq!(tx, vec!["A".to_string(), "C".to_string()])
+    }
+}

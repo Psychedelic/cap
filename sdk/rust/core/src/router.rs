@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// Use [`Router`]'s [`Into<Index>`] implementation to use a [`Router`] as an [`Index`].
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, CandidType)]
-pub struct Router(pub(crate) Principal);
+pub struct Router(pub Principal);
 
 impl Router {
     pub fn new(principal: Principal) -> Self {

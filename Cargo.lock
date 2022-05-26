@@ -362,6 +362,7 @@ dependencies = [
 name = "cap-sdk"
 version = "0.2.1"
 dependencies = [
+ "async-std",
  "async-stream",
  "cap-sdk-core",
  "futures",

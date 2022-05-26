@@ -20,5 +20,8 @@ thiserror = "1"
 async-stream = "0.3"
 lazy_static = "1"
 
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+async-std = { version="1.10.0", features = ["attributes"] }
+
 [lib]
 doctest = false
