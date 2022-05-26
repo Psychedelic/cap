@@ -1,11 +1,12 @@
 use crate::{handshake, restore_pending_transactions, CapEnv, IndefiniteEvent};
 use cap_sdk_core::{RootBucket, Router};
 use ic_cdk::export::Principal;
+use ic_kit::candid::CandidType;
 use ic_kit::ic;
 use ic_kit::ic::get_maybe;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, CandidType)]
 pub struct Archive {
     router: Option<Principal>,
     creation_cycles: Option<u64>,
