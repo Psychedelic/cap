@@ -1,18 +1,20 @@
 {
   "version": 1,
-  "dfx": "0.9.2",
+  "dfx": "0.9.3",
   "canisters": {
-    "ic-history-router": {
-      "build": "node build.js",
-      "candid": "candid/router.did",
-      "wasm": "target/wasm32-unknown-unknown/release/ic_history_router-rel-opt.wasm",
-      "type": "custom"
+    "cap-bucket": {
+      "candid": 
     },
-    "sdk-example": {
-      "build": "node build.js",
-      "candid": "candid/sdk_example.did",
-      "wasm": "target/wasm32-unknown-unknown/release/sdk_example-rel-opt.wasm",
-      "type": "custom"
+    "cap-root": {
+      "candid": "candid/root.did",
+      "package": "cap_root",
+      "type": "rust"
+    },
+    "cap-router": {
+      "dependencies": ["cap-root"],
+      "candid": "candid/router.did",
+      "package": "cap_router",
+      "type": "rust"
     }
   },
   "networks": {
@@ -22,3 +24,4 @@
     }
   }
 }
+

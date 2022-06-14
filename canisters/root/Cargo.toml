@@ -1,5 +1,5 @@
 [package]
-name = "ic-history-root"
+name = "cap_root"
 version = "0.1.0"
 edition = "2018"
 

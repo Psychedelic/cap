@@ -14,11 +14,11 @@ use ic_kit::macros::*;
 
 #[cfg(debug_cfg)]
 pub const WASM: &[u8] =
-    include_bytes!("../../../target/wasm32-unknown-unknown/debug/ic_history_root-deb-opt.wasm");
+    include_bytes!("../../../target/wasm32-unknown-unknown/release/ic_history_root.wasm");
 
 #[cfg(not(debug_cfg))]
 pub const WASM: &[u8] =
-    include_bytes!("../../../target/wasm32-unknown-unknown/release/ic_history_root-rel-opt.wasm");
+    include_bytes!("../../../target/wasm32-unknown-unknown/release/ic_history_root.wasm");
 
 #[derive(CandidType, Deserialize)]
 pub struct InstallCodeArgumentBorrowed<'a> {
