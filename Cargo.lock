@@ -344,6 +344,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "cap-bucket"
+version = "0.1.0"
+dependencies = [
+ "async-std",
+ "cap-common",
+ "certified-vars",
+ "compile-time-run",
+ "ic-cdk",
+ "ic-kit",
+ "serde",
+ "serde_cbor",
+]
+
+[[package]]
 name = "cap-common"
 version = "0.2.0"
 dependencies = [
@@ -817,20 +831,6 @@ dependencies = [
  "serde",
  "serde_bytes",
  "sha2",
-]
-
-[[package]]
-name = "ic-history-bucket"
-version = "0.1.0"
-dependencies = [
- "async-std",
- "cap-common",
- "certified-vars",
- "compile-time-run",
- "ic-cdk",
- "ic-kit",
- "serde",
- "serde_cbor",
 ]
 
 [[package]]

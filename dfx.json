@@ -3,7 +3,9 @@
   "dfx": "0.9.3",
   "canisters": {
     "cap-bucket": {
-      "candid": 
+      "candid": "candid/bucket.did",
+      "package": "cap_bucket",
+      "type": "rust"
     },
     "cap-root": {
       "candid": "candid/root.did",
