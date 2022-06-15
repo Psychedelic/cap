@@ -8,7 +8,7 @@ edition = "2018"
 [dependencies]
 cap-sdk = { path= "../../sdk/rust" }
 ic-kit = "0.4.3"
-ic-cdk = "0.3.1"
+ic-cdk = "0.5.1"
 serde = "1.0.116"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]

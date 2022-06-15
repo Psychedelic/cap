@@ -1,0 +1,13 @@
+{
+  "ownerId": "ffuck-kxghi-gyvia-r5htr-246cy-acq5u-2tdgd-avtvf-jyqbt-xtmf7-cae",
+  "canisterId": "lhtux-ciaaa-aaaag-qakpa-cai",
+  "canisterName": "cap-router-test",
+  "repoUrl": "psychedelic/cap",
+  "commitHash": "05015536f4c737d0b1f22689339bd33cc69afe88",
+  "rustVersion": "1.61.0",
+  "dfxVersion": "0.9.3",
+  "optimizeCount": 1,
+  "publicKey": "0488bb751d43a89a22e41e6966d1bd6d9d018d0dcec76d4d553436b2928be46426385cf69446eb02b3248686ed116cfa06d76323577224b042076bf53af9f3b67a",
+  "signature": "2199a513789712acd52042138a134963cc0597b5f17d2b090aee1ef1db86fbee5783763a67c398a43b3b5f9a7540341c175ccba251a04bf8ff2a72bb80020b68",
+  "timestamp": 1655299963101
+}
