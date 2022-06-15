@@ -5,9 +5,9 @@ name: Continuous integration
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   build:
@@ -23,15 +23,13 @@ jobs:
         with:
           path: target
           key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ github.sha }}
-          restore-keys:
-            ${{ runner.os }}-build-${{ env.cache-name }}-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-build-${{ env.cache-name }}-${{ github.sha }}
       - name: Cache Cargo Dir
         uses: actions/cache@v2
         with:
           path: /home/runner/.cargo
           key: ${{ runner.os }}-build-${{ env.cache-name }}
-          restore-keys:
-            ${{ runner.os }}-build-${{ env.cache-name }}
+          restore-keys: ${{ runner.os }}-build-${{ env.cache-name }}
 
       - uses: actions-rs/toolchain@v1
         with:
@@ -49,7 +47,7 @@ jobs:
           use-tool-cache: true
       - uses: actions-rs/cargo@v1
       - run: export PATH=/home/runner/.cargo/bin:$PATH
-      - run: node build.js
+      - run: dfx build --network ic
   check:
     name: Check
     needs: build
@@ -63,8 +61,7 @@ jobs:
         with:
           path: target
           key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ github.sha }}
-          restore-keys:
-            ${{ runner.os }}-build-${{ env.cache-name }}-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-build-${{ env.cache-name }}-${{ github.sha }}
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -88,8 +85,7 @@ jobs:
         with:
           path: target
           key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ github.sha }}
-          restore-keys:
-            ${{ runner.os }}-build-${{ env.cache-name }}-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-build-${{ env.cache-name }}-${{ github.sha }}
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -129,8 +125,7 @@ jobs:
         with:
           path: target
           key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ github.sha }}
-          restore-keys:
-            ${{ runner.os }}-build-${{ env.cache-name }}-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-build-${{ env.cache-name }}-${{ github.sha }}
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
