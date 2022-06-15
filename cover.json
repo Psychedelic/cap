@@ -3,11 +3,11 @@
   "canisterId": "lhtux-ciaaa-aaaag-qakpa-cai",
   "canisterName": "cap-router-test",
   "repoUrl": "psychedelic/cap",
-  "commitHash": "d7b06d51b8f49e4642af1d7d5d96a9690b53d321",
+  "commitHash": "567ae325b839085dc72a49ff97c67e260e092189",
   "rustVersion": "1.61.0",
   "dfxVersion": "0.9.3",
   "optimizeCount": 1,
   "publicKey": "0488bb751d43a89a22e41e6966d1bd6d9d018d0dcec76d4d553436b2928be46426385cf69446eb02b3248686ed116cfa06d76323577224b042076bf53af9f3b67a",
-  "signature": "7b06e91b74b5047f0415005de0e363a9748eb6e842087c330a32f1716167481f3a180e86784893491f62ff5c90f65e92d1d724353aec04b08fe140dbd68b2872",
-  "timestamp": 1655315728833
+  "signature": "b28086059e460c9f49730e42ab2837ec8647cc85120ff1cf6ca96436a9725caf61738e440c1ed685a1d098952877b9f6f3a0a1e66bc15f37de23f0abb7ca7804",
+  "timestamp": 1655319878127
 }
