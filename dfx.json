@@ -13,15 +13,18 @@
       "type": "rust"
     },
     "cap-router": {
-      "dependencies": ["cap-root"],
       "candid": "candid/router.did",
       "package": "cap_router",
       "type": "rust"
     },
     "cap-router-test": {
-      "dependencies": ["cap-root"],
       "candid": "candid/router.did",
       "package": "cap_router",
+      "type": "rust"
+    },
+    "sdk-example": {
+      "candid": "candid/sdk_example.did",
+      "package": "sdk_example",
       "type": "rust"
     }
   },
@@ -32,3 +35,4 @@
     }
   }
 }
+
