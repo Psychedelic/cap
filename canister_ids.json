@@ -8,6 +8,12 @@
   "cap-root": {
     "ic": "aaaaa-aa",
     "local": "aaaaa-aa"
+  },
+  "sdk-example": {
+    "ic": "aaaaa-aa"
+  },
+  "cap-bucket": {
+    "ic": "aaaaa-aa"
   }
 }
 
