@@ -15,6 +15,19 @@ jobs:
     needs: fmt
     runs-on: ubuntu-latest
     steps:
+      - name: Cache Dfx
+        id: cache-dfx
+        uses: actions/cache@v2
+        with:
+          path: |
+            /usr/local/bin/dfx
+          key: cache-dfx-${{ hashFiles('dfx.json') }}
+
+      - name: Install DFX
+        if: steps.cache-dfx.outputs.cache-hit != 'true'
+        run: |
+          yes Y | DFX_VERSION="$DFX_VERSION" sh -ci "$(curl -fsSL https://sdk.dfinity.org/install.sh)"
+
       - uses: actions/checkout@v2
       - name: Cache Output Files
         uses: actions/cache@v2
@@ -24,6 +37,7 @@ jobs:
           path: target
           key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ github.sha }}
           restore-keys: ${{ runner.os }}-build-${{ env.cache-name }}-${{ github.sha }}
+
       - name: Cache Cargo Dir
         uses: actions/cache@v2
         with:
@@ -40,6 +54,7 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: '14'
+
       - uses: actions-rs/install@v0.1
         with:
           crate: ic-cdk-optimizer
@@ -48,6 +63,7 @@ jobs:
       - uses: actions-rs/cargo@v1
       - run: export PATH=/home/runner/.cargo/bin:$PATH
       - run: dfx build --network ic
+
   check:
     name: Check
     needs: build
@@ -137,3 +153,4 @@ jobs:
         with:
           command: clippy
           args: -- -D warnings
+
