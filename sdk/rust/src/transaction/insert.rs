@@ -215,7 +215,7 @@ mod test {
     async fn insert_ordering() {
         MockContext::new()
             .with_handler(RawHandler::raw(Box::new(move |_, _, _, _| {
-                Err((RejectionCode::CanisterError, "X".into()))
+                Err((ic_kit::RejectionCode::CanisterError, "X".into()))
             })))
             .with_data(CapEnv {
                 root: RootBucket(Principal::anonymous()),

@@ -356,7 +356,7 @@ dependencies = [
  "async-stream",
  "cap-sdk-core",
  "futures",
- "ic-cdk 0.3.3",
+ "ic-cdk 0.5.1",
  "ic-kit",
  "lazy_static",
  "serde",
@@ -368,7 +368,7 @@ name = "cap-sdk-core"
 version = "0.2.1"
 dependencies = [
  "cap-common",
- "ic-cdk 0.3.3",
+ "ic-cdk 0.5.1",
  "ic-kit",
  "serde",
  "thiserror",
