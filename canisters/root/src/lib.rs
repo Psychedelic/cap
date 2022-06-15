@@ -126,7 +126,7 @@ fn insert(event: IndefiniteEvent) -> TransactionId {
         }
     }
 
-    ic_cdk::block_on(write_new_users_to_cap(
+    ic_cdk::spawn(write_new_users_to_cap(
         data.cap_id,
         *data.bucket.contract_id(),
         new_users,
@@ -167,7 +167,7 @@ fn insert_many(transactions: Vec<IndefiniteEvent>) -> TransactionId {
         data.bucket.insert(event);
     }
 
-    ic_cdk::block_on(write_new_users_to_cap(
+    ic_cdk::spawn(write_new_users_to_cap(
         data.cap_id,
         *data.bucket.contract_id(),
         new_users,
@@ -204,7 +204,7 @@ fn migrate(events: Vec<Event>) {
         data.bucket.insert(event);
     }
 
-    ic_cdk::block_on(write_new_users_to_cap(
+    ic_cdk::spawn(write_new_users_to_cap(
         data.cap_id,
         *data.bucket.contract_id(),
         new_users,

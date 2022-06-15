@@ -45,7 +45,7 @@ fn trigger_upgrade(passcode: String) {
 
     for _ in 0..32 {
         if let Some(canister_id) = canisters.0.pop() {
-            ic_cdk::block_on(upgrade_root_bucket(canister_id));
+            ic_cdk::spawn(upgrade_root_bucket(canister_id));
         } else {
             break;
         }

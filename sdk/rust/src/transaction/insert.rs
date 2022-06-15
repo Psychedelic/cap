@@ -128,7 +128,7 @@ pub fn insert_sync(event: impl Into<IndefiniteEvent>) {
         p.borrow_mut().push(event.into());
     });
 
-    ic_cdk::block_on(async {
+    ic_cdk::spawn(async {
         let _ = flush_to_cap().await;
     });
 }
@@ -139,7 +139,7 @@ pub fn insert_many_sync<T: Into<IndefiniteEvent>>(events: impl Iterator<Item = T
         p.borrow_mut().extend(events.map(|e| e.into()));
     });
 
-    ic_cdk::block_on(async {
+    ic_cdk::spawn(async {
         let _ = flush_to_cap().await;
     });
 }
