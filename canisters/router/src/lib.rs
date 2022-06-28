@@ -3,14 +3,20 @@ use certified_vars::{
     hashtree::{fork, fork_hash},
     AsHashTree, HashTree, Seq,
 };
-use ic_kit::candid::{candid_method, export_service, CandidType};
-use ic_kit::ic;
+use ic_kit::{
+    candid::{candid_method, export_service, CandidType},
+    ic,
+    interfaces::{
+        management::{CanisterStatus, CanisterStatusResponse, WithCanisterId},
+        Method,
+    },
+    macros::*,
+    Principal,
+};
 use serde::{Deserialize, Serialize};
 
 // It's ok.
 use cap_common::*;
-use ic_cdk::export::Principal;
-use ic_kit::macros::*;
 
 mod installer;
 mod plug;
@@ -153,6 +159,19 @@ fn insert_new_users(contract_id: Principal, users: Vec<Principal>) {
 #[candid_method(query)]
 fn git_commit_hash() -> String {
     compile_time_run::run_command_str!("git", "rev-parse", "HEAD").into()
+}
+
+// get a root buckets status via management api
+#[update]
+#[candid_method(update)]
+async fn bucket_status(canister_id: Principal) -> Result<CanisterStatusResponse, String> {
+    CanisterStatus::perform(
+        Principal::management_canister(),
+        (WithCanisterId { canister_id },),
+    )
+    .await
+    .map(|(status,)| Ok(status))
+    .unwrap_or_else(|(code, message)| Err(format!("Code: {:?}, Message: {}", code, message)))
 }
 
 #[query(name = "__get_candid_interface_tmp_hack")]

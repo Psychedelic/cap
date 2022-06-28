@@ -1,3 +1,16 @@
+type CanisterStatusResponse = record {
+  status : Status;
+  memory_size : nat;
+  cycles : nat;
+  settings : DefiniteCanisterSettings;
+  module_hash : opt vec nat8;
+};
+type DefiniteCanisterSettings = record {
+  freezing_threshold : nat;
+  controllers : vec principal;
+  memory_allocation : nat;
+  compute_allocation : nat;
+};
 type GetIndexCanistersResponse = record {
   witness : opt Witness;
   canisters : vec principal;
@@ -15,9 +28,12 @@ type GetUserRootBucketsResponse = record {
   witness : opt Witness;
   contracts : vec principal;
 };
+type Result = variant { Ok : CanisterStatusResponse; Err : text };
+type Status = variant { stopped; stopping; running };
 type WithWitnessArg = record { witness : bool };
 type Witness = record { certificate : vec nat8; tree : vec nat8 };
 service : {
+  bucket_status : (principal) -> (Result);
   custom_upgrade_root_bucket : (principal, opt vec nat8) -> (text);
   deploy_plug_bucket : (principal, nat64) -> ();
   get_index_canisters : (WithWitnessArg) -> (GetIndexCanistersResponse) query;
