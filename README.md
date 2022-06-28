@@ -1,6 +1,8 @@
 
 ![](https://storageapi.fleek.co/fleek-team-bucket/logos/capp.png)
 
+[![CI](https://github.com/Psychedelic/cap/actions/workflows/main.yml/badge.svg)](https://github.com/Psychedelic/cap/actions/workflows/main.yml)
+
 <h1 align="center">CAP - Certified Asset Provenance</h1>
 
 <h3 align="center">Transaction history & asset provenance for NFT’s & Tokens on the Internet Computer</h3>
