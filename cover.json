@@ -1,13 +1,13 @@
 {
   "ownerId": "ffuck-kxghi-gyvia-r5htr-246cy-acq5u-2tdgd-avtvf-jyqbt-xtmf7-cae",
-  "canisterId": "lhtux-ciaaa-aaaag-qakpa-cai",
-  "canisterName": "cap-router-test",
+  "canisterId": "lj532-6iaaa-aaaah-qcc7a-cai",
+  "canisterName": "cap-router",
   "repoUrl": "psychedelic/cap",
-  "commitHash": "567ae325b839085dc72a49ff97c67e260e092189",
+  "commitHash": "20a18c536da91c7858b6d83dfd4a2721960febf5",
   "rustVersion": "1.61.0",
   "dfxVersion": "0.9.3",
   "optimizeCount": 1,
   "publicKey": "0488bb751d43a89a22e41e6966d1bd6d9d018d0dcec76d4d553436b2928be46426385cf69446eb02b3248686ed116cfa06d76323577224b042076bf53af9f3b67a",
-  "signature": "b28086059e460c9f49730e42ab2837ec8647cc85120ff1cf6ca96436a9725caf61738e440c1ed685a1d098952877b9f6f3a0a1e66bc15f37de23f0abb7ca7804",
-  "timestamp": 1655319878127
+  "signature": "c136c9e24bdf188e94a8a266b63e302084d2cfdb1830e2f835e981fedc11d40b125f012401d2f0e75ab2e11e13dbf057dc595efd3c56df937813b7c1fb67f910",
+  "timestamp": 1656445593731
 }
