@@ -1,4 +1,4 @@
-use cap_sdk::{CapEnv, DetailValue, Event, IndefiniteEventBuilder, IntoEvent};
+use cap_sdk::{DetailValue, Event, IndefiniteEventBuilder, IntoEvent};
 use ic_kit::candid::CandidType;
 use ic_kit::candid::{candid_method, export_service};
 use ic_kit::{ic, Principal};
@@ -45,16 +45,16 @@ fn pre_upgrade() {
     // Store the canister state alongside CapEnv data to the stable storage
     // so that we can recover this data after an upgrade.
     let data = ic::get::<Data>();
-    let stable_data = (data, cap_sdk::CapEnv::to_archive());
+    let stable_data = (data, cap_sdk::archive());
     ic::stable_store(stable_data).expect("Failed to write data to stable storage.");
 }
 
 #[post_upgrade]
 fn post_upgrade() {
-    if let Ok((data, env)) = ic::stable_restore::<(Data, CapEnv)>() {
+    if let Ok((data, env)) = ic::stable_restore::<(Data, cap_sdk::Archive)>() {
         // Always remember to call "load_from_archive" to load the CapEnv that
         // we stored during the pre_upgrade.
-        CapEnv::load_from_archive(env);
+        cap_sdk::from_archive(env);
         ic::store(data);
     } else {
         ic::print("There was an error reading data from stable storage.");

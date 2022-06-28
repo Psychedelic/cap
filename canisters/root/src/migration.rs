@@ -2,7 +2,8 @@ use cap_common::bucket::Bucket;
 use cap_common::did::*;
 use cap_common::transaction::Event;
 use cap_common::TransactionList;
-use certified_vars::{Hash, Map, Seq};
+use certified_vars::{Map, Seq};
+// use certified_vars::Hash;
 use ic_cdk::api::stable::StableReader;
 use ic_kit::candid::Principal;
 use ic_kit::ic;
@@ -44,8 +45,9 @@ pub mod v0 {
 
     #[derive(Deserialize)]
     pub struct CanisterList {
-        data: Vec<Principal>,
-        hash: Hash,
+        // commented out because it's not used in the migration, clippy complains
+        // data: Vec<Principal>,
+        // hash: Hash,
     }
 
     #[derive(Deserialize)]

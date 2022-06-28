@@ -11,3 +11,4 @@
 .dfx/
 
 target/
+!target/wasm32-unknown-unknown/release/cap_root.wasm
