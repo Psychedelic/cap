@@ -165,10 +165,6 @@ fn git_commit_hash() -> String {
 #[update]
 #[candid_method(update)]
 async fn bucket_status(canister_id: Principal) -> Result<CanisterStatusResponse, String> {
-    if let Err(e) = is_controller(&ic::caller()).await {
-        return Err(format!("{:?}", e));
-    }
-
     CanisterStatus::perform(
         Principal::management_canister(),
         (WithCanisterId { canister_id },),
@@ -176,29 +172,6 @@ async fn bucket_status(canister_id: Principal) -> Result<CanisterStatusResponse,
     .await
     .map(|(status,)| Ok(status))
     .unwrap_or_else(|(code, message)| Err(format!("Code: {:?}, Message: {}", code, message)))
-}
-
-/// Check if a given principal is included in the current canister controller list
-///
-/// To let the canister call the `aaaaa-aa` Management API `canister_status`,
-/// the canister needs to be a controller of itself.
-pub async fn is_controller(principal: &Principal) -> Result<(), String> {
-    let self_id = ic::id();
-
-    let status = CanisterStatus::perform(
-        Principal::management_canister(),
-        (WithCanisterId {
-            canister_id: ic::id(),
-        },),
-    )
-    .await
-    .map(|(status,)| Ok(status))
-    .unwrap_or_else(|(code, message)| Err(format!("Code: {:?}, Message: {}", code, message)))?;
-
-    match status.settings.controllers.contains(&principal) {
-        true => Ok(()),
-        false => Err(format!("{} is not a controller of {}", principal, self_id)),
-    }
 }
 
 #[query(name = "__get_candid_interface_tmp_hack")]
