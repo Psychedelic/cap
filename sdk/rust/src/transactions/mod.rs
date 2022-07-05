@@ -15,8 +15,8 @@ pub use user_query::get_user_transactions_page;
 /// The response given from a [`get_transactions`] call.
 #[derive(Debug, Clone)]
 pub struct GetTransactionsResponse {
-    transactions: Vec<Transaction>,
-    next_page: u32,
+    pub(crate) transactions: Vec<Transaction>,
+    pub(crate) next_page: u32,
 }
 
 impl GetTransactionsResponse {
