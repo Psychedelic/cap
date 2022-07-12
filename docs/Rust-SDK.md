@@ -25,6 +25,8 @@ of making inter-canister calls (must be sync), so that's why our SDK's
 `handshake` method is also a sync function, that can be called in either
 of `init` or `post_upgrade`.
 
+⚠️ The root bucket is only created after the first insert! Until an event is inserted, there'll be no root bucket id; If you fail to consider this, it might cause confusion when you try to `get_user_root_buckets`, etc. As the root bucket id will not be available or provided!
+
 ### Parameters
 1. Creation cycles: The number of cycles that you allow the SDK use for creating a root bucket.
 2. Router override: If you're working with a mock environment and need to use another ID for Cap router you can perform this override. Otherwise, just pass `None`.
