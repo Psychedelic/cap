@@ -7,7 +7,7 @@ license = "GPL-3.0"
 description = "A collection of transaction standards that can be used with Cap."
 homepage = "https://github.com/Psychedelic/cap"
 repository = "https://github.com/Psychedelic/cap"
-readme = "https://github.com/Psychedelic/cap/README.md"
+readme = "../../README.md"
 documentation = "https://crates.io/cap_standards"
 
 [features]
