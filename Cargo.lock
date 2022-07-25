@@ -354,7 +354,7 @@ dependencies = [
 
 [[package]]
 name = "cap-sdk"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "async-std",
  "async-stream",
