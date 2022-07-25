@@ -388,6 +388,7 @@ dependencies = [
  "candid",
  "cap-sdk",
  "ic-cdk 0.5.5",
+ "ic-cdk-macros 0.5.5",
  "num-bigint",
  "serde",
  "thiserror",
@@ -847,6 +848,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "ic-cdk-macros"
+version = "0.5.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a5196f57df320b206129d4aae96a0cea72ea2759a5c82651bbb60d721f834998"
+dependencies = [
+ "candid",
+ "ic-cdk 0.5.5",
+ "proc-macro2",
+ "quote",
+ "serde",
+ "serde_tokenstream",
+ "syn",
+]
+
+[[package]]
 name = "ic-certified-map"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -867,7 +883,7 @@ dependencies = [
  "candid",
  "futures",
  "ic-cdk 0.4.0",
- "ic-cdk-macros",
+ "ic-cdk-macros 0.4.0",
  "serde",
  "serde_bytes",
 ]
