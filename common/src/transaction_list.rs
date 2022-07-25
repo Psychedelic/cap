@@ -300,13 +300,13 @@ impl AsHashTree for TransactionList {
 
 impl Drop for TransactionList {
     fn drop(&mut self) {
-        unsafe {
+        
             for event in &self.events {
-                let as_mut_ref = &mut (*event.as_ptr());
-                ptr::drop_in_place(as_mut_ref);
-                dealloc(event.cast().as_ptr(), Layout::for_value(event.as_ref()));
+                let as_mut_ref = unsafe { &mut (*event.as_ptr()) };
+                unsafe { ptr::drop_in_place(as_mut_ref) };
+                unsafe { dealloc(event.cast().as_ptr(), Layout::for_value(event.as_ref())) };
             }
-        }
+        
     }
 }
 
