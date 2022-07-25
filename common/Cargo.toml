@@ -10,8 +10,8 @@ homepage = "https://github.com/Psychedelic/cap"
 repository = "https://github.com/Psychedelic/cap"
 
 [dependencies]
-ic-certified-map = "0.3.0"
-certified-vars = "0.1.2"
+ic-certified-map = "0.3"
+certified-vars = "0.1"
 ic-kit = "0.4"
 ic-cdk = "0.5"
 candid = "0.7"

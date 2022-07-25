@@ -7,7 +7,7 @@ edition = "2018"
 
 [dependencies]
 cap-common = { path= "../../common" }
-certified-vars = "0.1.2"
+certified-vars = "0.1"
 ic-kit = "0.4"
 ic-cdk = "0.5"
 candid = "0.7"
