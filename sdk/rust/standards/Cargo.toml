@@ -27,6 +27,7 @@ thiserror = "1"
 
 [dependencies.cap-sdk]
 path = "../"
+version = "0.2"
 optional = true
 
 [dependencies.num-bigint]
