@@ -338,7 +338,7 @@ dependencies = [
 
 [[package]]
 name = "cap-common"
-version = "0.2.1"
+version = "0.2.3"
 dependencies = [
  "async-std",
  "candid",
