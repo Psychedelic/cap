@@ -3,7 +3,7 @@ name = "cap-sdk"
 version = "0.2.3"
 edition = "2018"
 
-# license = "IDK"
+license = "GPL-3.0"
 description = "An SDK for implementing Cap support within your IC canister."
 homepage = "https://github.com/Psychedelic/cap"
 repository = "https://github.com/Psychedelic/cap"
