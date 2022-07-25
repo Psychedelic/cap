@@ -3,7 +3,7 @@ name = "cap-common"
 version = "0.2.1"
 edition = "2018"
 authors = ["Parsa Ghadimi <parsa@fleek.co>"]
-license = "MIT"
+license = "GPL-3.0"
 
 description = "The common data structures of CAP. This crate shouldn't be used for implementing support for cap, see cap-sdk instead."
 homepage = "https://github.com/Psychedelic/cap"

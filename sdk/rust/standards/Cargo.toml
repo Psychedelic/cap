@@ -3,7 +3,7 @@ name = "cap-standards"
 version = "0.2.0"
 edition = "2018"
 
-# license = "IDK"
+license = "GPL-3.0"
 description = "A collection of transaction standards that can be used with Cap."
 homepage = "https://github.com/Psychedelic/cap"
 repository = "https://github.com/Psychedelic/cap"
