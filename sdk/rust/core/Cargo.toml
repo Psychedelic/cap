@@ -13,6 +13,6 @@ documentation = "https://crates.io/cap_standards"
 [dependencies]
 cap-common = { path = "../../../common" }
 ic-kit = "0.4"
-ic-cdk = "0.5.1"
+ic-cdk = "0.5"
 thiserror = "1"
 serde = { version = "1", features = ["derive"] }

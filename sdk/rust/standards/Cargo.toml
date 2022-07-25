@@ -22,7 +22,7 @@ alpha-dip20-dank = ["alpha-dip20"]
 candid = "0.7"
 serde = { version = "1", features = ["derive"] }
 bincode = "1"
-ic-cdk = "0.3"
+ic-cdk = "0.5"
 thiserror = "1"
 
 [dependencies.cap-sdk]
