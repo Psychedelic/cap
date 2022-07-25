@@ -338,7 +338,7 @@ dependencies = [
 
 [[package]]
 name = "cap-common"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "async-std",
  "candid",
@@ -354,7 +354,7 @@ dependencies = [
 
 [[package]]
 name = "cap-sdk"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "async-std",
  "async-stream",
@@ -381,7 +381,7 @@ dependencies = [
 
 [[package]]
 name = "cap-standards"
-version = "0.1.0-alpha1"
+version = "0.2.0"
 dependencies = [
  "bincode",
  "candid",
@@ -394,7 +394,7 @@ dependencies = [
 
 [[package]]
 name = "cap_bucket"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-std",
  "candid",
@@ -409,7 +409,7 @@ dependencies = [
 
 [[package]]
 name = "cap_root"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-std",
  "candid",
@@ -424,7 +424,7 @@ dependencies = [
 
 [[package]]
 name = "cap_router"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "async-std",
  "candid",
@@ -1301,7 +1301,7 @@ checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
 
 [[package]]
 name = "sdk_example"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-std",
  "candid",
