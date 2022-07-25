@@ -3,7 +3,7 @@ name = "cap-sdk-core"
 version = "0.2.1"
 edition = "2018"
 
-# license = "IDK"
+license = "GPL-3.0"
 description = "The core for Cap's SDK. This crate shouldn't be used for implementing support for cap, see cap-sdk instead."
 homepage = "https://github.com/Psychedelic/cap"
 repository = "https://github.com/Psychedelic/cap"
