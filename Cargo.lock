@@ -372,6 +372,7 @@ dependencies = [
 name = "cap-sdk-core"
 version = "0.2.1"
 dependencies = [
+ "candid",
  "cap-common",
  "ic-cdk 0.5.5",
  "ic-kit",
@@ -447,13 +448,13 @@ checksum = "2fff2a6927b3bb87f9595d67196a70493f627687a71d87a0d692242c33f58c11"
 
 [[package]]
 name = "certified-vars"
-version = "0.1.2"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c5355bc98273ac7230620fe5b23eb5c3714666c8c353f0e22ad8e0bcb0dc9be"
+checksum = "d7983d9b0ad23199b6a22246ac2138f9a1713ed66d6aef67f0376044e3415ebc"
 dependencies = [
  "candid",
  "hex",
- "ic-cdk 0.3.3",
+ "ic-cdk 0.5.5",
  "serde",
  "serde_bytes",
  "serde_cbor",
@@ -807,17 +808,6 @@ name = "hex"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
-
-[[package]]
-name = "ic-cdk"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "606276ed1ce363eb9ccaf492e36fb40425417dcd4598f261d47e0ed6a1309faa"
-dependencies = [
- "candid",
- "cfg-if",
- "serde",
-]
 
 [[package]]
 name = "ic-cdk"
