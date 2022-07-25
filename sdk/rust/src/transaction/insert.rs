@@ -200,7 +200,7 @@ pub async fn flush_to_cap() -> Result<TransactionId, InsertTransactionError> {
 mod test {
     use super::*;
     use cap_sdk_core::{RootBucket, Router};
-    use ic_cdk::api::call::RejectionCode;
+    
     use ic_kit::{MockContext, Principal, RawHandler};
 
     fn t(x: &str) -> IndefiniteEvent {
