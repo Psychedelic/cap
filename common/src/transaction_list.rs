@@ -361,9 +361,9 @@ impl<'de> Deserialize<'de> for TransactionList {
         D: Deserializer<'de>,
     {
         #[derive(Deserialize)]
-        struct BucketDe(u64, Principal, Vec<Event>);
+        struct TransactionListDe(u64, Principal, Vec<Event>);
 
-        let data = BucketDe::deserialize(deserializer)?;
+        let data = TransactionListDe::deserialize(deserializer)?;
         let mut list = TransactionList::new(data.1, data.0);
 
         for event in data.2 {
