@@ -1,8 +1,7 @@
 use cap_common::did::*;
 use cap_common::transaction::Event;
-use cap_common::TransactionList;
 use certified_vars::{Map, Seq};
-// use certified_vars::Hash;
+use ic_kit::candid::CandidType;
 use ic_kit::candid::Principal;
 use ic_kit::ic;
 use ic_kit::stable::StableReader;
@@ -11,7 +10,6 @@ use std::collections::BTreeSet;
 
 pub mod v2 {
     use super::*;
-    use ic_kit::candid::CandidType;
 
     #[derive(CandidType, Deserialize)]
     pub struct Bucket {
@@ -29,10 +27,6 @@ pub mod v2 {
         pub allow_migration: bool,
         pub writers: BTreeSet<TokenContractId>,
     }
-
-    impl Data {
-        pub fn migrate(self) -> crate::Data {}
-    }
 }
 
 /// f18c9b48287f489ed8c4bac6f0a285b2251a7f4e
@@ -41,7 +35,7 @@ pub mod v1 {
 
     /// Serialized transaction list.
     /// (offset, contract, events)
-    #[derive(Deserialize)]
+    #[derive(CandidType, Deserialize)]
     pub struct TransactionListDe(pub u64, pub Principal, pub Vec<Event>);
 
     #[derive(Deserialize)]

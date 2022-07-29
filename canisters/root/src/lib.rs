@@ -5,11 +5,13 @@ use ic_kit::{ic, Principal};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
+use crate::multi_stage_reader::InProgressReadFromStable;
 use cap_common::bucket::Bucket;
 use cap_common::did::*;
 use ic_kit::macros::*;
 
 mod migration;
+mod multi_stage_reader;
 pub mod upgrade;
 
 /// Merkle tree of the canister.
@@ -110,6 +112,11 @@ fn contract_id() -> &'static Principal {
 #[update]
 #[candid_method(update)]
 fn insert(event: IndefiniteEvent) -> TransactionId {
+    if ic::get_maybe::<InProgressReadFromStable>().is_some() {
+        let caller = ic::caller();
+        return ic::get_mut::<InProgressReadFromStable>().insert_batch(&caller, vec![event]);
+    }
+
     let data = ic::get_mut::<Data>();
     let caller = ic::caller();
 
@@ -144,6 +151,11 @@ fn insert(event: IndefiniteEvent) -> TransactionId {
 #[update]
 #[candid_method(update)]
 fn insert_many(transactions: Vec<IndefiniteEvent>) -> TransactionId {
+    if ic::get_maybe::<InProgressReadFromStable>().is_some() {
+        let caller = ic::caller();
+        return ic::get_mut::<InProgressReadFromStable>().insert_batch(&caller, transactions);
+    }
+
     let data = ic::get_mut::<Data>();
     let caller = ic::caller();
     let time = ic::time() / 1_000_000;
@@ -213,7 +225,11 @@ fn migrate(events: Vec<Event>) {
     ic::set_certified_data(&data.bucket.root_hash());
 }
 
-async fn write_new_users_to_cap(cap_id: Principal, contract_id: Principal, users: Vec<Principal>) {
+pub async fn write_new_users_to_cap(
+    cap_id: Principal,
+    contract_id: Principal,
+    users: Vec<Principal>,
+) {
     for _ in 0..10 {
         let args = (contract_id, &users);
         if ic::call::<(Principal, &Vec<Principal>), (), &str>(cap_id, "insert_new_users", args)

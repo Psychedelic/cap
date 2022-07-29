@@ -1,7 +1,7 @@
-use crate::migration;
-use crate::migration::{v0, v2};
+use crate::migration::{v0, v1, v2};
 use crate::Data;
-use ic_cdk::storage::stable_restore;
+use crate::{migration, InProgressReadFromStable};
+use ic_cdk::spawn;
 use ic_kit::macros::{post_upgrade, pre_upgrade, update};
 use ic_kit::{ic, Principal};
 use std::collections::HashSet;
@@ -25,7 +25,7 @@ fn pre_upgrade() {
 #[post_upgrade]
 pub fn post_upgrade() {
     let from_v0 = ["3qxje-uqaaa-aaaah-qcn4q-cai", "whq4n-xiaaa-aaaam-qaazq-cai"]
-        .into_iter()
+        .iter()
         .map(|text| Principal::from_text(text).unwrap())
         .collect::<HashSet<_>>();
 
@@ -47,7 +47,7 @@ pub fn post_upgrade() {
         "mm3ed-viaaa-aaaah-qc2xa-cai",
         "myux7-2yaaa-aaaap-aah3q-cai",
     ]
-    .into_iter()
+    .iter()
     .map(|text| Principal::from_text(text).unwrap())
     .collect::<HashSet<_>>();
 
@@ -59,14 +59,14 @@ pub fn post_upgrade() {
     }
 
     if more_than_10k.contains(&id) {
-        let data: (v2::Data,) = ic::stable_restore().unwrap_or_else(|m| {
+        let (data,): (v2::Data,) = ic::stable_restore().unwrap_or_else(|m| {
             ic::trap(&format!(
                 "M10K: Could not deserialize data as v2::Data: {}",
                 m
             ))
         });
 
-        ic::store(data);
+        ic::store(InProgressReadFromStable::new(data));
 
         return;
     }
@@ -76,10 +76,54 @@ pub fn post_upgrade() {
 }
 
 fn rescue() -> Result<(), String> {
-    Ok(())
+    let mut message = String::new();
+
+    match migration::from_stable::<v0::Data>() {
+        Ok(v0) => {
+            let data = v0.migrate().migrate();
+            ic::store(InProgressReadFromStable::new(data));
+            return Ok(());
+        }
+        Err(e) => message = format!("{} - ErrV0: {}", message, e),
+    }
+
+    match migration::from_stable::<v1::Data>() {
+        Ok(v1) => {
+            let data = v1.migrate();
+            ic::store(InProgressReadFromStable::new(data));
+            return Ok(());
+        }
+        Err(e) => message = format!("{} - ErrV0: {}", message, e),
+    }
+
+    Err(message)
 }
 
 /// Perform the leftover tasks from the upgrade.
 #[update]
 pub fn upgrade_progress() {
+    {
+        if !ic::get_maybe::<InProgressReadFromStable>().is_some() {
+            return;
+        }
+
+        let c = ic::get_mut::<InProgressReadFromStable>();
+        c.progress(10000);
+
+        if c.is_complete() {
+            let data = c.get_data().unwrap();
+            ic::store(data);
+            ic::delete::<InProgressReadFromStable>();
+            return;
+        }
+    }
+
+    for _ in 0..4 {
+        spawn(async {
+            match ic::call::<(), (), &str>(ic::id(), "upgrade_progress", ()).await {
+                Ok(_) => {}
+                Err(_) => {}
+            }
+        });
+    }
 }
