@@ -91,6 +91,11 @@ impl InProgressReadFromStable {
         self.cursor >= self.v2.bucket.bucket.2.len()
     }
 
+    /// Return the number of remaining events.
+    pub fn rem(&self) -> usize {
+        self.v2.bucket.bucket.2.len() - self.cursor
+    }
+
     /// If there are no more work to be done on this reader, return the Data instance.
     /// the InProgressReadFromStable should be deleted after this call.
     pub fn get_data(&mut self) -> Option<crate::Data> {

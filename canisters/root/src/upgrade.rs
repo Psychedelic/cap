@@ -102,13 +102,15 @@ fn rescue() -> Result<(), String> {
 /// Perform the leftover tasks from the upgrade.
 #[update]
 pub fn upgrade_progress() {
-    {
+    let number_of_spawns = {
         if !ic::get_maybe::<InProgressReadFromStable>().is_some() {
             return;
         }
 
         let c = ic::get_mut::<InProgressReadFromStable>();
-        c.progress(10000);
+        // are we the top-level upgrade_progress call?
+        let is_main = c.cursor == 0;
+        c.progress(10_000);
 
         if c.is_complete() {
             let data = c.get_data().unwrap();
@@ -116,9 +118,17 @@ pub fn upgrade_progress() {
             ic::delete::<InProgressReadFromStable>();
             return;
         }
-    }
 
-    for _ in 0..4 {
+        if !is_main {
+            // if we're not the top-level call, don't spawn anything.
+            0
+        } else {
+            // ceiling decision.
+            (c.rem() + 10_000 - 1) / 10_000
+        }
+    };
+
+    for _ in 0..number_of_spawns {
         spawn(async {
             match ic::call::<(), (), &str>(ic::id(), "upgrade_progress", ()).await {
                 Ok(_) => {}
