@@ -849,18 +849,32 @@ dependencies = [
 
 [[package]]
 name = "ic-kit"
-version = "0.4.6"
+version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "606d344468c56ef57f986ce4028195a2332025b4bce3bde734a6a05cbd010805"
+checksum = "a5f1be26d1d7c53c51e7291475d41773f4d86b7f67599d3beae8fd375e095fa0"
 dependencies = [
  "async-std",
  "bincode",
  "candid",
  "futures",
  "ic-cdk",
- "ic-cdk-macros",
+ "ic-kit-macros",
  "serde",
  "serde_bytes",
+]
+
+[[package]]
+name = "ic-kit-macros"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6e99841e2325318b376bdfa3185818dd0864aa5f0723c4b9c45c71d334b34c1d"
+dependencies = [
+ "lazy_static",
+ "proc-macro2",
+ "quote",
+ "serde",
+ "serde_tokenstream",
+ "syn",
 ]
 
 [[package]]
