@@ -4,8 +4,8 @@ use certified_vars::{Map, Seq};
 use ic_kit::candid::CandidType;
 use ic_kit::candid::Principal;
 use ic_kit::ic;
-use ic_kit::stable::StableReader;
-use serde::Deserialize;
+use ic_kit::stable::{StableReader, StableWriter};
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
 pub mod v2 {
@@ -27,6 +27,12 @@ pub mod v2 {
         pub allow_migration: bool,
         pub writers: BTreeSet<TokenContractId>,
     }
+
+    impl Data {
+        pub fn store(&self) {
+            ic::stable_store((self,)).expect("Failed to serialize data.");
+        }
+    }
 }
 
 /// f18c9b48287f489ed8c4bac6f0a285b2251a7f4e
@@ -35,10 +41,10 @@ pub mod v1 {
 
     /// Serialized transaction list.
     /// (offset, contract, events)
-    #[derive(CandidType, Deserialize)]
+    #[derive(CandidType, Deserialize, Serialize)]
     pub struct TransactionListDe(pub u64, pub Principal, pub Vec<Event>);
 
-    #[derive(Deserialize)]
+    #[derive(Deserialize, Serialize)]
     pub struct Data {
         pub bucket: TransactionListDe,
         pub buckets: Map<TransactionId, Principal>,
@@ -65,6 +71,11 @@ pub mod v1 {
                 writers: self.writers,
             }
         }
+
+        pub fn store(&self) {
+            let writer = StableWriter::default();
+            serde_cbor::to_writer(writer, &self).expect("Failed to serialize data.");
+        }
     }
 }
 
@@ -73,13 +84,13 @@ pub mod v0 {
     use super::*;
     use certified_vars::Hash;
 
-    #[derive(Deserialize)]
+    #[derive(Deserialize, Serialize)]
     pub struct CanisterList {
-        data: Vec<Principal>,
-        hash: Hash,
+        pub(crate) data: Vec<Principal>,
+        pub(crate) hash: Hash,
     }
 
-    #[derive(Deserialize)]
+    #[derive(Deserialize, Serialize)]
     pub struct Data {
         pub bucket: Vec<Event>,
         pub buckets: Vec<(TransactionId, Principal)>,
@@ -112,6 +123,11 @@ pub mod v0 {
                 writers: self.writers,
                 allow_migration: self.allow_migration,
             }
+        }
+
+        pub fn store(&self) {
+            let writer = StableWriter::default();
+            serde_cbor::to_writer(writer, &self).expect("Failed to serialize data.");
         }
     }
 }

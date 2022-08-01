@@ -1,5 +1,5 @@
 use crate::migration::v2;
-use crate::write_new_users_to_cap;
+
 use cap_common::bucket::Bucket;
 use cap_common::transaction::IndefiniteEvent;
 use cap_common::{TransactionId, TransactionList};
@@ -23,7 +23,7 @@ impl Default for InProgressReadFromStable {
 
 impl InProgressReadFromStable {
     pub fn new(v2: v2::Data) -> Self {
-        let list = TransactionList::new(v2.bucket.bucket.1.clone(), v2.bucket.bucket.0);
+        let list = TransactionList::new(v2.bucket.bucket.1, v2.bucket.bucket.0);
 
         Self {
             cursor: 0,
@@ -61,6 +61,7 @@ impl InProgressReadFromStable {
             data.bucket.bucket.2.push(event);
         }
 
+        #[cfg(not(test))]
         ic_cdk::spawn(write_new_users_to_cap(
             data.cap_id,
             data.bucket.contract,
@@ -99,7 +100,7 @@ impl InProgressReadFromStable {
     /// If there are no more work to be done on this reader, return the Data instance.
     /// the InProgressReadFromStable should be deleted after this call.
     pub fn get_data(&mut self) -> Option<crate::Data> {
-        if self.is_complete() {
+        if !self.is_complete() {
             return None;
         }
 
@@ -107,12 +108,12 @@ impl InProgressReadFromStable {
             &mut self.list,
             TransactionList::new(Principal::management_canister(), 0),
         );
-        let users = std::mem::replace(&mut self.v2.users, Default::default());
+        let users = std::mem::take(&mut self.v2.users);
 
         Some(crate::Data {
             bucket: Bucket::with_transaction_list(list),
             users,
-            cap_id: self.v2.cap_id.clone(),
+            cap_id: self.v2.cap_id,
             allow_migration: self.v2.allow_migration,
             writers: self.v2.writers.clone(),
         })

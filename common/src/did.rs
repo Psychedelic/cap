@@ -29,7 +29,7 @@ pub type UserId = Principal;
 /// Hash of an even which is obtained by `Event::hash`
 pub type EventHash = Hash;
 
-#[derive(Serialize, Deserialize, CandidType)]
+#[derive(Serialize, Deserialize, CandidType, Debug, PartialEq)]
 pub struct Witness {
     #[serde(with = "serde_bytes")]
     certificate: Vec<u8>,
@@ -84,7 +84,7 @@ pub struct WithIdArg {
     pub witness: bool,
 }
 
-#[derive(Serialize, Deserialize, CandidType)]
+#[derive(Serialize, Deserialize, CandidType, Debug, PartialEq)]
 pub enum GetTransactionResponse {
     Delegate(BucketId, Option<Witness>),
     Found(Option<Event>, Option<Witness>),

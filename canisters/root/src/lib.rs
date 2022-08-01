@@ -133,6 +133,7 @@ fn insert(event: IndefiniteEvent) -> TransactionId {
         }
     }
 
+    #[cfg(not(test))]
     ic_cdk::spawn(write_new_users_to_cap(
         data.cap_id,
         *data.bucket.contract_id(),
@@ -216,6 +217,7 @@ fn migrate(events: Vec<Event>) {
         data.bucket.insert(event);
     }
 
+    #[cfg(not(test))]
     ic_cdk::spawn(write_new_users_to_cap(
         data.cap_id,
         *data.bucket.contract_id(),

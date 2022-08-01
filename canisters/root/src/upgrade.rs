@@ -71,7 +71,7 @@ pub fn post_upgrade() {
         return;
     }
 
-    let data: (Data,) = ic::stable_restore().expect("Failed to deserialize");
+    let (data,): (Data,) = ic::stable_restore().expect("Failed to deserialize");
     ic::store(data);
 }
 
@@ -103,20 +103,19 @@ fn rescue() -> Result<(), String> {
 #[update]
 pub fn upgrade_progress() {
     let number_of_spawns = {
-        if !ic::get_maybe::<InProgressReadFromStable>().is_some() {
+        if ic::get_maybe::<InProgressReadFromStable>().is_none() {
             return;
         }
 
         let c = ic::get_mut::<InProgressReadFromStable>();
         // are we the top-level upgrade_progress call?
-        let is_main = c.cursor == 0;
+        let is_main = c.cursor <= 1_000;
         c.progress(10_000);
 
         if c.is_complete() {
             let data = c.get_data().unwrap();
             ic::store(data);
             ic::delete::<InProgressReadFromStable>();
-            return;
         }
 
         if !is_main {
@@ -134,6 +133,164 @@ pub fn upgrade_progress() {
                 Ok(_) => {}
                 Err(_) => {}
             }
+        });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::migration::*;
+    use crate::upgrade::{post_upgrade, upgrade_progress};
+    use crate::{insert, insert_many, Data, Principal};
+    use candid::encode_args;
+    use cap_common::transaction::{DetailValue, Event, IndefiniteEvent};
+    
+    use certified_vars::Map;
+    use certified_vars::{AsHashTree, Seq};
+    use ic_kit::{ic, MockContext, RawHandler};
+    
+
+    /// Create a mock indefinite event.
+    fn event(i: usize) -> IndefiniteEvent {
+        IndefiniteEvent {
+            caller: Principal::management_canister(),
+            operation: format!("op-{}", i),
+            details: vec![("something".into(), DetailValue::U64(i as u64))],
+        }
+    }
+
+    fn time(i: usize) -> u64 {
+        10000000000 + i as u64
+    }
+
+    fn create_events(size: usize) -> Vec<Event> {
+        let mut events = Vec::with_capacity(size);
+
+        for i in 0..size {
+            events.push(event(i).to_event(time(i)));
+        }
+
+        events
+    }
+
+    fn test_rescue<F: Fn(Vec<Event>)>(id: Principal, title: &'static str, store: F) {
+        MockContext::new()
+            .with_handler(RawHandler::raw(Box::new(move |_, _, _, _| {
+                println!("{}: Still running upgrade progress.", title);
+                upgrade_progress();
+                Ok(encode_args(()).unwrap())
+            })))
+            .with_id(id)
+            .with_caller(Principal::from_text("3xwpq-ziaaa-aaaah-qcn4a-cai").unwrap())
+            .inject();
+
+        println!("{}: Creating events.", title);
+        let events = create_events(25_000);
+
+        // Write data to stable storage.
+        println!("{}: Storing data to stable storage", title);
+        store(events);
+
+        // Now try to decode from v0 to latest using the post_upgrade
+        println!("{}: running post_upgrade", title);
+        post_upgrade();
+
+        println!(
+            "{}: sending transactions during active upgrade process",
+            title
+        );
+        insert(event(25_000));
+        insert(event(25_001));
+        let _id = insert(event(25_002));
+        insert_many(vec![event(25_003), event(25_004), event(25_005)]);
+
+        // Auto called by router.
+        println!("{}: initial call to upgrade_progress", title);
+        upgrade_progress();
+
+        // Now we should have data.
+        let data = ic::get_maybe::<Data>().expect("Data is not created.");
+        data.bucket.root_hash();
+        assert_eq!(data.bucket.size(), 25_006);
+    }
+
+    #[test]
+    fn test_from_v0() {
+        let id = Principal::from_text("3qxje-uqaaa-aaaah-qcn4q-cai").unwrap();
+        test_rescue(id, "v0", |events| {
+            let data = v0::Data {
+                bucket: events,
+                buckets: vec![],
+                next_canisters: v0::CanisterList {
+                    data: vec![],
+                    hash: [0; 32],
+                },
+                users: Default::default(),
+                cap_id: Principal::from_text("lj532-6iaaa-aaaah-qcc7a-cai").unwrap(),
+                contract: Principal::from_text("3xwpq-ziaaa-aaaah-qcn4a-cai").unwrap(),
+                writers: Default::default(),
+                allow_migration: false,
+            };
+
+            data.store();
+        });
+    }
+
+    #[test]
+    fn test_from_v1() {
+        let id = Principal::from_text("3qxje-uqaaa-aaaah-qcn4q-cai").unwrap();
+        test_rescue(id, "v1", |events| {
+            let data = v1::Data {
+                bucket: v1::TransactionListDe(0, ic::id(), events),
+                buckets: Map::new(),
+                next_canisters: Seq::new(),
+                users: Default::default(),
+                cap_id: Principal::from_text("lj532-6iaaa-aaaah-qcc7a-cai").unwrap(),
+                contract: Principal::from_text("3xwpq-ziaaa-aaaah-qcn4a-cai").unwrap(),
+                writers: Default::default(),
+                allow_migration: false,
+            };
+            data.store();
+        });
+    }
+
+    #[test]
+    fn test_from_v2_10k() {
+        let id = Principal::from_text("riufi-uyaaa-aaaam-qaaiq-cai").unwrap();
+        test_rescue(id, "v2-10k", |events| {
+            let data = v2::Data {
+                bucket: v2::Bucket {
+                    bucket: v1::TransactionListDe(0, ic::id(), events),
+                    buckets: Map::new(),
+                    next_canisters: Seq::new(),
+                    contract: Principal::from_text("3xwpq-ziaaa-aaaah-qcn4a-cai").unwrap(),
+                },
+                users: Default::default(),
+                cap_id: Principal::from_text("lj532-6iaaa-aaaah-qcc7a-cai").unwrap(),
+                allow_migration: false,
+                writers: Default::default(),
+            };
+            data.store();
+        });
+    }
+
+    #[test]
+    fn test_from_v2_normal() {
+        let id = Principal::from_text("lhtux-ciaaa-aaaag-qakpa-cai").unwrap();
+        test_rescue(id, "v2-normal", |events| {
+            let data = v2::Data {
+                bucket: v2::Bucket {
+                    bucket: v1::TransactionListDe(0, ic::id(), events),
+                    buckets: Map::new(),
+                    next_canisters: Seq::new(),
+                    contract: Principal::from_text("3xwpq-ziaaa-aaaah-qcn4a-cai").unwrap(),
+                },
+                users: Default::default(),
+                cap_id: Principal::from_text("lj532-6iaaa-aaaah-qcc7a-cai").unwrap(),
+                allow_migration: false,
+                writers: Default::default(),
+            };
+            data.store();
         });
     }
 }

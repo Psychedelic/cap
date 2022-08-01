@@ -8,7 +8,7 @@ use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 use std::convert::TryInto;
 
-#[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
+#[derive(CandidType, Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Event {
     /// The timestamp in ms.
     pub time: u64,
@@ -30,7 +30,7 @@ pub struct IndefiniteEvent {
     pub details: Vec<(String, DetailValue)>,
 }
 
-#[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
+#[derive(CandidType, Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum DetailValue {
     True,
     False,
