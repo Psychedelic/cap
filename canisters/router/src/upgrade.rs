@@ -1,11 +1,11 @@
-use crate::Data;
-use cap_common::RootBucketId;
+use crate::{get_user_root_buckets, Data};
+use cap_common::{GetUserRootBucketsArg, RootBucketId};
 use ic_kit::candid::{candid_method, encode_args, CandidType};
 use ic_kit::ic;
 use ic_kit::macros::{post_upgrade, pre_upgrade, query, update};
 use ic_kit::Principal;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashSet};
 
 #[derive(Default, CandidType, Serialize, Deserialize)]
 struct RootBucketsToUpgrade(Vec<RootBucketId>);
@@ -26,6 +26,15 @@ fn post_upgrade() {
 
     ic::store(data);
     ic::store(to_upgrade);
+
+    // comment out the following lines if we only want to upgrade our old code.
+    let root_buckets = get_user_root_buckets(GetUserRootBucketsArg {
+        user: Principal::management_canister(),
+        witness: false,
+    })
+    .contracts;
+
+    ic::store(RootBucketsToUpgrade(root_buckets.to_vec()));
 }
 
 // Codes related to upgrading root buckets.
@@ -82,7 +91,38 @@ async fn upgrade_root_bucket(canister_id: Principal) {
         // Retry.
         let canisters = ic::get_mut::<RootBucketsToUpgrade>();
         canisters.0.push(canister_id);
+        return;
     }
+
+    let large_canisters = [
+        "3qxje-uqaaa-aaaah-qcn4q-cai",
+        "whq4n-xiaaa-aaaam-qaazq-cai",
+        "riufi-uyaaa-aaaam-qaaiq-cai",
+        "ugjiu-taaaa-aaaam-qaaua-cai",
+        "mq76s-ciaaa-aaaah-qc2va-cai",
+        "j5ua3-6yaaa-aaaak-aaggq-cai",
+        "q675d-biaaa-aaaam-qaanq-cai",
+        "mm3ed-viaaa-aaaah-qc2xa-cai",
+        "he2ur-tqaaa-aaaan-qabja-cai",
+        "6rjbk-7qaaa-aaaah-qczvq-cai",
+        "eineg-yqaaa-aaaan-qabda-cai",
+        "szgqq-gyaaa-aaaab-qaebq-cai",
+        "m5na3-faaaa-aaaan-qaawa-cai",
+        "bqswi-zaaaa-aaaah-abkza-cai",
+        "ebop2-oyaaa-aaaan-qabcq-cai",
+        "rrr4x-hqaaa-aaaam-qamga-cai",
+        "mm3ed-viaaa-aaaah-qc2xa-cai",
+        "myux7-2yaaa-aaaap-aah3q-cai",
+    ]
+    .iter()
+    .map(|text| Principal::from_text(text).unwrap())
+    .collect::<HashSet<_>>();
+
+    if !large_canisters.contains(&canister_id) {
+        return;
+    }
+
+    let _ = ic::call::<_, (), _>(canister_id, "upgrade_progress", ()).await;
 }
 
 #[query]
@@ -114,6 +154,7 @@ async fn custom_upgrade_root_bucket(canister_id: Principal, wasm: Option<Vec<u8>
         Some(w) => w.as_slice(),
         None => WASM,
     };
+
     let install_config = InstallCodeArgumentBorrowed {
         mode: InstallMode::Upgrade,
         canister_id,

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "dfx": "0.9.3",
+  "dfx": "0.10.1",
   "canisters": {
     "cap-bucket": {
       "candid": "candid/bucket.did",
