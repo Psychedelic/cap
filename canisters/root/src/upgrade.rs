@@ -123,7 +123,7 @@ pub fn upgrade_progress() {
             // if we're not the top-level call, don't spawn anything.
             0
         } else {
-            // ceiling decision.
+            // ceiling division.
             (c.rem() + 10_000 - 1) / 10_000
         }
     };
