@@ -12,13 +12,8 @@ use serde::Deserialize;
 use cap_common::*;
 use ic_kit::macros::*;
 
-#[cfg(debug_cfg)]
 pub const WASM: &[u8] =
-    include_bytes!("../../../target/wasm32-unknown-unknown/release/cap_root.wasm");
-
-#[cfg(not(debug_cfg))]
-pub const WASM: &[u8] =
-    include_bytes!("../../../target/wasm32-unknown-unknown/release/cap_root.wasm");
+    include_bytes!("../../../wasm/cap_root.wasm");
 
 #[derive(CandidType, Deserialize)]
 pub struct InstallCodeArgumentBorrowed<'a> {
