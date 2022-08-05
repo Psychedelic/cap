@@ -3,6 +3,7 @@ use crate::migration::v2;
 use cap_common::bucket::Bucket;
 use cap_common::transaction::IndefiniteEvent;
 use cap_common::{TransactionId, TransactionList};
+use crate::write_new_users_to_cap;
 use ic_kit::{ic, Principal};
 
 /// An in progress read from the stable storage.
