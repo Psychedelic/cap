@@ -10,8 +10,8 @@ use cap_common::bucket::Bucket;
 use cap_common::did::*;
 use ic_kit::macros::*;
 
-mod migration;
-mod multi_stage_reader;
+pub mod migration;
+pub mod multi_stage_reader;
 pub mod upgrade;
 
 /// Merkle tree of the canister.
@@ -339,6 +339,12 @@ fn complete_data_restore() {
     }
 
     ic::store::<Data>(data);
+}
+
+#[query]
+fn old_data_size(events: Vec<Event>) -> u64 {
+    let tmp = ic::get::<OldData>();
+    tmp.0.bucket.size()
 }
 
 #[cfg(test)]
