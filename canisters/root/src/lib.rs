@@ -33,8 +33,15 @@ pub struct Data {
     pub writers: BTreeSet<TokenContractId>,
 }
 
-#[derive(Default)]
-pub struct OldData(Data);
+struct OldData(Data);
+
+impl Default for OldData {
+    fn default() -> Self {
+        let mut data = Data::default();
+        data.bucket.bucket.global_offset = 0;
+        Self(data)
+    }
+}
 
 impl Default for Data {
     fn default() -> Self {

@@ -37,7 +37,7 @@ pub struct TransactionList {
     /// ID of the current contract.
     contract: Principal,
     /// The offset of this list, i.e the actual id of the first event in the list.
-    global_offset: u64,
+    pub global_offset: u64,
     /// Maps each user principal id to the vector of events they have.
     user_indexer: Paged<Principal, NonNull<Event>, 64>,
     /// Maps contract id to each transaction page.
