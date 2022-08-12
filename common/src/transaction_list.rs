@@ -93,7 +93,7 @@ impl TransactionList {
     /// Try to insert an event into the list.
     pub fn insert(&mut self, event: Event) -> u64 {
         let local_index = self.events.len() as u32;
-        let hash = event.hash();
+        // let hash = event.hash();
         let event: NonNull<Event> = Box::leak(Box::new(event)).into();
         let eve = unsafe { event.as_ref() };
 
@@ -107,7 +107,7 @@ impl TransactionList {
         }
 
         // Insert the event itself.
-        self.event_hashes.insert(local_index, hash);
+        // self.event_hashes.insert(local_index, hash);
         self.events.push(event);
 
         self.global_offset + (local_index as u64)

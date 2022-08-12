@@ -6,7 +6,7 @@ use ic_kit::macros::{post_upgrade, pre_upgrade, update};
 use ic_kit::{ic, Principal};
 use std::collections::HashSet;
 
-const UPGRADE_SIZE: usize = 2_500;
+const UPGRADE_SIZE: usize = 10_000;
 
 #[pre_upgrade]
 fn pre_upgrade() {
