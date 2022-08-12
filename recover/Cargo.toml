@@ -1,0 +1,22 @@
+[package]
+name = "recover"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+cap-common = { path= "../common", version = "0.2" }
+candid = "0.7"
+tokio = { version="1.16.1", features=["macros"] }
+ic-agent = { version = "0.12.0", features = ["reqwest", "pem"]}
+anyhow = "1.0.53"
+sha2 = "0.10.1"
+ring = "0.16.20"
+pem = "1.0.0"
+openssl = "0.10.36"
+serde = "1.0.143"
+serde_cbor = "0.11.2"
+cap_root = {path="../canisters/root"}
+ic-types = "0.3"
+garcon = "0.2.3"
