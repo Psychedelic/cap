@@ -1,9 +1,9 @@
 use crate::migration::v2;
 
+use crate::write_new_users_to_cap;
 use cap_common::bucket::Bucket;
 use cap_common::transaction::IndefiniteEvent;
 use cap_common::{TransactionId, TransactionList};
-use crate::write_new_users_to_cap;
 use ic_kit::{ic, Principal};
 
 /// An in progress read from the stable storage.
@@ -31,6 +31,10 @@ impl InProgressReadFromStable {
             v2,
             list,
         }
+    }
+
+    pub fn status(&self) -> (usize, bool) {
+        (self.cursor, self.is_complete())
     }
 
     /// Insert a batch of transaction to the hash queue, this is used when an in-progress reader

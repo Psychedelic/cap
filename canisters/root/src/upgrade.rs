@@ -8,6 +8,9 @@ use std::collections::HashSet;
 
 #[pre_upgrade]
 fn pre_upgrade() {
+    if ic::get_maybe::<InProgressReadFromStable>().is_some() {
+        return;
+    }
     // If data doesn't exits, don't rewrite the stable store.
     if let Some(data) = ic::get_maybe::<Data>() {
         ic::stable_store((data,)).expect("Failed to serialize data.");
@@ -110,7 +113,7 @@ pub fn upgrade_progress() {
         let c = ic::get_mut::<InProgressReadFromStable>();
         // are we the top-level upgrade_progress call?
         let is_main = c.cursor <= 1_000;
-        c.progress(10_000);
+        c.progress(5_000);
 
         if c.is_complete() {
             let data = c.get_data().unwrap();
@@ -123,7 +126,7 @@ pub fn upgrade_progress() {
             0
         } else {
             // ceiling division.
-            (c.rem() + 10_000 - 1) / 10_000
+            (c.rem() + 5_000 - 1) / 5_000
         }
     };
 
@@ -144,11 +147,10 @@ mod tests {
     use crate::{insert, insert_many, Data, Principal};
     use candid::encode_args;
     use cap_common::transaction::{DetailValue, Event, IndefiniteEvent};
-    
+
     use certified_vars::Map;
     use certified_vars::{AsHashTree, Seq};
     use ic_kit::{ic, MockContext, RawHandler};
-    
 
     /// Create a mock indefinite event.
     fn event(i: usize) -> IndefiniteEvent {

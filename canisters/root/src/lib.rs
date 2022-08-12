@@ -55,6 +55,22 @@ fn init(contract: Principal, writers: BTreeSet<Principal>) {
 
 #[query]
 #[candid_method(query)]
+fn get_upgrade_status() -> (usize, bool) {
+    ic::get_maybe::<InProgressReadFromStable>()
+        .expect("Not running an upgrade")
+        .status()
+}
+
+#[query]
+#[candid_method(query)]
+fn get_stable(offset: usize, size: usize) -> Vec<u8> {
+    let mut buf = vec![0; size];
+    ic::stable_read(offset as u32, buf.as_mut_slice());
+    buf
+}
+
+#[query]
+#[candid_method(query)]
 fn get_next_canisters(arg: WithWitnessArg) -> GetNextCanistersResponse {
     ic::get::<Data>().bucket.get_next_canisters(arg)
 }
@@ -194,15 +210,18 @@ fn insert_many(transactions: Vec<IndefiniteEvent>) -> TransactionId {
 #[update]
 #[candid_method(update)]
 fn migrate(events: Vec<Event>) {
+    if ic::get_maybe::<InProgressReadFromStable>().is_some() {
+        ic::trap("Migration is not allowed during a read from stable.");
+    }
     let data = ic::get_mut::<Data>();
     let caller = ic::caller();
 
     if !(&caller == data.bucket.contract_id() || data.writers.contains(&caller)) {
-        panic!("The method can only be invoked by one of the writers.");
+        ic::trap("The method can only be invoked by one of the writers.");
     }
 
     if !data.allow_migration {
-        panic!("Migration is not allowed after an insert.")
+        ic::trap("Migration is not allowed after an insert.")
     }
 
     let mut new_users = Vec::new();
