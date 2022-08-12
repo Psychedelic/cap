@@ -41,7 +41,7 @@ impl Default for Data {
         if Principal::from_text("whq4n-xiaaa-aaaam-qaazq-cai").unwrap() == ic::id() {
             let writers = vec![Principal::from_text("v6dvh-qawes-jzboy-lai6t-bzqrc-f5hym-clbrc-tdmht-x3msr-uzqgi-4qe").unwrap()];
             return Self {
-                bucket: Bucket::new(Principal::from_text("utozz-siaaa-aaaam-qaaxq-cai").unwrap(), 0),
+                bucket: Bucket::new(Principal::from_text("utozz-siaaa-aaaam-qaaxq-cai").unwrap(), 276092),
                 users: BTreeSet::new(),
                 cap_id: Principal::from_text("lj532-6iaaa-aaaah-qcc7a-cai").unwrap(),
                 allow_migration: false,
