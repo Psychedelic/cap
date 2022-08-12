@@ -6,6 +6,8 @@ use ic_kit::macros::{post_upgrade, pre_upgrade, update};
 use ic_kit::{ic, Principal};
 use std::collections::HashSet;
 
+const UPGRADE_SIZE: usize = 5_000;
+
 #[pre_upgrade]
 fn pre_upgrade() {
     if ic::get_maybe::<InProgressReadFromStable>().is_some() {
@@ -113,7 +115,7 @@ pub fn upgrade_progress() {
         let c = ic::get_mut::<InProgressReadFromStable>();
         // are we the top-level upgrade_progress call?
         let is_main = c.cursor <= 1_000;
-        c.progress(5_000);
+        c.progress(UPGRADE_SIZE);
 
         if c.is_complete() {
             let data = c.get_data().unwrap();
@@ -126,7 +128,7 @@ pub fn upgrade_progress() {
             0
         } else {
             // ceiling division.
-            (c.rem() + 5_000 - 1) / 5_000
+            (c.rem() + UPGRADE_SIZE - 1) / UPGRADE_SIZE
         }
     };
 
