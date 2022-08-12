@@ -71,6 +71,12 @@ fn get_stable(offset: usize, size: usize) -> Vec<u8> {
 
 #[query]
 #[candid_method(query)]
+fn get_stable_size() -> u32 {
+    ic::stable_size()
+}
+
+#[query]
+#[candid_method(query)]
 fn get_next_canisters(arg: WithWitnessArg) -> GetNextCanistersResponse {
     ic::get::<Data>().bucket.get_next_canisters(arg)
 }
