@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(CandidType, Serialize, Deserialize)]
 pub struct Bucket {
-    bucket: TransactionList,
+    pub bucket: TransactionList,
     buckets: Map<TransactionId, Principal>,
     next_canisters: Seq<BucketId>,
     contract: TokenContractId,

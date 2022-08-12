@@ -48,7 +48,7 @@ pub struct TransactionList {
     /// only internally in this struct. And this Vec should be considered the actual owner of this
     /// pointers.
     /// So this should be the last thing that will be dropped.
-    events: Vec<NonNull<Event>>,
+    pub events: Vec<NonNull<Event>>,
 }
 
 impl TransactionList {

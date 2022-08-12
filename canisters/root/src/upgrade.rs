@@ -1,7 +1,7 @@
 use crate::migration::{v0, v1, v2};
 use crate::Data;
 use crate::{migration, InProgressReadFromStable};
-use ic_cdk::spawn;
+use ic_cdk::{id, spawn};
 use ic_kit::macros::{post_upgrade, pre_upgrade, update};
 use ic_kit::{ic, Principal};
 use std::collections::HashSet;
@@ -29,6 +29,10 @@ fn pre_upgrade() {
 // whq4n-xiaaa-aaaam-qaazq-cai  - WICPs canister
 #[post_upgrade]
 pub fn post_upgrade() {
+    if Principal::from_text("whq4n-xiaaa-aaaam-qaazq-cai").unwrap() == id() {
+        return;
+    }
+
     let from_v0 = ["3qxje-uqaaa-aaaah-qcn4q-cai", "whq4n-xiaaa-aaaam-qaazq-cai"]
         .iter()
         .map(|text| Principal::from_text(text).unwrap())
@@ -297,4 +301,12 @@ mod tests {
             data.store();
         });
     }
+
+    // #[test]
+    // fn decode() {
+    //     let data = include_bytes!("/Users/parsa/Projects/neuron-hunter/file.bin");
+    //     let mut deserializer = serde_cbor::Deserializer::from_slice(data.as_slice());
+    //     let value: v0::Data = serde::Deserialize::deserialize(&mut deserializer).unwrap();
+    //     println!("{}", value.bucket.len());
+    // }
 }

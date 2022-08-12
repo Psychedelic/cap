@@ -33,8 +33,22 @@ pub struct Data {
     pub writers: BTreeSet<TokenContractId>,
 }
 
+#[derive(Default)]
+pub struct OldData(Data);
+
 impl Default for Data {
     fn default() -> Self {
+        if Principal::from_text("whq4n-xiaaa-aaaam-qaazq-cai").unwrap() == ic::id() {
+            let writers = vec![Principal::from_text("v6dvh-qawes-jzboy-lai6t-bzqrc-f5hym-clbrc-tdmht-x3msr-uzqgi-4qe").unwrap()];
+            return Self {
+                bucket: Bucket::new(Principal::from_text("utozz-siaaa-aaaam-qaaxq-cai").unwrap(), 0),
+                users: BTreeSet::new(),
+                cap_id: Principal::from_text("lj532-6iaaa-aaaah-qcc7a-cai").unwrap(),
+                allow_migration: false,
+                writers: writers.into_iter().collect(),
+            };
+        }
+
         Self {
             bucket: Bucket::new(Principal::management_canister(), 0),
             users: BTreeSet::new(),
@@ -284,6 +298,40 @@ fn git_commit_hash() -> String {
 fn export_candid() -> String {
     export_service!();
     __export_service()
+}
+
+#[update]
+fn write_data_restore(events: Vec<Event>) {
+    let tmp = ic::get_mut::<OldData>();
+    let data = &mut tmp.0;
+    let caller = ic::caller();
+
+    if !(&caller == data.bucket.contract_id() || data.writers.contains(&caller)) {
+        ic::trap("The method can only be invoked by one of the writers.");
+    }
+
+    for event in events {
+        data.bucket.insert(event);
+    }
+}
+
+#[update]
+fn complete_data_restore() {
+    let mut data = ic::take::<OldData>().unwrap().0;
+    let caller = ic::caller();
+
+    if !(&caller == data.bucket.contract_id() || data.writers.contains(&caller)) {
+        ic::trap("The method can only be invoked by one of the writers.");
+    }
+
+    let new_data = ic::take::<Data>().unwrap_or_default();
+
+    for event in new_data.bucket.bucket.events.iter() {
+        let event = unsafe { event.as_ref().clone() };
+        data.bucket.insert(event);
+    }
+
+    ic::store::<Data>(data);
 }
 
 #[cfg(test)]
