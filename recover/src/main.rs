@@ -119,9 +119,11 @@ async fn main() -> anyhow::Result<()> {
     let events = value.bucket;
     assert_eq!(events.len(), 276092);
 
-    let bytes = agent.query(&canister_id, "old_data_size").with_arg(encode_one(Vec::<Event>::new())).call().await.unwrap();
+    let bytes = agent.query(&canister_id, "old_data_size").with_arg(encode_args(()).unwrap()).call().await.unwrap();
     let from = decode_one::<u64>(bytes.as_slice()).unwrap() as usize;
     let events = events.into_iter().skip(from).collect::<Vec<_>>();
+
+    println!("Skipping {} transactions.", from);
 
     let mut i = 0;
     loop {
@@ -132,11 +134,13 @@ async fn main() -> anyhow::Result<()> {
             break;
         }
 
+        println!("sending ({}..{})", start + from, end + from);
+
         let data = &events[start..end];
         let arg = encode_one(data).unwrap();
         match agent.update(&canister_id, "write_data_restore").with_arg(arg).call_and_wait(waiter_with_exponential_backoff()).await {
             Ok(_) => {
-                println!("sent ({}..{}) successfully.", start, end);
+                println!("sent ({}..{}) successfully xD", start + from, end + from);
                 i += 1;
             }
             Err(e) => {
@@ -144,6 +148,8 @@ async fn main() -> anyhow::Result<()> {
             }
         }
     }
+
+    agent.update(&canister_id, "complete_data_restore").with_arg(encode_args(()).unwrap()).call_and_wait(waiter_with_exponential_backoff()).await.unwrap();
 
     Ok(())
 }
