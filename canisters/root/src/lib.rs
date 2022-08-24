@@ -342,7 +342,7 @@ fn complete_data_restore() {
 }
 
 #[query]
-fn old_data_size(events: Vec<Event>) -> u64 {
+fn old_data_size() -> u64 {
     let tmp = ic::get::<OldData>();
     tmp.0.bucket.size()
 }

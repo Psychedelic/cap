@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 use ic_agent::{Agent, agent, AgentError};
-use candid::{encode_args, encode_one};
+use candid::{decode_one, encode_args, encode_one};
 use ic_agent::identity::{BasicIdentity, Secp256k1Identity};
 use ic_agent::Identity;
 use openssl::ec::{EcGroup, EcKey};
@@ -94,7 +94,7 @@ impl PrivateKey {
     }
 }
 
-const PER_MESSAGE: usize = 2000;
+const PER_MESSAGE: usize = 1000;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -119,8 +119,11 @@ async fn main() -> anyhow::Result<()> {
     let events = value.bucket;
     assert_eq!(events.len(), 276092);
 
-    let mut i = 1;
+    let bytes = agent.query(&canister_id, "old_data_size").with_arg(encode_one(Vec::<Event>::new())).call().await.unwrap();
+    let from = decode_one::<u64>(bytes.as_slice()).unwrap() as usize;
+    let events = events.into_iter().skip(from).collect::<Vec<_>>();
 
+    let mut i = 0;
     loop {
         let start = i * PER_MESSAGE;
         let end = (start + PER_MESSAGE).min(events.len());
@@ -141,9 +144,6 @@ async fn main() -> anyhow::Result<()> {
             }
         }
     }
-
-    let ret = agent.update(&canister_id, "complete_data_restore").with_arg(&encode_args(()).unwrap()).call_and_wait(waiter_with_exponential_backoff()).await;
-    println!("{:#?}", ret);
 
     Ok(())
 }
