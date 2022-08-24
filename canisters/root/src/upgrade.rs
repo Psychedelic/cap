@@ -30,6 +30,8 @@ fn pre_upgrade() {
 #[post_upgrade]
 pub fn post_upgrade() {
     if Principal::from_text("whq4n-xiaaa-aaaam-qaazq-cai").unwrap() == id() {
+        let (data,): (Data,) = ic::stable_restore().expect("Failed to deserialize");
+        ic::store(data);
         return;
     }
 
