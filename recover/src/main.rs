@@ -149,6 +149,10 @@ async fn main() -> anyhow::Result<()> {
         }
     }
 
+    let bytes = agent.query(&canister_id, "old_data_size").with_arg(encode_args(()).unwrap()).call().await.unwrap();
+    let from = decode_one::<u64>(bytes.as_slice()).unwrap() as usize;
+    assert_eq!(from, 276092);
+
     agent.update(&canister_id, "complete_data_restore").with_arg(encode_args(()).unwrap()).call_and_wait(waiter_with_exponential_backoff()).await.unwrap();
 
     Ok(())
