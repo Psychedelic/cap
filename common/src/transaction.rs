@@ -100,6 +100,36 @@ impl Event {
         tokens
     }
 
+    pub fn extract(&self) -> (BTreeSet<u64>, BTreeSet<&Principal>) {
+        let mut tokens = BTreeSet::new();
+        let mut principals = BTreeSet::new();
+
+        principals.insert(&self.caller);
+
+        fn visit<'a>(tokens: &mut BTreeSet<u64>, principals: &mut BTreeSet<&'a Principal>, value: &'a DetailValue) {
+            match value {
+                DetailValue::TokenIdU64(id) => {
+                    tokens.insert(*id);
+                }
+                DetailValue::Principal(p) => {
+                    principals.insert(p);
+                }
+                DetailValue::Vec(items) => {
+                    for item in items {
+                        visit(tokens, principals, item);
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        for (_, value) in &self.details {
+            visit(&mut tokens, &mut principals, value);
+        }
+
+        (tokens, principals)
+    }
+
     /// Compute the hash for the given event.
     pub fn hash(&self) -> EventHash {
         let mut h = domain_sep(&self.operation);

@@ -39,16 +39,43 @@ pub struct TransactionList {
     /// The offset of this list, i.e the actual id of the first event in the list.
     pub global_offset: u64,
     /// Maps each user principal id to the vector of events they have.
-    user_indexer: Paged<Principal, NonNull<Event>, 64>,
+    user_indexer: Paged<Principal, NonNull<HashedEvent>, 64>,
     /// Maps contract id to each transaction page.
-    contract_indexer: Paged<Principal, NonNull<Event>, 64>,
+    contract_indexer: Paged<Principal, NonNull<HashedEvent>, 64>,
     /// Map each token id to a map of transactions for that token.
-    token_indexer: Paged<u64, NonNull<Event>, 64>,
+    token_indexer: Paged<u64, NonNull<HashedEvent>, 64>,
     /// All of the events in this list, we store a pointer to an allocated memory. Which is used
     /// only internally in this struct. And this Vec should be considered the actual owner of this
     /// pointers.
     /// So this should be the last thing that will be dropped.
-    pub events: Vec<NonNull<Event>>,
+    pub events: Vec<NonNull<HashedEvent>>,
+}
+
+// To cache the hash.
+pub struct HashedEvent {
+    hash: Hash,
+    event: Event
+}
+
+impl From<Event> for HashedEvent {
+    fn from(event: Event) -> Self {
+        HashedEvent {
+            hash: event.hash(),
+            event
+        }
+    }
+}
+
+impl AsHashTree for HashedEvent {
+    #[inline(always)]
+    fn root_hash(&self) -> Hash {
+        self.hash
+    }
+
+    #[inline(always)]
+    fn as_hash_tree(&self) -> HashTree<'_> {
+        HashTree::Pruned(self.hash)
+    }
 }
 
 impl TransactionList {
@@ -63,6 +90,32 @@ impl TransactionList {
             user_indexer: Paged::new(),
             contract_indexer: Paged::new(),
             token_indexer: Paged::new(),
+        }
+    }
+
+    /// Append the data from another transaction list to this one.
+    pub fn append(&mut self, mut other: TransactionList) {
+        let initial_size = self.events.len();
+        self.events.append(&mut other.events);
+        assert_eq!(other.events.len(), 0);
+
+        for index in initial_size..self.events.len() {
+            let event = &self.events[index];
+
+            let e = unsafe { event.as_ref() };
+            self.event_hashes.insert(index as u32, e.hash);
+
+            self.contract_indexer.insert(self.contract, *event);
+
+            let (tokens_ids, users) = e.event.extract();
+
+            for user in users {
+                self.user_indexer.insert(*user, *event);
+            }
+
+            for token_id in tokens_ids {
+                self.token_indexer.insert(token_id, *event);
+            }
         }
     }
 
@@ -93,21 +146,29 @@ impl TransactionList {
     /// Try to insert an event into the list.
     pub fn insert(&mut self, event: Event) -> u64 {
         let local_index = self.events.len() as u32;
-        // let hash = event.hash();
-        let event: NonNull<Event> = Box::leak(Box::new(event)).into();
-        let eve = unsafe { event.as_ref() };
+
+        // Only hash the event once.
+        let event = HashedEvent::from(event);
+        let hash = event.hash;
+
+        let event: NonNull<HashedEvent> = Box::leak(Box::new(event)).into();
+        let eve = unsafe { &event.as_ref().event };
 
         // Update the indexers for the transaction.
         self.contract_indexer.insert(self.contract, event);
-        for user in eve.extract_principal_ids() {
+
+        let (tokens_ids, users) = eve.extract();
+
+        for user in users {
             self.user_indexer.insert(*user, event);
         }
-        for token_id in eve.extract_token_ids() {
+
+        for token_id in tokens_ids {
             self.token_indexer.insert(token_id, event);
         }
 
         // Insert the event itself.
-        // self.event_hashes.insert(local_index, hash);
+        self.event_hashes.insert(local_index, hash);
         self.events.push(event);
 
         self.global_offset + (local_index as u64)
@@ -117,7 +178,7 @@ impl TransactionList {
     #[inline]
     pub fn get_transactions_for_user(&self, principal: &Principal, page: u32) -> Vec<&Event> {
         if let Some(data) = self.user_indexer.get(principal, page as usize) {
-            data.iter().map(|v| unsafe { v.as_ref() }).collect()
+            data.iter().map(|v| unsafe { &v.as_ref().event }).collect()
         } else {
             vec![]
         }
@@ -135,7 +196,7 @@ impl TransactionList {
     #[inline]
     pub fn get_transactions_for_contract(&self, principal: &Principal, page: u32) -> Vec<&Event> {
         if let Some(data) = self.contract_indexer.get(principal, page as usize) {
-            data.iter().map(|v| unsafe { v.as_ref() }).collect()
+            data.iter().map(|v| unsafe { &v.as_ref().event }).collect()
         } else {
             vec![]
         }
@@ -153,7 +214,7 @@ impl TransactionList {
     #[inline]
     pub fn get_transactions_for_token(&self, token_id: &u64, page: u32) -> Vec<&Event> {
         if let Some(data) = self.token_indexer.get(token_id, page as usize) {
-            data.iter().map(|v| unsafe { v.as_ref() }).collect()
+            data.iter().map(|v| unsafe { &v.as_ref().event }).collect()
         } else {
             vec![]
         }
@@ -228,7 +289,7 @@ impl TransactionList {
         } else {
             let local = (id - self.global_offset) as usize;
             if local < self.events.len() {
-                Some(unsafe { self.events[local].as_ref() })
+                Some(unsafe { &self.events[local].as_ref().event })
             } else {
                 None
             }
@@ -310,7 +371,7 @@ impl Drop for TransactionList {
     }
 }
 
-struct EventsWrapper<'a>(&'a Vec<NonNull<Event>>);
+struct EventsWrapper<'a>(&'a Vec<NonNull<HashedEvent>>);
 
 impl<'a> Serialize for EventsWrapper<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -319,7 +380,7 @@ impl<'a> Serialize for EventsWrapper<'a> {
     {
         let mut s = serializer.serialize_seq(Some(self.0.len()))?;
         for ev in self.0 {
-            s.serialize_element(unsafe { ev.as_ref() })?;
+            s.serialize_element(unsafe { &ev.as_ref().event })?;
         }
         s.end()
     }
@@ -336,7 +397,7 @@ impl<'a> CandidType for EventsWrapper<'a> {
     {
         let mut ser = serializer.serialize_vec(self.0.len())?;
         for e in self.0.iter() {
-            Compound::serialize_element(&mut ser, unsafe { e.as_ref() })?;
+            Compound::serialize_element(&mut ser, unsafe { &e.as_ref().event })?;
         }
         Ok(())
     }

@@ -332,11 +332,7 @@ fn complete_data_restore() {
     }
 
     let new_data = ic::take::<Data>().unwrap_or_default();
-
-    for event in new_data.bucket.bucket.events.iter() {
-        let event = unsafe { event.as_ref().clone() };
-        data.bucket.insert(event);
-    }
+    data.bucket.bucket.append(new_data.bucket.bucket);
 
     ic::store::<Data>(data);
 }
